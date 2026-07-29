@@ -15,6 +15,7 @@ import { CalendarModule } from 'primeng/calendar';
 import { DropdownModule } from 'primeng/dropdown';
 
 import { ComingSoonComponent } from './components/coming-soon/coming-soon.component';
+import { StatTileComponent } from './components/stat-tile/stat-tile.component';
 
 /**
  * Regroupe les modules PrimeNG et composants réutilisés par toutes les
@@ -22,7 +23,7 @@ import { ComingSoonComponent } from './components/coming-soon/coming-soon.compon
  * suppression) afin d'éviter de ré-importer ces mêmes modules partout.
  */
 @NgModule({
-    declarations: [ComingSoonComponent],
+    declarations: [ComingSoonComponent, StatTileComponent],
     imports: [
         CommonModule,
         ReactiveFormsModule,
@@ -52,7 +53,8 @@ import { ComingSoonComponent } from './components/coming-soon/coming-soon.compon
         ToolbarModule,
         CalendarModule,
         DropdownModule,
-        ComingSoonComponent
+        ComingSoonComponent,
+        StatTileComponent
     ]
 })
 export class SharedModule { }

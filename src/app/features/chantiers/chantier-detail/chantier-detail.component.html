@@ -163,41 +163,55 @@
 </div>
 
 <ng-container *ngIf="!isNew">
-    <!-- Statistiques salariés -->
+    <!-- Statistiques -->
     <div class="card mb-3">
-        <div class="flex align-items-center gap-2 mb-4">
-            <i class="pi pi-chart-bar"></i>
-            <h6 class="m-0">Statistiques salariés</h6>
+        <div class="flex align-items-center justify-content-between mb-4">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-chart-bar"></i>
+                <h6 class="m-0">Statistiques</h6>
+            </div>
         </div>
-        <div class="flex flex-wrap gap-4">
-            <div><span class="text-500 block">Total</span><span class="text-2xl font-bold">{{ statsSalariesParStatutAcces.total }}</span></div>
-            <div><span class="text-500 block">Accord d'accès</span><span class="text-2xl font-bold text-green-600">{{ statsSalariesParStatutAcces.accorde }}</span></div>
-            <div><span class="text-500 block">Refus d'accès</span><span class="text-2xl font-bold text-red-600">{{ statsSalariesParStatutAcces.refuse }}</span></div>
-            <div><span class="text-500 block">En attente</span><span class="text-2xl font-bold text-yellow-600">{{ statsSalariesParStatutAcces.enAttente }}</span></div>
-            <div *ngFor="let s of statsSalariesParContrat"><span class="text-500 block">{{ s.libelle }}</span><span class="text-2xl font-bold">{{ s.total }}</span></div>
-        </div>
-    </div>
 
-    <!-- Statistiques entreprises -->
-    <div class="card mb-3">
-        <div class="flex align-items-center gap-2 mb-4">
-            <i class="pi pi-chart-bar"></i>
-            <h6 class="m-0">Statistiques entreprises</h6>
+        <div *ngIf="!afficherStatistiques" class="flex align-items-center justify-content-between">
+            <a class="cursor-pointer text-primary">Statistiques masquées</a>
+            <button pButton type="button" label="Afficher" (click)="afficherStatistiques = true"></button>
         </div>
-        <div class="flex flex-wrap gap-4">
-            <div><span class="text-500 block">Total</span><span class="text-2xl font-bold">{{ statsEntreprises.total }}</span></div>
-            <div><span class="text-500 block">Actives</span><span class="text-2xl font-bold text-green-600">{{ statsEntreprises.actif }}</span></div>
-            <div><span class="text-500 block">Inactives</span><span class="text-2xl font-bold text-red-600">{{ statsEntreprises.inactif }}</span></div>
-        </div>
+
+        <ng-container *ngIf="afficherStatistiques">
+            <div class="mb-4">
+                <div class="text-500 mb-3">Salariés</div>
+                <div class="flex flex-wrap gap-5">
+                    <app-stat-tile [compact]="true" label="Total" [value]="statsSalariesParStatutAcces.total" color="blue"></app-stat-tile>
+                    <app-stat-tile [compact]="true" label="Accord d'accès" [value]="statsSalariesParStatutAcces.accorde" color="green"></app-stat-tile>
+                    <app-stat-tile [compact]="true" label="Refus d'accès" [value]="statsSalariesParStatutAcces.refuse" color="red"></app-stat-tile>
+                    <app-stat-tile [compact]="true" label="En attente" [value]="statsSalariesParStatutAcces.enAttente" color="yellow"></app-stat-tile>
+                    <app-stat-tile [compact]="true" *ngFor="let s of statsSalariesParContrat" [label]="s.libelle" [value]="s.total" color="purple"></app-stat-tile>
+                </div>
+            </div>
+            <div>
+                <div class="text-500 mb-3">Entreprises</div>
+                <div class="flex flex-wrap gap-5">
+                    <app-stat-tile [compact]="true" label="Total" [value]="statsEntreprises.total" color="blue"></app-stat-tile>
+                    <app-stat-tile [compact]="true" label="Actives" [value]="statsEntreprises.actif" color="green"></app-stat-tile>
+                    <app-stat-tile [compact]="true" label="Inactives" [value]="statsEntreprises.inactif" color="red"></app-stat-tile>
+                </div>
+            </div>
+        </ng-container>
     </div>
 
     <!-- Contrôles -->
     <div class="card mb-3">
         <div class="flex align-items-center gap-2 mb-4">
             <i class="pi pi-pencil"></i>
-            <h6 class="m-0">Contrôles</h6>
+            <h6 class="m-0">Contrôles ({{ controles.length }})</h6>
         </div>
 
+        <div *ngIf="!afficherControles" class="flex align-items-center justify-content-between">
+            <a class="cursor-pointer text-primary" (click)="afficherControles = true">{{ controles.length }} contrôle(s)</a>
+            <button pButton type="button" label="Gérer les contrôles" (click)="afficherControles = true"></button>
+        </div>
+
+        <ng-container *ngIf="afficherControles">
         <form [formGroup]="controlesForm" (ngSubmit)="submitControlesConfig()" class="formgrid grid align-items-end mb-4">
             <div class="field col-12 md:col-4">
                 <label for="recurrenceControles">Réccurence des contrôles</label>
@@ -248,6 +262,7 @@
                 <button pButton type="submit" icon="pi pi-plus" label="Créer un contrôle" class="w-full"></button>
             </div>
         </form>
+        </ng-container>
     </div>
 
     <!-- Utilisateurs du Back Office -->
@@ -257,6 +272,12 @@
             <h6 class="m-0">Utilisateurs du Back Office ({{ chantierUtilisateurIds.length }})</h6>
         </div>
 
+        <div *ngIf="!afficherUtilisateurs" class="flex align-items-center justify-content-between">
+            <a class="cursor-pointer text-primary" (click)="afficherUtilisateurs = true">{{ chantierUtilisateurIds.length }} utilisateur(s)</a>
+            <button pButton type="button" label="Gérer les utilisateurs" (click)="afficherUtilisateurs = true"></button>
+        </div>
+
+        <ng-container *ngIf="afficherUtilisateurs">
         <p-table [value]="chantierUtilisateurIds" *ngIf="chantierUtilisateurIds.length > 0">
             <ng-template pTemplate="header">
                 <tr><th>Identité</th><th style="width: 6rem"></th></tr>
@@ -281,6 +302,7 @@
             </div>
             <button pButton type="button" label="Affecter" (click)="affecterUtilisateur()"></button>
         </div>
+        </ng-container>
     </div>
 
     <!-- Entreprises affectées -->
@@ -290,6 +312,12 @@
             <h6 class="m-0">Entreprises ({{ affectationsEntreprise.length }})</h6>
         </div>
 
+        <div *ngIf="!afficherEntreprises" class="flex align-items-center justify-content-between">
+            <a class="cursor-pointer text-primary" (click)="afficherEntreprises = true">{{ affectationsEntreprise.length }} entreprise(s) affectée(s)</a>
+            <button pButton type="button" label="Gérer les entreprises" (click)="afficherEntreprises = true"></button>
+        </div>
+
+        <ng-container *ngIf="afficherEntreprises">
         <p-table [value]="affectationsEntreprise" dataKey="id" *ngIf="affectationsEntreprise.length > 0">
             <ng-template pTemplate="header">
                 <tr>
@@ -330,6 +358,7 @@
                 <button pButton type="submit" label="Ajouter" class="w-full"></button>
             </div>
         </form>
+        </ng-container>
     </div>
 
     <!-- Salariés affectés -->
@@ -339,6 +368,12 @@
             <h6 class="m-0">Salariés ({{ affectationsSalarie.length }})</h6>
         </div>
 
+        <div *ngIf="!afficherSalaries" class="flex align-items-center justify-content-between">
+            <a class="cursor-pointer text-primary" (click)="afficherSalaries = true">{{ affectationsSalarie.length }} salarié(s) affecté(s)</a>
+            <button pButton type="button" label="Gérer les salariés" (click)="afficherSalaries = true"></button>
+        </div>
+
+        <ng-container *ngIf="afficherSalaries">
         <p-table [value]="affectationsSalarie" dataKey="id" *ngIf="affectationsSalarie.length > 0">
             <ng-template pTemplate="header">
                 <tr>
@@ -382,5 +417,6 @@
                 <button pButton type="submit" label="Ajouter" class="w-full"></button>
             </div>
         </form>
+        </ng-container>
     </div>
 </ng-container>

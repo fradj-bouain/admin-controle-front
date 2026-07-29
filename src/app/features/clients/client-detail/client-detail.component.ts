@@ -25,6 +25,7 @@ export class ClientDetailComponent implements OnInit {
     pays: Pays[] = [];
     utilisateurs: Utilisateur[] = [];
     chantiers: Chantier[] = [];
+    afficherChantiers = false;
 
     coordonneesForm = this.fb.group({
         raisonSociale: ['', Validators.required],

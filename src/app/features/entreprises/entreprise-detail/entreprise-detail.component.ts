@@ -63,6 +63,7 @@ export class EntrepriseDetailComponent implements OnInit {
     affectationsChantierSelectionne: AffectationEntrepriseChantier[] = [];
     parentsDisponibles: Array<{ id: string; label: string }> = [];
     chantiersDisponibles: Chantier[] = [];
+    afficherAffectation = false;
 
     affectationForm = this.fb.group({
         chantierId: ['', Validators.required],
@@ -74,6 +75,7 @@ export class EntrepriseDetailComponent implements OnInit {
     documents: DocumentItem[] = [];
     types: TypeDocument[] = [];
     typesPourEntreprise: TypeDocument[] = [];
+    afficherDocuments = false;
     afficherObligatoireSeulement = false;
     documentsByType: Record<string, DocumentItem> = {};
     lignesDocument: Record<string, LigneDocument> = {};
@@ -315,6 +317,10 @@ export class EntrepriseDetailComponent implements OnInit {
 
     onFiltreObligatoireChange() {
         this.recalculerTypesPourEntreprise();
+    }
+
+    get nbDocumentsManquants(): number {
+        return this.typesPourEntreprise.filter((t) => !this.documentsByType[t.id]).length;
     }
 
     renseignerDocument(type: TypeDocument) {

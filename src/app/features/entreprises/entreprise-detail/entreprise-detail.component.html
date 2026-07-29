@@ -155,6 +155,12 @@
 
     <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez l'entreprise pour activer cette section.</small>
 
+    <div *ngIf="!isNew && !afficherAffectation" class="flex align-items-center justify-content-between">
+        <a class="cursor-pointer text-primary" (click)="afficherAffectation = true">{{ mesAffectations.length }} chantier(s) affecté(s)</a>
+        <button pButton type="button" label="Gérer les affectations" (click)="afficherAffectation = true"></button>
+    </div>
+
+    <ng-container *ngIf="!isNew && afficherAffectation">
     <form [formGroup]="affectationForm" (ngSubmit)="submitAffectation()">
         <div class="formgrid grid">
             <div class="field col-12 md:col-3">
@@ -222,6 +228,7 @@
             </tr>
         </ng-template>
     </p-table>
+    </ng-container>
 </div>
 
 <!-- Documents -->
@@ -231,7 +238,7 @@
             <i class="pi pi-folder"></i>
             <h6 class="m-0">Documents</h6>
         </div>
-        <div class="flex align-items-center gap-2" *ngIf="!isNew">
+        <div class="flex align-items-center gap-2" *ngIf="!isNew && afficherDocuments">
             <p-checkbox
                 [binary]="true"
                 [(ngModel)]="afficherObligatoireSeulement"
@@ -244,7 +251,12 @@
 
     <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez l'entreprise pour activer cette section.</small>
 
-    <div *ngIf="!isNew">
+    <div *ngIf="!isNew && !afficherDocuments" class="flex align-items-center justify-content-between">
+        <a class="cursor-pointer text-primary" (click)="afficherDocuments = true">{{ nbDocumentsManquants }} documents cachés</a>
+        <button pButton type="button" label="Mettre à jour les documents" (click)="afficherDocuments = true"></button>
+    </div>
+
+    <div *ngIf="!isNew && afficherDocuments">
         <div
             *ngFor="let type of typesPourEntreprise"
             class="border-bottom-1 surface-border py-3"

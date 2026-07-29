@@ -60,6 +60,13 @@ export class ChantierDetailComponent implements OnInit {
         salarieResponsableId: ['']
     });
 
+    // --- Sections secondaires repliées par défaut ---
+    afficherStatistiques = false;
+    afficherControles = false;
+    afficherUtilisateurs = false;
+    afficherEntreprises = false;
+    afficherSalaries = false;
+
     // --- Contrôles ---
     controles: Controle[] = [];
     controlesForm = this.fb.group({

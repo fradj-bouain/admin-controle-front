@@ -1,0 +1,45 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="card">
+    <p-toolbar styleClass="mb-4">
+        <ng-template pTemplate="left"><h5 class="m-0">Planification des envois</h5></ng-template>
+        <ng-template pTemplate="right">
+            <button pButton type="button" icon="pi pi-plus" label="Planifier un envoi" routerLink="/messagerie/planification/nouveau"></button>
+        </ng-template>
+    </p-toolbar>
+
+    <p-table [value]="messages" dataKey="id" [loading]="loading">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Destinataires</th>
+                <th>Sujet</th>
+                <th>Date d'envoi prévue</th>
+                <th>Statut</th>
+                <th></th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-message>
+            <tr>
+                <td>{{ cibleLabels[message.cibleGroupe] }}</td>
+                <td>{{ message.sujet }}</td>
+                <td>{{ message.dateEnvoiPrevue | date: 'short' }}</td>
+                <td><p-tag [severity]="statutSeverity(message.statut)" [value]="message.statut"></p-tag></td>
+                <td>
+                    <button
+                        *ngIf="message.statut === 'EN_ATTENTE'"
+                        pButton
+                        type="button"
+                        icon="pi pi-times"
+                        class="p-button-text p-button-rounded p-button-danger"
+                        pTooltip="Annuler"
+                        (click)="confirmerAnnulation(message)"
+                    ></button>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr><td colspan="5" class="text-center text-500">Aucun envoi planifié.</td></tr>
+        </ng-template>
+    </p-table>
+</div>

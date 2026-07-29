@@ -178,7 +178,12 @@
 
     <small class="text-500 block" *ngIf="isNew">Enregistrez le client pour activer cette section.</small>
 
-    <p-table [value]="chantiers" dataKey="id" *ngIf="!isNew">
+    <div *ngIf="!isNew && !afficherChantiers" class="flex align-items-center justify-content-between">
+        <a class="cursor-pointer text-primary" (click)="afficherChantiers = true">{{ chantiers.length }} chantier(s) — voir la liste</a>
+        <button pButton type="button" label="Afficher" (click)="afficherChantiers = true"></button>
+    </div>
+
+    <p-table [value]="chantiers" dataKey="id" *ngIf="!isNew && afficherChantiers">
         <ng-template pTemplate="header">
             <tr><th>Nom</th><th>Ville</th><th>Statut</th></tr>
         </ng-template>

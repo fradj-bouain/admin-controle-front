@@ -4,12 +4,12 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # DNS embarqué de Docker (adresse standard sur les runtimes basés Docker,
-    # dont Railway) : nécessaire pour que la résolution de l'hôte interne
-    # Railway ci-dessous soit faite à CHAQUE requête plutôt qu'une seule fois
-    # au démarrage de nginx (sinon un DNS pas encore prêt au boot, ou une IP
-    # de conteneur qui change, laisse le proxy bloqué indéfiniment -> 504).
-    resolver 127.0.0.11 ipv6=off valid=10s;
+    # DNS publics (Google/Cloudflare) : on a constaté que la résolution DNS
+    # privée Railway (admin-controle.railway.internal) n'est pas fiable
+    # depuis ce conteneur (resolver 127.0.0.11 : connexion refusée). On
+    # proxifie donc vers l'URL PUBLIQUE du backend, qui elle est résolue
+    # par le DNS public normal.
+    resolver 8.8.8.8 1.1.1.1 valid=30s;
 
     # SPA : toute route inconnue retombe sur index.html (routing Angular en mode PathLocationStrategy)
     location / {
@@ -17,13 +17,14 @@ server {
     }
 
     location /api/ {
-        # L'utilisation d'une variable ($backend_upstream) plutôt qu'un hôte
-        # littéral dans proxy_pass force nginx à résoudre le DNS à chaque
-        # requête via le resolver ci-dessus, au lieu de le mettre en cache
-        # une seule fois au démarrage.
-        set $backend_upstream "${BACKEND_INTERNAL_HOST}:${BACKEND_INTERNAL_PORT}";
-        proxy_pass http://$backend_upstream/api/;
-        proxy_set_header Host $host;
+        # Variable (pas un hôte littéral) pour forcer une résolution DNS
+        # dynamique à chaque requête plutôt qu'une seule fois au démarrage.
+        set $backend_upstream "${BACKEND_PUBLIC_HOST}";
+        proxy_pass https://$backend_upstream/api/;
+        proxy_ssl_server_name on;
+        # Host = domaine public du backend (et non $host, qui serait celui
+        # du frontend) : l'edge Railway route par nom de domaine (SNI/Host).
+        proxy_set_header Host $backend_upstream;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_connect_timeout 10s;
     }
