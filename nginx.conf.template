@@ -4,29 +4,14 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # Résolveur DNS réel du conteneur, auto-détecté par le script officiel de
-    # l'image nginx (15-local-resolvers.envsh, à partir de /etc/resolv.conf)
-    # et exposé via cette variable, substituée ici par envsubst au démarrage.
-    # (Un essai précédent avec un resolver Docker "standard" codé en dur,
-    # 127.0.0.11, a échoué avec "connection refused" : Railway n'expose pas
-    # de DNS embarqué à cette adresse, contrairement à Docker Compose.)
-    ${NGINX_ENTRYPOINT_LOCAL_RESOLVERS}
-
-    # SPA : toute route inconnue retombe sur index.html (routing Angular en mode PathLocationStrategy)
+    # Sert uniquement les fichiers statiques Angular. L'API est appelée
+    # directement par le navigateur sur l'URL publique du backend (voir
+    # environment.prod.ts) — pas de proxy /api/ ici : après plusieurs essais,
+    # ni le réseau privé Railway (DNS non résolvable depuis ce conteneur) ni
+    # le proxy vers l'URL publique du backend (401 vide, cause non identifiée
+    # spécifique au trafic sortant d'un conteneur Railway) ne se sont montrés
+    # fiables. Le CORS backend est configuré pour autoriser cette origine.
     location / {
         try_files $uri $uri/ /index.html;
-    }
-
-    location /api/ {
-        # Réseau privé Railway plutôt que l'URL publique : un essai précédent
-        # via l'URL publique fonctionnait pour les requêtes directes mais
-        # échouait (401 vide) spécifiquement pour le trafic sortant de ce
-        # conteneur vers l'edge public Railway — cause non identifiée côté
-        # edge. Le réseau privé contourne l'edge public entièrement.
-        set $backend_upstream "${BACKEND_INTERNAL_HOST}:${BACKEND_INTERNAL_PORT}";
-        proxy_pass http://$backend_upstream/api/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_connect_timeout 10s;
     }
 }
