@@ -1,0 +1,60 @@
+<p-toast></p-toast>
+
+<div class="card">
+    <p-toolbar styleClass="mb-4">
+        <ng-template pTemplate="left"><h5 class="m-0">Messagerie</h5></ng-template>
+        <ng-template pTemplate="right">
+            <button pButton type="button" icon="pi pi-plus" label="Nouveau message" routerLink="/messagerie/nouveau"></button>
+        </ng-template>
+    </p-toolbar>
+
+    <p-tabView>
+        <p-tabPanel header="Boîte de réception">
+            <p-table [value]="reception" dataKey="id">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th></th>
+                        <th>Sujet</th>
+                        <th>Message</th>
+                        <th>Date</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-message>
+                    <tr [ngClass]="{ 'font-bold': !message.lu }" (click)="marquerLu(message)" style="cursor: pointer;">
+                        <td><i class="pi" [ngClass]="message.lu ? 'pi-envelope-open' : 'pi-envelope'"></i></td>
+                        <td>{{ message.sujet }}</td>
+                        <td>{{ message.contenu }}</td>
+                        <td>{{ message.createdAt | date: 'short' }}</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="4" class="text-center text-500">Aucun message reçu.</td></tr>
+                </ng-template>
+            </p-table>
+        </p-tabPanel>
+
+        <p-tabPanel header="Envoyés">
+            <p-table [value]="envoyes" dataKey="id">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Destinataire</th>
+                        <th>Sujet</th>
+                        <th>Message</th>
+                        <th>Date</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-message>
+                    <tr>
+                        <td><p-tag severity="info" [value]="message.destinataireType"></p-tag></td>
+                        <td>{{ message.sujet }}</td>
+                        <td>{{ message.contenu }}</td>
+                        <td>{{ message.createdAt | date: 'short' }}</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="4" class="text-center text-500">Aucun message envoyé.</td></tr>
+                </ng-template>
+            </p-table>
+        </p-tabPanel>
+    </p-tabView>
+</div>

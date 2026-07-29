@@ -1,0 +1,54 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="card">
+    <p-toolbar styleClass="mb-4">
+        <ng-template pTemplate="left">
+            <h5 class="m-0">Entreprises</h5>
+        </ng-template>
+        <ng-template pTemplate="right">
+            <button pButton type="button" icon="pi pi-plus" label="Ajouter" routerLink="/entreprises/nouveau"></button>
+        </ng-template>
+    </p-toolbar>
+
+    <p-table [value]="entreprises" [loading]="loading" [paginator]="true" [rows]="10" dataKey="id">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Raison sociale</th>
+                <th>SIRET</th>
+                <th>Téléphone</th>
+                <th>Email</th>
+                <th>Statut</th>
+                <th style="width: 6rem"></th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-entreprise>
+            <tr class="cursor-pointer" [routerLink]="['/entreprises', entreprise.id]">
+                <td>{{ entreprise.raisonSociale }}</td>
+                <td>{{ entreprise.siret }}</td>
+                <td>{{ entreprise.telephone }}</td>
+                <td>{{ entreprise.email }}</td>
+                <td><p-tag [severity]="entreprise.actif ? 'success' : 'danger'" [value]="entreprise.actif ? 'ACTIF' : 'INACTIF'"></p-tag></td>
+                <td>
+                    <button
+                        pButton
+                        type="button"
+                        icon="pi pi-pencil"
+                        class="p-button-text p-button-rounded"
+                        pTooltip="Modifier"
+                        [routerLink]="['/entreprises', entreprise.id]"
+                        (click)="$event.stopPropagation()"
+                    ></button>
+                    <button
+                        pButton
+                        type="button"
+                        [icon]="entreprise.actif ? 'pi pi-ban' : 'pi pi-check'"
+                        class="p-button-text p-button-rounded"
+                        [pTooltip]="entreprise.actif ? 'Désactiver' : 'Activer'"
+                        (click)="confirmerBasculeStatut(entreprise); $event.stopPropagation()"
+                    ></button>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>

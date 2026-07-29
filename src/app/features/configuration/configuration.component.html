@@ -1,0 +1,154 @@
+<p-toast></p-toast>
+
+<p-tabView>
+    <p-tabPanel header="Utilisateurs">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="right">
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" routerLink="/configuration/utilisateurs/nouveau"></button>
+                </ng-template>
+            </p-toolbar>
+            <p-table [value]="utilisateurs" dataKey="id">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Utilisateur</th>
+                        <th>Rôles</th>
+                        <th>Statut</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-utilisateur>
+                    <tr>
+                        <td>{{ utilisateur.username }}</td>
+                        <td>
+                            <p-tag *ngFor="let role of utilisateur.roles" [value]="role" class="mr-1"></p-tag>
+                        </td>
+                        <td><p-tag [severity]="utilisateur.actif ? 'success' : 'danger'" [value]="utilisateur.actif ? 'ACTIF' : 'INACTIF'"></p-tag></td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="Pays">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="right">
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="dialogPaysVisible = true"></button>
+                </ng-template>
+            </p-toolbar>
+            <p-table [value]="pays" dataKey="id">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Code ISO</th>
+                        <th>Nom</th>
+                        <th>Zone</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-p>
+                    <tr>
+                        <td>{{ p.codeIso }}</td>
+                        <td>{{ p.nom }}</td>
+                        <td>{{ p.zone }}</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="Corps de métier">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="right">
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="dialogCorpsVisible = true"></button>
+                </ng-template>
+            </p-toolbar>
+            <p-table [value]="corpsDeMetier" dataKey="id">
+                <ng-template pTemplate="header">
+                    <tr><th>Libellé</th></tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-corps>
+                    <tr><td>{{ corps.libelle }}</td></tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="Types de salarié">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="right">
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="dialogTypeSalarieVisible = true"></button>
+                </ng-template>
+            </p-toolbar>
+            <p-table [value]="typesSalarie" dataKey="id">
+                <ng-template pTemplate="header">
+                    <tr><th>Code</th><th>Libellé</th></tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-type>
+                    <tr><td>{{ type.code }}</td><td>{{ type.libelle }}</td></tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="Types de contrat">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="right">
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="dialogTypeContratSalarieVisible = true"></button>
+                </ng-template>
+            </p-toolbar>
+            <p-table [value]="typesContratSalarie" dataKey="id">
+                <ng-template pTemplate="header">
+                    <tr><th>Code</th><th>Libellé</th></tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-type>
+                    <tr><td>{{ type.code }}</td><td>{{ type.libelle }}</td></tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="Fonctions">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="right">
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="dialogSalarieFonctionVisible = true"></button>
+                </ng-template>
+            </p-toolbar>
+            <p-table [value]="salarieFonctions" dataKey="id">
+                <ng-template pTemplate="header">
+                    <tr><th>Libellé</th></tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-fonction>
+                    <tr><td>{{ fonction.libelle }}</td></tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="Contrôleurs tiers">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="right">
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="dialogControleTiersVisible = true"></button>
+                </ng-template>
+            </p-toolbar>
+            <p-table [value]="controleTiers" dataKey="id">
+                <ng-template pTemplate="header">
+                    <tr><th>Nom</th></tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-tiers>
+                    <tr><td>{{ tiers.nom }}</td></tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </p-tabPanel>
+</p-tabView>
+
+<app-pays-form-dialog [(visible)]="dialogPaysVisible" (created)="creerPays($event)"></app-pays-form-dialog>
+<app-corps-de-metier-form-dialog [(visible)]="dialogCorpsVisible" (created)="creerCorpsDeMetier($event)"></app-corps-de-metier-form-dialog>
+<app-type-salarie-form-dialog [(visible)]="dialogTypeSalarieVisible" (created)="creerTypeSalarie($event)"></app-type-salarie-form-dialog>
+<app-type-contrat-salarie-form-dialog [(visible)]="dialogTypeContratSalarieVisible" (created)="creerTypeContratSalarie($event)"></app-type-contrat-salarie-form-dialog>
+<app-salarie-fonction-form-dialog [(visible)]="dialogSalarieFonctionVisible" (created)="creerSalarieFonction($event)"></app-salarie-fonction-form-dialog>
+<app-controle-tiers-form-dialog [(visible)]="dialogControleTiersVisible" (created)="creerControleTiers($event)"></app-controle-tiers-form-dialog>

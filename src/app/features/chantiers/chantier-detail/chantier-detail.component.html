@@ -1,0 +1,386 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="card mb-3">
+    <div class="flex align-items-center justify-content-between">
+        <div class="flex align-items-center gap-3">
+            <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
+            <h5 class="m-0">Chantier {{ chantier ? '(' + chantier.nom + ')' : '' }}</h5>
+        </div>
+        <div class="flex align-items-center gap-2" *ngIf="chantier">
+            <p-tag [severity]="chantier.statut === 'ACTIF' ? 'success' : 'danger'" [value]="chantier.statut"></p-tag>
+            <button
+                pButton
+                type="button"
+                [label]="chantier.statut === 'ACTIF' ? 'Désactiver' : 'Activer'"
+                [icon]="chantier.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"
+                class="p-button-text"
+                (click)="confirmerBasculeStatut()"
+            ></button>
+        </div>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="col-12 lg:col-8">
+        <!-- Détail du chantier -->
+        <div class="card mb-3">
+            <div class="flex align-items-center gap-2 mb-4">
+                <i class="pi pi-map-marker"></i>
+                <h6 class="m-0">Détail du chantier</h6>
+            </div>
+
+            <form [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
+                <div class="field">
+                    <label for="clientId">Client *</label>
+                    <p-dropdown
+                        id="clientId"
+                        [options]="clients"
+                        formControlName="clientId"
+                        optionLabel="raisonSociale"
+                        optionValue="id"
+                        [filter]="true"
+                        filterBy="raisonSociale"
+                        placeholder="-- Sélectionner un client --"
+                    ></p-dropdown>
+                </div>
+
+                <div class="field">
+                    <label for="ipsAllowed">IPs autorisées sur la visualisation des pièces entreprises / salariés</label>
+                    <textarea id="ipsAllowed" pInputTextarea formControlName="ipsAllowed" rows="3" placeholder="au format IPv4 ou IPv6, une par ligne"></textarea>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-6">
+                        <label for="nom">Nom *</label>
+                        <input id="nom" type="text" pInputText formControlName="nom" />
+                    </div>
+                    <div class="field col-12 md:col-6">
+                        <label for="prestation">Prestation</label>
+                        <input id="prestation" type="text" pInputText formControlName="prestation" />
+                    </div>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-4">
+                        <label for="adresse">Adresse</label>
+                        <input id="adresse" type="text" pInputText formControlName="adresse" />
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="adresse2">Adresse (bis)</label>
+                        <input id="adresse2" type="text" pInputText formControlName="adresse2" />
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="adresse3">Adresse (ter)</label>
+                        <input id="adresse3" type="text" pInputText formControlName="adresse3" />
+                    </div>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-6">
+                        <label for="ville">Ville</label>
+                        <input id="ville" type="text" pInputText formControlName="ville" />
+                    </div>
+                    <div class="field col-12 md:col-6">
+                        <label for="paysId">Pays</label>
+                        <p-dropdown
+                            id="paysId"
+                            [options]="pays"
+                            formControlName="paysId"
+                            optionLabel="nom"
+                            optionValue="id"
+                            [filter]="true"
+                            filterBy="nom"
+                            placeholder="Sélectionner un pays"
+                        ></p-dropdown>
+                    </div>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-6">
+                        <label for="dateDebut">Date de début</label>
+                        <p-calendar id="dateDebut" formControlName="dateDebut" dateFormat="dd/mm/yy" [showIcon]="true"></p-calendar>
+                    </div>
+                    <div class="field col-12 md:col-6">
+                        <label for="dateFinPrevue">Date de fin</label>
+                        <p-calendar id="dateFinPrevue" formControlName="dateFinPrevue" dateFormat="dd/mm/yy" [showIcon]="true"></p-calendar>
+                    </div>
+                </div>
+
+                <div class="flex justify-content-end gap-2 mt-4">
+                    <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
+                    <button pButton type="submit" [label]="isNew ? 'Créer ce chantier' : 'Modifier ce chantier'" icon="pi pi-check" [loading]="saving"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-12 lg:col-4">
+        <!-- Responsable du chantier -->
+        <div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
+            <div class="flex align-items-center gap-2 mb-4">
+                <i class="pi pi-user"></i>
+                <h6 class="m-0">Responsable du chantier</h6>
+            </div>
+            <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez le chantier pour activer cette section.</small>
+            <form [formGroup]="responsableForm" (ngSubmit)="affecterResponsable()" class="p-fluid">
+                <div class="field">
+                    <label for="chefChantierUtilisateurId">Un utilisateur ?</label>
+                    <p-dropdown
+                        id="chefChantierUtilisateurId"
+                        [options]="utilisateurs"
+                        formControlName="chefChantierUtilisateurId"
+                        optionValue="id"
+                        [filter]="true"
+                        filterBy="nom"
+                        placeholder="-- Sélectionner parmi les utilisateurs --"
+                        [showClear]="true"
+                    >
+                        <ng-template let-u pTemplate="item">{{ u?.prenom }} {{ u?.nom }}</ng-template>
+                        <ng-template let-u pTemplate="selectedItem">{{ u?.prenom }} {{ u?.nom }}</ng-template>
+                    </p-dropdown>
+                </div>
+                <div class="field">
+                    <label for="salarieResponsableId">Un salarié ?</label>
+                    <p-dropdown
+                        id="salarieResponsableId"
+                        [options]="salaries"
+                        formControlName="salarieResponsableId"
+                        optionValue="id"
+                        [filter]="true"
+                        filterBy="nom"
+                        placeholder="-- Sélectionner parmi les salariés --"
+                        [showClear]="true"
+                    >
+                        <ng-template let-s pTemplate="item">{{ s?.prenom }} {{ s?.nom }}</ng-template>
+                        <ng-template let-s pTemplate="selectedItem">{{ s?.prenom }} {{ s?.nom }}</ng-template>
+                    </p-dropdown>
+                </div>
+                <button pButton type="submit" label="Affecter" [disabled]="isNew" class="w-full"></button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<ng-container *ngIf="!isNew">
+    <!-- Statistiques salariés -->
+    <div class="card mb-3">
+        <div class="flex align-items-center gap-2 mb-4">
+            <i class="pi pi-chart-bar"></i>
+            <h6 class="m-0">Statistiques salariés</h6>
+        </div>
+        <div class="flex flex-wrap gap-4">
+            <div><span class="text-500 block">Total</span><span class="text-2xl font-bold">{{ statsSalariesParStatutAcces.total }}</span></div>
+            <div><span class="text-500 block">Accord d'accès</span><span class="text-2xl font-bold text-green-600">{{ statsSalariesParStatutAcces.accorde }}</span></div>
+            <div><span class="text-500 block">Refus d'accès</span><span class="text-2xl font-bold text-red-600">{{ statsSalariesParStatutAcces.refuse }}</span></div>
+            <div><span class="text-500 block">En attente</span><span class="text-2xl font-bold text-yellow-600">{{ statsSalariesParStatutAcces.enAttente }}</span></div>
+            <div *ngFor="let s of statsSalariesParContrat"><span class="text-500 block">{{ s.libelle }}</span><span class="text-2xl font-bold">{{ s.total }}</span></div>
+        </div>
+    </div>
+
+    <!-- Statistiques entreprises -->
+    <div class="card mb-3">
+        <div class="flex align-items-center gap-2 mb-4">
+            <i class="pi pi-chart-bar"></i>
+            <h6 class="m-0">Statistiques entreprises</h6>
+        </div>
+        <div class="flex flex-wrap gap-4">
+            <div><span class="text-500 block">Total</span><span class="text-2xl font-bold">{{ statsEntreprises.total }}</span></div>
+            <div><span class="text-500 block">Actives</span><span class="text-2xl font-bold text-green-600">{{ statsEntreprises.actif }}</span></div>
+            <div><span class="text-500 block">Inactives</span><span class="text-2xl font-bold text-red-600">{{ statsEntreprises.inactif }}</span></div>
+        </div>
+    </div>
+
+    <!-- Contrôles -->
+    <div class="card mb-3">
+        <div class="flex align-items-center gap-2 mb-4">
+            <i class="pi pi-pencil"></i>
+            <h6 class="m-0">Contrôles</h6>
+        </div>
+
+        <form [formGroup]="controlesForm" (ngSubmit)="submitControlesConfig()" class="formgrid grid align-items-end mb-4">
+            <div class="field col-12 md:col-4">
+                <label for="recurrenceControles">Réccurence des contrôles</label>
+                <p-dropdown id="recurrenceControles" [options]="recurrences" formControlName="recurrenceControles" styleClass="w-full"></p-dropdown>
+            </div>
+            <div class="field col-12 md:col-4">
+                <label for="dateProchainControle">Date du prochain contrôle</label>
+                <p-calendar id="dateProchainControle" formControlName="dateProchainControle" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-calendar>
+            </div>
+            <div class="field col-12 md:col-2">
+                <button pButton type="submit" label="Enregistrer" class="w-full"></button>
+            </div>
+        </form>
+
+        <p-table [value]="controles" dataKey="id" *ngIf="controles.length > 0">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Date de début</th>
+                    <th>Date de fin</th>
+                    <th>Remarque</th>
+                    <th>Terminé ?</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-controle>
+                <tr>
+                    <td>{{ controle.dateControle }}</td>
+                    <td>{{ controle.dateFin || '—' }}</td>
+                    <td>{{ controle.remarques || '—' }}</td>
+                    <td><p-tag [severity]="controle.termine ? 'success' : 'danger'" [value]="controle.termine ? 'Oui' : 'Non'"></p-tag></td>
+                </tr>
+            </ng-template>
+        </p-table>
+
+        <form [formGroup]="nouveauControleForm" (ngSubmit)="submitNouveauControle()" class="formgrid grid align-items-end mt-4">
+            <div class="field col-12 md:col-3">
+                <label for="dateControle">Date du contrôle *</label>
+                <p-calendar id="dateControle" formControlName="dateControle" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-calendar>
+            </div>
+            <div class="field col-12 md:col-3">
+                <label for="controleTiersId">Effectué par</label>
+                <p-dropdown id="controleTiersId" [options]="controleTiersListe" formControlName="controleTiersId" optionLabel="nom" optionValue="id" placeholder="-- Choisir --" styleClass="w-full"></p-dropdown>
+            </div>
+            <div class="field col-12 md:col-3">
+                <label for="remarques">Remarque</label>
+                <input id="remarques" type="text" pInputText formControlName="remarques" class="w-full" />
+            </div>
+            <div class="field col-12 md:col-3">
+                <button pButton type="submit" icon="pi pi-plus" label="Créer un contrôle" class="w-full"></button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Utilisateurs du Back Office -->
+    <div class="card mb-3">
+        <div class="flex align-items-center gap-2 mb-4">
+            <i class="pi pi-users"></i>
+            <h6 class="m-0">Utilisateurs du Back Office ({{ chantierUtilisateurIds.length }})</h6>
+        </div>
+
+        <p-table [value]="chantierUtilisateurIds" *ngIf="chantierUtilisateurIds.length > 0">
+            <ng-template pTemplate="header">
+                <tr><th>Identité</th><th style="width: 6rem"></th></tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-utilisateurId>
+                <tr>
+                    <td>{{ nomUtilisateur(utilisateurId) }}</td>
+                    <td>
+                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" (click)="revoquerUtilisateur(utilisateurId)"></button>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+
+        <div class="flex align-items-end gap-2 mt-3">
+            <div class="flex-1">
+                <label class="text-500 text-sm block mb-1">Affecter un utilisateur</label>
+                <p-dropdown [options]="utilisateurs" [(ngModel)]="nouvelUtilisateurId" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Sélectionner parmi les utilisateurs --" styleClass="w-full">
+                    <ng-template let-u pTemplate="item">{{ u?.prenom }} {{ u?.nom }}</ng-template>
+                    <ng-template let-u pTemplate="selectedItem">{{ u?.prenom }} {{ u?.nom }}</ng-template>
+                </p-dropdown>
+            </div>
+            <button pButton type="button" label="Affecter" (click)="affecterUtilisateur()"></button>
+        </div>
+    </div>
+
+    <!-- Entreprises affectées -->
+    <div class="card mb-3">
+        <div class="flex align-items-center gap-2 mb-4">
+            <i class="pi pi-building"></i>
+            <h6 class="m-0">Entreprises ({{ affectationsEntreprise.length }})</h6>
+        </div>
+
+        <p-table [value]="affectationsEntreprise" dataKey="id" *ngIf="affectationsEntreprise.length > 0">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Entreprise</th>
+                    <th>Rôle</th>
+                    <th>Statut</th>
+                    <th class="text-center">Nb salariés</th>
+                    <th style="width: 6rem"></th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-affectation>
+                <tr>
+                    <td>{{ nomEntreprise(affectation.entrepriseId) }}</td>
+                    <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
+                    <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut"></p-tag></td>
+                    <td class="text-center">{{ entrepriseStatSalaries(affectation.id) }}</td>
+                    <td>
+                        <button pButton type="button" icon="pi pi-ban" class="p-button-text p-button-rounded" *ngIf="affectation.statut === 'ACTIF'" (click)="desactiverAffectationEntreprise(affectation)"></button>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+
+        <form [formGroup]="affecterEntrepriseForm" (ngSubmit)="submitAffecterEntreprise()" class="formgrid grid align-items-end mt-3">
+            <div class="field col-12 md:col-4">
+                <label for="entrepriseId">Entreprise</label>
+                <p-dropdown id="entrepriseId" [options]="entreprisesDisponibles" formControlName="entrepriseId" optionLabel="raisonSociale" optionValue="id" [filter]="true" filterBy="raisonSociale" placeholder="-- Choisir --" styleClass="w-full"></p-dropdown>
+            </div>
+            <div class="field col-12 md:col-3">
+                <label for="role">Rôle</label>
+                <p-dropdown id="role" [options]="roles" formControlName="role" styleClass="w-full"></p-dropdown>
+            </div>
+            <div class="field col-12 md:col-3" *ngIf="affecterEntrepriseForm.value.role !== 'PRINCIPALE'">
+                <label for="affectationParenteId">Rattachée à</label>
+                <p-dropdown id="affectationParenteId" [options]="parentsDisponibles" formControlName="affectationParenteId" optionLabel="label" optionValue="id" placeholder="-- Choisir --" styleClass="w-full"></p-dropdown>
+            </div>
+            <div class="field col-12 md:col-2">
+                <button pButton type="submit" label="Ajouter" class="w-full"></button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Salariés affectés -->
+    <div class="card mb-3">
+        <div class="flex align-items-center gap-2 mb-4">
+            <i class="pi pi-users"></i>
+            <h6 class="m-0">Salariés ({{ affectationsSalarie.length }})</h6>
+        </div>
+
+        <p-table [value]="affectationsSalarie" dataKey="id" *ngIf="affectationsSalarie.length > 0">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Identité</th>
+                    <th>Statut</th>
+                    <th>Contrat</th>
+                    <th style="width: 10rem"></th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-affectation>
+                <tr>
+                    <td>{{ nomSalarie(affectation.salarieId) }}</td>
+                    <td>
+                        <p-tag [severity]="affectation.statutAcces === 'ACCORDE' ? 'success' : (affectation.statutAcces === 'REFUSE' ? 'danger' : 'warning')" [value]="affectation.statutAcces"></p-tag>
+                    </td>
+                    <td>{{ contratDuSalarie(affectation.salarieId) }}</td>
+                    <td>
+                        <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="affectation.statutAcces !== 'ACCORDE'" (click)="accorderAcces(affectation)"></button>
+                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="affectation.statutAcces !== 'REFUSE'" (click)="refuserAcces(affectation)"></button>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+
+        <form [formGroup]="affecterSalarieForm" (ngSubmit)="submitAffecterSalarie()" class="formgrid grid align-items-end mt-3">
+            <div class="field col-12 md:col-5">
+                <label for="salarieId">Salarié</label>
+                <p-dropdown id="salarieId" [options]="salariesDisponibles" formControlName="salarieId" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Choisir --" styleClass="w-full">
+                    <ng-template let-s pTemplate="item">{{ s?.prenom }} {{ s?.nom }}</ng-template>
+                    <ng-template let-s pTemplate="selectedItem">{{ s?.prenom }} {{ s?.nom }}</ng-template>
+                </p-dropdown>
+            </div>
+            <div class="field col-12 md:col-5">
+                <label for="affectationEntrepriseChantierId">Entreprise (sur ce chantier)</label>
+                <p-dropdown id="affectationEntrepriseChantierId" [options]="affectationsEntreprise" formControlName="affectationEntrepriseChantierId" optionValue="id" placeholder="-- Choisir --" styleClass="w-full">
+                    <ng-template let-a pTemplate="item">{{ nomEntreprise(a?.entrepriseId) }}</ng-template>
+                    <ng-template let-a pTemplate="selectedItem">{{ nomEntreprise(a?.entrepriseId) }}</ng-template>
+                </p-dropdown>
+            </div>
+            <div class="field col-12 md:col-2">
+                <button pButton type="submit" label="Ajouter" class="w-full"></button>
+            </div>
+        </form>
+    </div>
+</ng-container>

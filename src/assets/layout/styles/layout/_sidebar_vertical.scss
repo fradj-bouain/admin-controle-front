@@ -1,0 +1,165 @@
+.layout-sidebar {
+    position: fixed;
+    height: 100%;
+    top: 0;
+    left: 0;
+    width: 18rem;
+    background: var(--menu-bg);
+    border-right: var(--sidebar-border);
+    box-shadow: var(--sidebar-shadow);
+    display: flex;
+    flex-direction: column;
+
+
+    .sidebar-header {
+        padding: 2.5rem 0 2rem 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        .app-logo {
+            .app-logo-normal {
+                display: inline;
+                width: 190px;
+                height: 64px;
+            }
+
+            .app-logo-small {
+                display: none;
+            }
+        }
+    }
+   
+
+    .layout-menu-container {
+        overflow: auto;
+        flex: 1;
+        padding-bottom: 2rem;
+    }
+
+    .layout-menu {
+        margin: 0;
+        padding: 0;
+        list-style-type: none;
+
+        .layout-root-menuitem {
+            // Notre menu n'a pas de catégories : chaque entrée racine est un lien
+            // direct (pas un en-tête de groupe comme dans le template Apollo
+            // d'origine), donc on masque le texte d'en-tête non cliquable et on
+            // affiche le lien racine lui-même avec le même style que les sous-liens.
+            > .layout-menuitem-root-text {
+                display: none;
+            }
+
+            > a {
+                display: flex;
+                align-items: center;
+                position: relative;
+                outline: 0 none;
+                color: var(--menuitem-text-color);
+                cursor: pointer;
+                padding: .75rem 2rem;
+                transition: background-color var(--transition-duration), box-shadow var(--transition-duration);
+
+                .layout-menuitem-icon {
+                    margin-right: .5rem;
+                    color: var(--menuitem-icon-color);
+                }
+            }
+        }
+
+        a {
+            user-select: none;
+            
+            &.active-menuitem {
+                > .layout-submenu-toggler {
+                    transform: rotate(-180deg);
+                }
+            }
+        }
+
+        li.active-menuitem {
+            > a {
+                .layout-submenu-toggler {
+                    transform: rotate(-180deg);
+                }
+            }
+        }
+
+        ul {
+            margin: 0;
+            padding: 0;
+            list-style-type: none;
+    
+            a {
+                display: flex;
+                align-items: center;
+                position: relative;
+                outline: 0 none;
+                color: var(--menuitem-text-color);
+                cursor: pointer;
+                padding: .75rem 2rem;
+                transition: background-color var(--transition-duration), box-shadow var(--transition-duration);
+
+                .layout-menuitem-icon {
+                    margin-right: .5rem;
+                    color: var(--menuitem-icon-color);
+                }
+    
+                .layout-submenu-toggler {
+                    font-size: 75%;
+                    margin-left: auto;
+                    transition: transform var(--transition-duration);
+                }
+    
+                &.active-route {
+                    font-weight: 700;
+                }
+
+                &:hover {
+                    background-color: var(--menuitem-hover-bg-color);
+                }
+            }
+    
+            ul {
+                overflow: hidden;
+                border-radius: var(--border-radius);
+    
+                li {
+                    a {
+                        padding-left: 2.5rem;
+                    }
+    
+                    li {
+                        a {
+                            padding-left: 3rem;
+                        }
+    
+                        li {
+                            a {
+                                padding-left: 3.5rem;
+                            }
+    
+                            li {
+                                a {
+                                    padding-left: 4rem;
+                                }
+    
+                                li {
+                                    a {
+                                        padding-left: 5.5rem;
+                                    }
+    
+                                    li {
+                                        a {
+                                            padding-left: 5rem;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

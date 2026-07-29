@@ -1,0 +1,47 @@
+<p-toast></p-toast>
+
+<div class="card" style="max-width: 720px;">
+    <div class="flex align-items-center gap-3 mb-4">
+        <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="annuler()"></button>
+        <div>
+            <h5 class="m-0">Générer un rapport</h5>
+            <span class="text-500 text-sm" *ngIf="dateControle">Pour le contrôle du {{ dateControle }}</span>
+        </div>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
+        <div class="field">
+            <label for="nbSalariesControles">Nombre de salariés contrôlés</label>
+            <p-inputNumber id="nbSalariesControles" formControlName="nbSalariesControles"></p-inputNumber>
+        </div>
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-6">
+                <label for="nbAccords">Accords</label>
+                <p-inputNumber id="nbAccords" formControlName="nbAccords"></p-inputNumber>
+            </div>
+            <div class="field col-12 md:col-6">
+                <label for="nbRefus">Refus</label>
+                <p-inputNumber id="nbRefus" formControlName="nbRefus"></p-inputNumber>
+            </div>
+        </div>
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-6">
+                <label for="nbNouvellesEntreprises">Nouvelles entreprises</label>
+                <p-inputNumber id="nbNouvellesEntreprises" formControlName="nbNouvellesEntreprises"></p-inputNumber>
+            </div>
+            <div class="field col-12 md:col-6">
+                <label for="nbNouveauxSalaries">Nouveaux salariés</label>
+                <p-inputNumber id="nbNouveauxSalaries" formControlName="nbNouveauxSalaries"></p-inputNumber>
+            </div>
+        </div>
+        <div class="field">
+            <label for="nbSalariesDetaches">Salariés détachés</label>
+            <p-inputNumber id="nbSalariesDetaches" formControlName="nbSalariesDetaches"></p-inputNumber>
+        </div>
+
+        <div class="flex justify-content-end gap-2 mt-4">
+            <button pButton type="button" label="Annuler" class="p-button-text" (click)="annuler()"></button>
+            <button pButton type="submit" label="Générer" icon="pi pi-check" [loading]="saving"></button>
+        </div>
+    </form>
+</div>

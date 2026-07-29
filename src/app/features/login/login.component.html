@@ -1,0 +1,23 @@
+<div class="flex align-items-center justify-content-center" style="min-height: 100vh; background: var(--surface-ground);">
+    <div class="card" style="width: 24rem;">
+        <div class="text-center mb-4">
+            <img src="assets/layout/images/admincontrol-logo.png" alt="ADMIN-CONTROL'BTP" style="max-width: 220px;" />
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
+            <div class="field">
+                <label for="username">Utilisateur</label>
+                <input id="username" type="text" pInputText formControlName="username" class="w-full" autocomplete="username" />
+            </div>
+
+            <div class="field">
+                <label for="password">Mot de passe</label>
+                <input id="password" type="password" pInputText formControlName="password" class="w-full" autocomplete="current-password" />
+            </div>
+
+            <p *ngIf="error" class="text-red-500 text-sm m-0">Identifiants invalides.</p>
+
+            <button pButton type="submit" label="Se connecter" [loading]="loading" class="w-full"></button>
+        </form>
+    </div>
+</div>

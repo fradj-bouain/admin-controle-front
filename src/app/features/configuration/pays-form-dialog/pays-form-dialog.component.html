@@ -1,0 +1,28 @@
+<p-dialog
+    header="Nouveau pays"
+    [(visible)]="visible"
+    (visibleChange)="visibleChange.emit($event)"
+    [modal]="true"
+    [style]="{ width: '24rem' }"
+    (onHide)="close()"
+>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
+        <div class="field">
+            <label for="codeIso">Code ISO *</label>
+            <input id="codeIso" type="text" pInputText formControlName="codeIso" class="w-full" maxlength="3" />
+        </div>
+        <div class="field">
+            <label for="nom">Nom *</label>
+            <input id="nom" type="text" pInputText formControlName="nom" class="w-full" />
+        </div>
+        <div class="field">
+            <label for="zone">Zone</label>
+            <input id="zone" type="text" pInputText formControlName="zone" class="w-full" placeholder="France / Europe / Europe de l'Est" />
+        </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="Annuler" class="p-button-text" (click)="close()"></button>
+        <button pButton type="button" label="Enregistrer" (click)="submit()"></button>
+    </ng-template>
+</p-dialog>

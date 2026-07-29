@@ -1,0 +1,62 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="card">
+    <p-toolbar styleClass="mb-4">
+        <ng-template pTemplate="left">
+            <h5 class="m-0">Salariés</h5>
+        </ng-template>
+        <ng-template pTemplate="right">
+            <button pButton type="button" icon="pi pi-plus" label="Ajouter" routerLink="/salaries/nouveau"></button>
+        </ng-template>
+    </p-toolbar>
+
+    <p-table [value]="salaries" [loading]="loading" [paginator]="true" [rows]="10" dataKey="id">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Entreprise employeur</th>
+                <th>Statut</th>
+                <th style="width: 9rem"></th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-salarie>
+            <tr class="cursor-pointer" [routerLink]="['/salaries', salarie.id]">
+                <td>{{ salarie.nom }}</td>
+                <td>{{ salarie.prenom }}</td>
+                <td>{{ nomEntreprise(salarie.entrepriseEmployeurId) }}</td>
+                <td><p-tag [severity]="salarie.statut === 'ACTIF' ? 'success' : 'danger'" [value]="salarie.statut"></p-tag></td>
+                <td>
+                    <button
+                        pButton
+                        type="button"
+                        icon="pi pi-pencil"
+                        class="p-button-text p-button-rounded"
+                        pTooltip="Modifier"
+                        [routerLink]="['/salaries', salarie.id]"
+                        (click)="$event.stopPropagation()"
+                    ></button>
+                    <button
+                        pButton
+                        type="button"
+                        icon="pi pi-qrcode"
+                        class="p-button-text p-button-rounded"
+                        pTooltip="Carte d'identité numérique"
+                        (click)="ouvrirQrCode(salarie); $event.stopPropagation()"
+                    ></button>
+                    <button
+                        pButton
+                        type="button"
+                        [icon]="salarie.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"
+                        class="p-button-text p-button-rounded"
+                        pTooltip="{{ salarie.statut === 'ACTIF' ? 'Désactiver' : 'Activer' }}"
+                        (click)="confirmerBasculeStatut(salarie); $event.stopPropagation()"
+                    ></button>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>
+
+<app-qrcode-dialog [(visible)]="dialogQrCodeVisible" [salarie]="salarieSelectionne"></app-qrcode-dialog>

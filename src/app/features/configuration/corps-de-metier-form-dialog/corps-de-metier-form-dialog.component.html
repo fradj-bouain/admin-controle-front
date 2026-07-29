@@ -1,0 +1,20 @@
+<p-dialog
+    header="Nouveau corps de métier"
+    [(visible)]="visible"
+    (visibleChange)="visibleChange.emit($event)"
+    [modal]="true"
+    [style]="{ width: '24rem' }"
+    (onHide)="close()"
+>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
+        <div class="field">
+            <label for="libelle">Libellé *</label>
+            <input id="libelle" type="text" pInputText formControlName="libelle" class="w-full" />
+        </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="Annuler" class="p-button-text" (click)="close()"></button>
+        <button pButton type="button" label="Enregistrer" (click)="submit()"></button>
+    </ng-template>
+</p-dialog>

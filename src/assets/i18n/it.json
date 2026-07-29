@@ -1,0 +1,38 @@
+{
+    "menu": {
+        "dashboard": "Cruscotto",
+        "clients": "Clienti",
+        "chantiers": "Cantieri",
+        "entreprises": "Aziende",
+        "salaries": "Dipendenti",
+        "controles": "Controlli",
+        "rapports": "Rapporti",
+        "documents": "Documenti",
+        "messagerie": "Messaggistica",
+        "configuration": "Configurazione"
+    },
+    "common": {
+        "add": "Aggiungi",
+        "edit": "Modifica",
+        "delete": "Elimina",
+        "cancel": "Annulla",
+        "save": "Salva",
+        "activate": "Attiva",
+        "deactivate": "Disattiva",
+        "confirmDeleteTitle": "Conferma",
+        "confirmDeleteMessage": "Vuoi eliminare questo elemento?",
+        "comingSoon": "Questo modulo è in fase di sviluppo."
+    },
+    "chantier": {
+        "title": "Cantieri",
+        "new": "Nuovo cantiere",
+        "nom": "Nome",
+        "client": "Cliente",
+        "adresse": "Indirizzo",
+        "codePostal": "CAP",
+        "ville": "Città",
+        "dateDebut": "Data di inizio",
+        "dateFinPrevue": "Data di fine prevista",
+        "statut": "Stato"
+    }
+}

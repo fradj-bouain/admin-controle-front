@@ -1,0 +1,196 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="card mb-3">
+    <div class="flex align-items-center justify-content-between">
+        <div class="flex align-items-center gap-3">
+            <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
+            <h5 class="m-0">Client {{ client ? '(' + client.raisonSociale + ')' : '' }}</h5>
+        </div>
+        <div class="flex align-items-center gap-2" *ngIf="client">
+            <p-tag [severity]="client.actif ? 'success' : 'danger'" [value]="client.actif ? 'ACTIF' : 'INACTIF'"></p-tag>
+            <button
+                pButton
+                type="button"
+                [label]="client.actif ? 'Désactiver' : 'Activer'"
+                [icon]="client.actif ? 'pi pi-ban' : 'pi pi-check'"
+                class="p-button-text"
+                (click)="confirmerBasculeStatut()"
+            ></button>
+        </div>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="col-12 lg:col-8">
+        <!-- Coordonnées -->
+        <div class="card mb-3">
+            <div class="flex align-items-center gap-2 mb-4">
+                <i class="pi pi-building"></i>
+                <h6 class="m-0">Coordonnées</h6>
+            </div>
+
+            <form [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
+                <div class="field">
+                    <label for="raisonSociale">Nom *</label>
+                    <input id="raisonSociale" type="text" pInputText formControlName="raisonSociale" />
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-4">
+                        <label for="adresse">Adresse</label>
+                        <input id="adresse" type="text" pInputText formControlName="adresse" />
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="adresse2">Adresse complément n°1</label>
+                        <input id="adresse2" type="text" pInputText formControlName="adresse2" />
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="adresse3">Adresse complément n°2</label>
+                        <input id="adresse3" type="text" pInputText formControlName="adresse3" />
+                    </div>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-6">
+                        <label for="ville">Ville</label>
+                        <input id="ville" type="text" pInputText formControlName="ville" />
+                    </div>
+                    <div class="field col-12 md:col-6">
+                        <label for="paysId">Pays</label>
+                        <p-dropdown
+                            id="paysId"
+                            [options]="pays"
+                            formControlName="paysId"
+                            optionLabel="nom"
+                            optionValue="id"
+                            [filter]="true"
+                            filterBy="nom"
+                            placeholder="Sélectionner un pays"
+                        ></p-dropdown>
+                    </div>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-4">
+                        <label for="telephone">Tel</label>
+                        <input id="telephone" type="text" pInputText formControlName="telephone" />
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="telephone2">Tel 2</label>
+                        <input id="telephone2" type="text" pInputText formControlName="telephone2" />
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="telephone3">Tel 3</label>
+                        <input id="telephone3" type="text" pInputText formControlName="telephone3" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="email">Email</label>
+                    <input id="email" type="email" pInputText formControlName="email" />
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-4">
+                        <label for="siren">Siren</label>
+                        <input id="siren" type="text" pInputText formControlName="siren" />
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="siret">Siret</label>
+                        <input id="siret" type="text" pInputText formControlName="siret" />
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="rcsRci">RCS / RCI</label>
+                        <input id="rcsRci" type="text" pInputText formControlName="rcsRci" />
+                    </div>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-6">
+                        <label for="tvaIntra">N° de TVA Intra</label>
+                        <input id="tvaIntra" type="text" pInputText formControlName="tvaIntra" />
+                    </div>
+                    <div class="field col-12 md:col-6">
+                        <label for="numCotisant">N° de cotisant URSSAF / CCSS / CAR</label>
+                        <input id="numCotisant" type="text" pInputText formControlName="numCotisant" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="responsableSignataireAgrement">Responsable signataire agrément</label>
+                    <input id="responsableSignataireAgrement" type="text" pInputText formControlName="responsableSignataireAgrement" />
+                </div>
+
+                <div class="flex justify-content-end gap-2 mt-4">
+                    <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
+                    <button pButton type="submit" [label]="isNew ? 'Ajouter' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-12 lg:col-4">
+        <!-- Utilisateurs -->
+        <div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
+            <div class="flex align-items-center gap-2 mb-4">
+                <i class="pi pi-users"></i>
+                <h6 class="m-0">Utilisateurs</h6>
+            </div>
+            <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez le client pour activer cette section.</small>
+
+            <ul class="list-none p-0 m-0" *ngIf="!isNew">
+                <li *ngFor="let u of utilisateurs" class="py-2 border-bottom-1 surface-border">{{ u.prenom }} {{ u.nom }}</li>
+                <li *ngIf="utilisateurs.length === 0" class="text-500 py-2">Aucun utilisateur.</li>
+            </ul>
+
+            <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                label="Créer un utilisateur"
+                class="w-full mt-3"
+                [disabled]="isNew"
+                [routerLink]="['/configuration/utilisateurs/nouveau']"
+                [queryParams]="{ clientId: clientId }"
+            ></button>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des chantiers -->
+<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
+    <div class="flex align-items-center justify-content-between mb-4">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-map-marker"></i>
+            <h6 class="m-0">Liste des chantiers</h6>
+        </div>
+        <button
+            pButton
+            type="button"
+            icon="pi pi-plus"
+            label="Ajouter un chantier"
+            [disabled]="isNew"
+            [routerLink]="['/chantiers/nouveau']"
+            [queryParams]="{ clientId: clientId }"
+        ></button>
+    </div>
+
+    <small class="text-500 block" *ngIf="isNew">Enregistrez le client pour activer cette section.</small>
+
+    <p-table [value]="chantiers" dataKey="id" *ngIf="!isNew">
+        <ng-template pTemplate="header">
+            <tr><th>Nom</th><th>Ville</th><th>Statut</th></tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-chantier>
+            <tr class="cursor-pointer" [routerLink]="['/chantiers', chantier.id]">
+                <td>{{ chantier.nom }}</td>
+                <td>{{ chantier.ville }}</td>
+                <td><p-tag [severity]="chantier.statut === 'ACTIF' ? 'success' : 'danger'" [value]="chantier.statut"></p-tag></td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr><td colspan="3" class="text-center text-500">Aucun chantier pour ce client.</td></tr>
+        </ng-template>
+    </p-table>
+</div>

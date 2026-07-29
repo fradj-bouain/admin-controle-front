@@ -1,0 +1,36 @@
+<p-toast></p-toast>
+
+<div class="card" style="max-width: 720px;">
+    <div class="flex align-items-center gap-3 mb-4">
+        <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="annuler()"></button>
+        <h5 class="m-0">Nouveau type de document</h5>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
+        <div class="field">
+            <label for="libelle">Libellé *</label>
+            <input id="libelle" type="text" pInputText formControlName="libelle" />
+        </div>
+
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-6">
+                <label for="cible">Cible *</label>
+                <p-dropdown id="cible" [options]="cibles" formControlName="cible"></p-dropdown>
+            </div>
+            <div class="field col-12 md:col-6">
+                <label for="format">Format *</label>
+                <p-dropdown id="format" [options]="formats" formControlName="format"></p-dropdown>
+            </div>
+        </div>
+
+        <div class="field-checkbox">
+            <p-checkbox formControlName="obligatoire" [binary]="true" inputId="obligatoire"></p-checkbox>
+            <label for="obligatoire" class="ml-2">Obligatoire</label>
+        </div>
+
+        <div class="flex justify-content-end gap-2 mt-4">
+            <button pButton type="button" label="Annuler" class="p-button-text" (click)="annuler()"></button>
+            <button pButton type="submit" label="Enregistrer" icon="pi pi-check" [loading]="saving"></button>
+        </div>
+    </form>
+</div>

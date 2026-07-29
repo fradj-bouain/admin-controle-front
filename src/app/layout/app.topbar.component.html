@@ -1,0 +1,22 @@
+<div class="layout-topbar">
+    <div class="topbar-start">
+        <button #menubutton type="button" class="topbar-menubutton p-link p-trigger" (click)="onMenuButtonClick()">
+            <i class="pi pi-bars"></i>
+        </button>
+
+        <app-breadcrumb class="topbar-breadcrumb"></app-breadcrumb>
+    </div>
+
+    <div class="topbar-end">
+        <ul class="topbar-menu">
+            <li class="ml-3">
+                <select class="p-inputtext p-component" [ngModel]="currentLang" (ngModelChange)="switchLanguage($event)" style="padding: 0.4rem;">
+                    <option *ngFor="let lang of languages" [value]="lang">{{ lang.toUpperCase() }}</option>
+                </select>
+            </li>
+            <li class="ml-3">
+                <button pButton type="button" icon="pi pi-sign-out" class="p-button-text p-button-secondary p-button-rounded flex-shrink-0" pTooltip="Déconnexion" tooltipPosition="bottom" (click)="logout()"></button>
+            </li>
+        </ul>
+    </div>
+</div>

@@ -1,0 +1,238 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="card mb-3">
+    <div class="flex align-items-center justify-content-between">
+        <div class="flex align-items-center gap-3">
+            <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
+            <h5 class="m-0">Salarié {{ salarie ? '(' + salarie.prenom + ' ' + salarie.nom + ')' : '' }}</h5>
+        </div>
+        <div class="flex align-items-center gap-2" *ngIf="salarie">
+            <p-tag [severity]="salarie.statut === 'ACTIF' ? 'success' : 'danger'" [value]="salarie.statut"></p-tag>
+            <button
+                pButton
+                type="button"
+                [label]="salarie.statut === 'ACTIF' ? 'Désactiver' : 'Activer'"
+                [icon]="salarie.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"
+                class="p-button-text"
+                (click)="confirmerBasculeStatut()"
+            ></button>
+        </div>
+    </div>
+</div>
+
+<!-- Coordonnées -->
+<div class="card mb-3">
+    <div class="flex align-items-center gap-2 mb-4">
+        <i class="pi pi-user"></i>
+        <h6 class="m-0">Coordonnées</h6>
+    </div>
+
+    <form [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-6">
+                <label for="nom">Nom *</label>
+                <input id="nom" type="text" pInputText formControlName="nom" />
+            </div>
+            <div class="field col-12 md:col-6">
+                <label for="prenom">Prénom *</label>
+                <input id="prenom" type="text" pInputText formControlName="prenom" />
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="nationalitePaysId">Nationalité</label>
+            <p-dropdown
+                id="nationalitePaysId"
+                [options]="pays"
+                formControlName="nationalitePaysId"
+                optionLabel="nom"
+                optionValue="id"
+                [filter]="true"
+                filterBy="nom"
+                placeholder="Sélectionner un pays"
+            ></p-dropdown>
+        </div>
+
+        <div class="field">
+            <label for="fonctionId">Fonction</label>
+            <p-dropdown
+                id="fonctionId"
+                [options]="fonctions"
+                formControlName="fonctionId"
+                optionLabel="libelle"
+                optionValue="id"
+                placeholder="-- Sélectionner une fonction --"
+                [showClear]="true"
+            ></p-dropdown>
+        </div>
+
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-6">
+                <label for="entrepriseEmployeurId">Entreprise *</label>
+                <p-dropdown
+                    id="entrepriseEmployeurId"
+                    [options]="entreprises"
+                    formControlName="entrepriseEmployeurId"
+                    optionLabel="raisonSociale"
+                    optionValue="id"
+                    placeholder="-- Sélectionner une entreprise --"
+                    [filter]="true"
+                    filterBy="raisonSociale"
+                ></p-dropdown>
+            </div>
+            <div class="field col-12 md:col-6">
+                <label for="typeContratId">Types de contrat</label>
+                <p-dropdown
+                    id="typeContratId"
+                    [options]="typesContrat"
+                    formControlName="typeContratId"
+                    optionLabel="libelle"
+                    optionValue="id"
+                    placeholder="Non indiqué"
+                    [showClear]="true"
+                ></p-dropdown>
+            </div>
+        </div>
+
+        <div class="flex justify-content-end gap-2 mt-4">
+            <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
+            <button pButton type="submit" [label]="isNew ? 'Ajouter ce salarié' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
+        </div>
+    </form>
+</div>
+
+<!-- Informations relatives au chantier -->
+<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
+    <div class="flex align-items-center gap-2 mb-4">
+        <i class="pi pi-truck"></i>
+        <h6 class="m-0">Informations relatives au chantier</h6>
+    </div>
+    <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez le salarié pour activer cette section.</small>
+
+    <p-table [value]="mesAffectations" dataKey="id" *ngIf="mesAffectations.length > 0">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Chantier</th>
+                <th>Statut d'accès</th>
+                <th style="width: 8rem"></th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-affectation>
+            <tr>
+                <td>{{ nomChantier(affectation.chantierId) }}</td>
+                <td>
+                    <p-tag
+                        [severity]="affectation.statutAcces === 'ACCORDE' ? 'success' : (affectation.statutAcces === 'REFUSE' ? 'danger' : 'warning')"
+                        [value]="affectation.statutAcces"
+                    ></p-tag>
+                </td>
+                <td>
+                    <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="affectation.statutAcces !== 'ACCORDE'" (click)="accorderAcces(affectation)"></button>
+                    <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="affectation.statutAcces !== 'REFUSE'" (click)="refuserAcces(affectation)"></button>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+
+    <form [formGroup]="affectationForm" (ngSubmit)="submitAffectation()" class="formgrid grid align-items-end mt-3">
+        <div class="field col-12 md:col-5">
+            <label for="chantierId">Chantier</label>
+            <p-dropdown id="chantierId" [options]="chantiersDisponibles" formControlName="chantierId" optionLabel="nom" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Sélectionner un chantier --" styleClass="w-full"></p-dropdown>
+        </div>
+        <div class="field col-12 md:col-5">
+            <label for="affectationEntrepriseChantierId">Entreprise</label>
+            <p-dropdown id="affectationEntrepriseChantierId" [options]="affectationsEntrepriseDuChantier" formControlName="affectationEntrepriseChantierId" optionValue="id" placeholder="-- Sélectionner une entreprise --" styleClass="w-full">
+                <ng-template let-a pTemplate="item">{{ nomEntreprise(a?.entrepriseId) }}</ng-template>
+                <ng-template let-a pTemplate="selectedItem">{{ nomEntreprise(a?.entrepriseId) }}</ng-template>
+            </p-dropdown>
+        </div>
+        <div class="field col-12 md:col-2">
+            <button pButton type="submit" label="Ajouter" [disabled]="isNew" class="w-full"></button>
+        </div>
+    </form>
+</div>
+
+<!-- Documents (repliés par défaut, comme sur le site réel) -->
+<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
+    <div class="flex align-items-center justify-content-between mb-4">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-folder"></i>
+            <h6 class="m-0">Documents</h6>
+        </div>
+        <div class="flex align-items-center gap-2" *ngIf="!isNew && afficherDocuments">
+            <p-checkbox [binary]="true" [(ngModel)]="afficherObligatoireSeulement" inputId="filtreObligatoire"></p-checkbox>
+            <label for="filtreObligatoire">Obligatoire ?</label>
+        </div>
+    </div>
+
+    <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez le salarié pour activer cette section.</small>
+
+    <div *ngIf="!isNew && !afficherDocuments" class="flex align-items-center justify-content-between">
+        <a class="cursor-pointer text-primary" (click)="afficherDocuments = true">{{ nbDocumentsManquants }} documents cachés</a>
+        <button pButton type="button" label="Mettre à jour les documents" (click)="afficherDocuments = true"></button>
+    </div>
+
+    <div *ngIf="!isNew && afficherDocuments">
+        <div
+            *ngFor="let type of typesPourSalarieFiltres"
+            class="border-bottom-1 surface-border py-3"
+            [ngStyle]="{ 'background-color': (type.obligatoire && !documentsByType[type.id]) ? '#fdecea' : 'transparent' }"
+        >
+            <div class="formgrid grid align-items-end px-2">
+                <div class="field col-12 md:col-3 mb-0">
+                    <div class="font-medium">{{ type.libelle }}</div>
+                    <p-tag
+                        *ngIf="documentsByType[type.id]"
+                        class="mt-1"
+                        [severity]="documentsByType[type.id].statutValidation === 'VALIDE' ? 'success' : (documentsByType[type.id].statutValidation === 'REFUSE' ? 'danger' : 'warning')"
+                        [value]="documentsByType[type.id].statutValidation"
+                    ></p-tag>
+                    <p-tag *ngIf="!documentsByType[type.id]" class="mt-1" severity="danger" value="Document manquant"></p-tag>
+                </div>
+
+                <ng-container *ngIf="!documentsByType[type.id]; else ligneRenseignee">
+                    <div class="field col-6 md:col-2 mb-0" *ngIf="type.dateDebutValiditeRequise">
+                        <label class="text-500 text-sm">Date de validité</label>
+                        <p-calendar [(ngModel)]="lignesDocument[type.id].dateDebutValidite" [ngModelOptions]="{standalone: true}" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-calendar>
+                    </div>
+                    <div class="field col-6 md:col-2 mb-0" *ngIf="type.dateFinValiditeRequise">
+                        <label class="text-500 text-sm">Fin de validité</label>
+                        <p-calendar [(ngModel)]="lignesDocument[type.id].dateExpiration" [ngModelOptions]="{standalone: true}" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-calendar>
+                    </div>
+                    <div class="field col-12 md:col-3 mb-0">
+                        <label class="text-500 text-sm">Fichier (URL)</label>
+                        <input type="text" pInputText [(ngModel)]="lignesDocument[type.id].fichierUrl" [ngModelOptions]="{standalone: true}" placeholder="https://..." class="w-full" />
+                    </div>
+                    <div class="field col-12 md:col-2 mb-0">
+                        <button pButton type="button" label="Renseigner" class="w-full" (click)="renseignerDocument(type)"></button>
+                    </div>
+                </ng-container>
+
+                <ng-template #ligneRenseignee>
+                    <div class="field col-6 md:col-2 mb-0" *ngIf="type.dateDebutValiditeRequise">
+                        <label class="text-500 text-sm">Date de validité</label>
+                        <p class="m-0">{{ documentsByType[type.id].dateDebutValidite || '—' }}</p>
+                    </div>
+                    <div class="field col-6 md:col-2 mb-0" *ngIf="type.dateFinValiditeRequise">
+                        <label class="text-500 text-sm">Fin de validité</label>
+                        <p class="m-0">{{ documentsByType[type.id].dateExpiration || '—' }}</p>
+                    </div>
+                    <div class="field col-12 md:col-3 mb-0">
+                        <label class="text-500 text-sm">Fichier</label>
+                        <p class="m-0">
+                            <a *ngIf="documentsByType[type.id].fichierUrl" [href]="documentsByType[type.id].fichierUrl" target="_blank" rel="noopener">Voir le fichier</a>
+                            <span *ngIf="!documentsByType[type.id].fichierUrl">—</span>
+                        </p>
+                    </div>
+                    <div class="field col-12 md:col-2 mb-0 flex gap-2">
+                        <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="documentsByType[type.id].statutValidation !== 'VALIDE'" (click)="valider(documentsByType[type.id])"></button>
+                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="documentsByType[type.id].statutValidation !== 'REFUSE'" (click)="refuserDocument(documentsByType[type.id])"></button>
+                    </div>
+                </ng-template>
+            </div>
+        </div>
+
+        <p class="text-500 text-center py-3" *ngIf="typesPourSalarieFiltres.length === 0">Aucun type de document configuré pour les salariés.</p>
+    </div>
+</div>

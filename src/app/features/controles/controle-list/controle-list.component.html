@@ -1,0 +1,107 @@
+<p-toast></p-toast>
+
+<p-tabView>
+    <p-tabPanel header="Contrôles">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="left">
+                    <p-dropdown
+                        [options]="chantiers"
+                        [(ngModel)]="chantierId"
+                        (ngModelChange)="onChantierChange()"
+                        optionLabel="nom"
+                        optionValue="id"
+                        placeholder="Sélectionner un chantier"
+                        [filter]="true"
+                        filterBy="nom"
+                        [style]="{ width: '20rem' }"
+                    ></p-dropdown>
+                </ng-template>
+                <ng-template pTemplate="right">
+                    <button
+                        pButton
+                        type="button"
+                        icon="pi pi-plus"
+                        label="Nouveau contrôle"
+                        [disabled]="!chantierId"
+                        (click)="nouveauControle()"
+                    ></button>
+                </ng-template>
+            </p-toolbar>
+
+            <p-table [value]="controles" dataKey="id">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Début</th>
+                        <th>Fin</th>
+                        <th>Remarques</th>
+                        <th>Statut</th>
+                        <th style="width: 10rem"></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-controle>
+                    <tr>
+                        <td>{{ controle.dateControle }}</td>
+                        <td>{{ controle.dateFin }}</td>
+                        <td>{{ controle.remarques }}</td>
+                        <td>
+                            <p-tag [severity]="controle.termine ? 'success' : 'warning'" [value]="controle.termine ? 'Terminé' : 'En cours'"></p-tag>
+                        </td>
+                        <td>
+                            <button pButton type="button" label="Générer un rapport" class="p-button-text" (click)="ouvrirGenerationRapport(controle)"></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="5" class="text-center text-500">{{ chantierId ? 'Aucun contrôle pour ce chantier.' : 'Sélectionnez un chantier.' }}</td></tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="Rapports">
+        <div class="card">
+            <p-table [value]="rapports" dataKey="id">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Salariés contrôlés</th>
+                        <th>Accords</th>
+                        <th>Refus</th>
+                        <th>Nouvelles entreprises</th>
+                        <th>Nouveaux salariés</th>
+                        <th>Détachés</th>
+                        <th>Envoi</th>
+                        <th style="width: 8rem"></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-rapport>
+                    <tr>
+                        <td>{{ rapport.nbSalariesControles }}</td>
+                        <td>{{ rapport.nbAccords }}</td>
+                        <td>{{ rapport.nbRefus }}</td>
+                        <td>{{ rapport.nbNouvellesEntreprises }}</td>
+                        <td>{{ rapport.nbNouveauxSalaries }}</td>
+                        <td>{{ rapport.nbSalariesDetaches }}</td>
+                        <td>
+                            <p-tag *ngIf="rapport.dateEnvoi" severity="success" value="Envoyé"></p-tag>
+                            <p-tag *ngIf="!rapport.dateEnvoi" severity="warning" value="Non envoyé"></p-tag>
+                        </td>
+                        <td>
+                            <button
+                                pButton
+                                type="button"
+                                label="Envoyer"
+                                class="p-button-text"
+                                *ngIf="!rapport.dateEnvoi"
+                                (click)="envoyerRapport(rapport)"
+                            ></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="8" class="text-center text-500">Aucun rapport généré.</td></tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </p-tabPanel>
+</p-tabView>

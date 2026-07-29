@@ -1,0 +1,38 @@
+{
+    "menu": {
+        "dashboard": "Tableau de bord",
+        "clients": "Clients",
+        "chantiers": "Chantiers",
+        "entreprises": "Entreprises",
+        "salaries": "Salariés",
+        "controles": "Contrôles",
+        "rapports": "Rapports",
+        "documents": "Documents",
+        "messagerie": "Messagerie",
+        "configuration": "Configuration"
+    },
+    "common": {
+        "add": "Ajouter",
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "activate": "Activer",
+        "deactivate": "Désactiver",
+        "confirmDeleteTitle": "Confirmation",
+        "confirmDeleteMessage": "Voulez-vous supprimer ?",
+        "comingSoon": "Ce module est en cours de développement."
+    },
+    "chantier": {
+        "title": "Chantiers",
+        "new": "Nouveau chantier",
+        "nom": "Nom",
+        "client": "Client",
+        "adresse": "Adresse",
+        "codePostal": "Code postal",
+        "ville": "Ville",
+        "dateDebut": "Date de début",
+        "dateFinPrevue": "Date de fin prévue",
+        "statut": "Statut"
+    }
+}

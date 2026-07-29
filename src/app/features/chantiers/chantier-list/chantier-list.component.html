@@ -1,0 +1,56 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="card">
+    <p-toolbar styleClass="mb-4">
+        <ng-template pTemplate="left">
+            <h5 class="m-0">{{ 'chantier.title' | translate }}</h5>
+        </ng-template>
+        <ng-template pTemplate="right">
+            <button pButton type="button" icon="pi pi-plus" [label]="'common.add' | translate" routerLink="/chantiers/nouveau"></button>
+        </ng-template>
+    </p-toolbar>
+
+    <p-table [value]="chantiers" [loading]="loading" [paginator]="true" [rows]="10" dataKey="id">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>{{ 'chantier.nom' | translate }}</th>
+                <th>{{ 'chantier.client' | translate }}</th>
+                <th>{{ 'chantier.ville' | translate }}</th>
+                <th>{{ 'chantier.dateDebut' | translate }}</th>
+                <th>{{ 'chantier.statut' | translate }}</th>
+                <th style="width: 8rem"></th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-chantier>
+            <tr class="cursor-pointer" [routerLink]="['/chantiers', chantier.id]">
+                <td>{{ chantier.nom }}</td>
+                <td>{{ nomClient(chantier.clientId) }}</td>
+                <td>{{ chantier.ville }}</td>
+                <td>{{ chantier.dateDebut }}</td>
+                <td>
+                    <p-tag [severity]="chantier.statut === 'ACTIF' ? 'success' : 'danger'" [value]="chantier.statut"></p-tag>
+                </td>
+                <td>
+                    <button
+                        pButton
+                        type="button"
+                        icon="pi pi-pencil"
+                        class="p-button-text p-button-rounded"
+                        pTooltip="Modifier"
+                        [routerLink]="['/chantiers', chantier.id]"
+                        (click)="$event.stopPropagation()"
+                    ></button>
+                    <button
+                        pButton
+                        type="button"
+                        [icon]="chantier.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"
+                        class="p-button-text p-button-rounded"
+                        [pTooltip]="(chantier.statut === 'ACTIF' ? 'common.deactivate' : 'common.activate') | translate"
+                        (click)="confirmerBasculeStatut(chantier); $event.stopPropagation()"
+                    ></button>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>

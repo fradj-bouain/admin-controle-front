@@ -1,0 +1,36 @@
+<p-dialog
+    header="Ajouter un document"
+    [(visible)]="visible"
+    (visibleChange)="visibleChange.emit($event)"
+    [modal]="true"
+    [style]="{ width: '28rem' }"
+    (onHide)="close()"
+>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
+        <div class="field">
+            <label for="typeDocumentId">Type de document *</label>
+            <p-dropdown
+                id="typeDocumentId"
+                [options]="typesDisponibles"
+                formControlName="typeDocumentId"
+                optionLabel="libelle"
+                optionValue="id"
+                placeholder="Sélectionner un type"
+                class="w-full"
+            ></p-dropdown>
+        </div>
+        <div class="field">
+            <label for="fichierUrl">URL du fichier</label>
+            <input id="fichierUrl" type="text" pInputText formControlName="fichierUrl" class="w-full" placeholder="https://..." />
+        </div>
+        <div class="field">
+            <label for="dateExpiration">Date d'expiration</label>
+            <p-calendar id="dateExpiration" formControlName="dateExpiration" dateFormat="dd/mm/yy" class="w-full" [showIcon]="true"></p-calendar>
+        </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="Annuler" class="p-button-text" (click)="close()"></button>
+        <button pButton type="button" label="Enregistrer" (click)="submit()"></button>
+    </ng-template>
+</p-dialog>

@@ -1,0 +1,42 @@
+<p-dialog
+    header="Carte d'identité numérique"
+    [(visible)]="visible"
+    (visibleChange)="visibleChange.emit($event)"
+    [modal]="true"
+    [style]="{ width: '26rem' }"
+    (onHide)="close()"
+>
+    <div *ngIf="salarie" class="flex flex-column align-items-center gap-3">
+        <div class="text-center">
+            <div class="text-900 font-bold text-xl">{{ salarie.prenom }} {{ salarie.nom }}</div>
+        </div>
+
+        <div *ngIf="loading" class="p-4">
+            <i class="pi pi-spin pi-spinner text-3xl"></i>
+        </div>
+
+        <div *ngIf="!loading && notFound" class="text-center">
+            <p class="text-500">Aucun QR code n'a encore été généré pour ce salarié.</p>
+            <button pButton type="button" icon="pi pi-qrcode" label="Générer le QR code" (click)="generer()"></button>
+        </div>
+
+        <ng-container *ngIf="!loading && qrCode">
+            <img *ngIf="imageUrl" [src]="imageUrl" alt="QR code" width="220" height="220" />
+
+            <p-tag [severity]="qrCode.actif ? 'success' : 'danger'" [value]="qrCode.actif ? 'ACTIF' : 'DÉSACTIVÉ'"></p-tag>
+
+            <div class="text-500 text-xs" style="word-break: break-all;">{{ qrCode.codeValeur }}</div>
+
+            <div class="flex gap-2">
+                <button pButton type="button" icon="pi pi-refresh" label="Régénérer" class="p-button-outlined" (click)="regenerer()"></button>
+            </div>
+            <small class="text-500 text-center">
+                Régénérer invalide immédiatement l'ancien code : un badge perdu ou copié cesse de fonctionner.
+            </small>
+        </ng-container>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="Fermer" class="p-button-text" (click)="close()"></button>
+    </ng-template>
+</p-dialog>

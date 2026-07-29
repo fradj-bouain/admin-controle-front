@@ -1,0 +1,38 @@
+{
+    "menu": {
+        "dashboard": "Panel",
+        "clients": "Clientes",
+        "chantiers": "Obras",
+        "entreprises": "Empresas",
+        "salaries": "Empleados",
+        "controles": "Controles",
+        "rapports": "Informes",
+        "documents": "Documentos",
+        "messagerie": "Mensajería",
+        "configuration": "Configuración"
+    },
+    "common": {
+        "add": "Añadir",
+        "edit": "Editar",
+        "delete": "Eliminar",
+        "cancel": "Cancelar",
+        "save": "Guardar",
+        "activate": "Activar",
+        "deactivate": "Desactivar",
+        "confirmDeleteTitle": "Confirmación",
+        "confirmDeleteMessage": "¿Desea eliminar esto?",
+        "comingSoon": "Este módulo está en desarrollo."
+    },
+    "chantier": {
+        "title": "Obras",
+        "new": "Nueva obra",
+        "nom": "Nombre",
+        "client": "Cliente",
+        "adresse": "Dirección",
+        "codePostal": "Código postal",
+        "ville": "Ciudad",
+        "dateDebut": "Fecha de inicio",
+        "dateFinPrevue": "Fecha de fin prevista",
+        "statut": "Estado"
+    }
+}
