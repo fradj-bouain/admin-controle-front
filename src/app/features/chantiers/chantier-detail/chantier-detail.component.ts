@@ -372,8 +372,10 @@ export class ChantierDetailComponent implements OnInit {
     }
 
     private recalculerEntreprisesDisponibles() {
-        const idsAffectes = new Set(this.affectationsEntreprise.map((a) => a.entrepriseId));
-        this.entreprisesDisponibles = this.entreprises.filter((e) => !idsAffectes.has(e.id));
+        // Une entreprise déjà affectée à ce chantier reste sélectionnable : elle peut
+        // porter plusieurs rôles sur le même chantier (ex : Principale ET STT1). Le
+        // backend refuse uniquement un doublon exact (même entreprise, même rôle).
+        this.entreprisesDisponibles = this.entreprises;
     }
 
     private recalculerParentsDisponibles() {

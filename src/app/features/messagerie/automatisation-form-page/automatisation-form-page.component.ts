@@ -2,8 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService as ToastService } from 'primeng/api';
-import { CibleGroupe, DestinataireType, EvenementDeclencheur } from '../models/message.model';
+import { ChampSurveillable, CibleGroupe, DestinataireType } from '../models/message.model';
 import { RegleAutomatisationService } from '../services/regle-automatisation.service';
+import { ChampSurveillableService } from '../services/champ-surveillable.service';
 import { Client } from 'src/app/features/clients/models/client.model';
 import { ClientService } from 'src/app/features/clients/services/client.service';
 import { Entreprise } from 'src/app/features/entreprises/models/entreprise.model';
@@ -22,10 +23,10 @@ export class AutomatisationFormPageComponent implements OnInit {
     regleId: string | null = null;
     saving = false;
 
-    evenements = [
-        { label: 'Document arrivant à expiration', value: 'DOCUMENT_EXPIRATION' },
-        { label: 'Contrôle de chantier à venir', value: 'CHANTIER_CONTROLE_A_VENIR' }
-    ];
+    // Servi par GET /champs-surveillables : ce que le backend sait réellement
+    // détecter, pas une liste figée ici. Ajouter une nouvelle source surveillable
+    // (nouvelle entité/champ) n'implique aucun changement de ce composant.
+    champsSurveillables: ChampSurveillable[] = [];
 
     ciblesGroupe = [
         { label: 'Tous les utilisateurs', value: 'TOUS_UTILISATEURS' },
@@ -46,7 +47,7 @@ export class AutomatisationFormPageComponent implements OnInit {
 
     form = this.fb.group({
         nom: ['', Validators.required],
-        evenementDeclencheur: ['DOCUMENT_EXPIRATION' as EvenementDeclencheur, Validators.required],
+        champSurveillableId: ['', Validators.required],
         nbJoursAvant: [3, [Validators.required, Validators.min(0)]],
         cibleGroupe: ['TOUS_CLIENTS' as CibleGroupe, Validators.required],
         destinataireType: ['UTILISATEUR' as DestinataireType],
@@ -60,6 +61,7 @@ export class AutomatisationFormPageComponent implements OnInit {
         private route: ActivatedRoute,
         private router: Router,
         private regleService: RegleAutomatisationService,
+        private champSurveillableService: ChampSurveillableService,
         private clientService: ClientService,
         private entrepriseService: EntrepriseService,
         private utilisateurService: UtilisateurService,
@@ -67,6 +69,12 @@ export class AutomatisationFormPageComponent implements OnInit {
     ) { }
 
     ngOnInit(): void {
+        this.champSurveillableService.lister().subscribe((champs) => {
+            this.champsSurveillables = champs;
+            if (!this.form.value.champSurveillableId && champs.length > 0) {
+                this.form.patchValue({ champSurveillableId: champs[0].id });
+            }
+        });
         this.clientService.lister().subscribe((clients) => { this.clients = clients; this.recalculerDestinataires(); });
         this.entrepriseService.lister().subscribe((entreprises) => { this.entreprises = entreprises; this.recalculerDestinataires(); });
         this.utilisateurService.lister().subscribe((utilisateurs) => { this.utilisateurs = utilisateurs; this.recalculerDestinataires(); });
@@ -80,7 +88,7 @@ export class AutomatisationFormPageComponent implements OnInit {
                 this.regleService.obtenir(id).subscribe((regle) => {
                     this.form.patchValue({
                         nom: regle.nom,
-                        evenementDeclencheur: regle.evenementDeclencheur,
+                        champSurveillableId: regle.champSurveillableId,
                         nbJoursAvant: regle.nbJoursAvant,
                         cibleGroupe: regle.cibleGroupe,
                         destinataireType: regle.destinataireType ?? 'UTILISATEUR',
@@ -123,7 +131,7 @@ export class AutomatisationFormPageComponent implements OnInit {
         const specifique = value.cibleGroupe === 'SPECIFIQUE';
         const payload = {
             nom: value.nom!,
-            evenementDeclencheur: value.evenementDeclencheur!,
+            champSurveillableId: value.champSurveillableId!,
             nbJoursAvant: value.nbJoursAvant!,
             cibleGroupe: value.cibleGroupe!,
             destinataireType: specifique ? value.destinataireType! : null,

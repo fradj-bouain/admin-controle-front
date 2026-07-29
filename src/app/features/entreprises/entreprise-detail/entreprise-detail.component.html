@@ -148,9 +148,12 @@
 
 <!-- Affectation à un chantier -->
 <div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
-    <div class="flex align-items-center gap-2 mb-4">
-        <i class="pi pi-map-marker"></i>
-        <h6 class="m-0">Affectation de l'entreprise à un chantier</h6>
+    <div class="flex align-items-center justify-content-between mb-4">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-map-marker"></i>
+            <h6 class="m-0">Affectation de l'entreprise à un chantier</h6>
+        </div>
+        <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="!isNew && afficherAffectation" (click)="afficherAffectation = false"></button>
     </div>
 
     <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez l'entreprise pour activer cette section.</small>
@@ -238,14 +241,17 @@
             <i class="pi pi-folder"></i>
             <h6 class="m-0">Documents</h6>
         </div>
-        <div class="flex align-items-center gap-2" *ngIf="!isNew && afficherDocuments">
-            <p-checkbox
-                [binary]="true"
-                [(ngModel)]="afficherObligatoireSeulement"
-                (onChange)="onFiltreObligatoireChange()"
-                inputId="filtreObligatoire"
-            ></p-checkbox>
-            <label for="filtreObligatoire">Obligatoire ?</label>
+        <div class="flex align-items-center gap-3" *ngIf="!isNew && afficherDocuments">
+            <div class="flex align-items-center gap-2">
+                <p-checkbox
+                    [binary]="true"
+                    [(ngModel)]="afficherObligatoireSeulement"
+                    (onChange)="onFiltreObligatoireChange()"
+                    inputId="filtreObligatoire"
+                ></p-checkbox>
+                <label for="filtreObligatoire">Obligatoire ?</label>
+            </div>
+            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" (click)="afficherDocuments = false"></button>
         </div>
     </div>
 

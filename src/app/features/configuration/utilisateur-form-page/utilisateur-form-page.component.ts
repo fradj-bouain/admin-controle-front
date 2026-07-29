@@ -7,6 +7,8 @@ import { Client } from 'src/app/features/clients/models/client.model';
 import { ClientService } from 'src/app/features/clients/services/client.service';
 import { Entreprise } from 'src/app/features/entreprises/models/entreprise.model';
 import { EntrepriseService } from 'src/app/features/entreprises/services/entreprise.service';
+import { ControleTiers } from '../models/configuration.model';
+import { ReferenceDataService } from '../services/reference-data.service';
 
 @Component({
     selector: 'app-utilisateur-form-page',
@@ -16,9 +18,10 @@ import { EntrepriseService } from 'src/app/features/entreprises/services/entrepr
 export class UtilisateurFormPageComponent implements OnInit {
 
     saving = false;
-    roles = ['SUPER_ADMIN', 'ADMIN', 'CLIENT', 'ENTREPRISE'];
+    roles = ['SUPER_ADMIN', 'ADMIN', 'CLIENT', 'ENTREPRISE', 'CONTROLEUR'];
     clients: Client[] = [];
     entreprises: Entreprise[] = [];
+    controleTiersListe: ControleTiers[] = [];
 
     form = this.fb.group({
         nom: ['', Validators.required],
@@ -28,7 +31,8 @@ export class UtilisateurFormPageComponent implements OnInit {
         password: ['', Validators.required],
         roles: [[] as string[], Validators.required],
         entrepriseId: [''],
-        clientId: ['']
+        clientId: [''],
+        controleTiersId: ['']
     });
 
     constructor(
@@ -36,6 +40,7 @@ export class UtilisateurFormPageComponent implements OnInit {
         private utilisateurService: UtilisateurService,
         private clientService: ClientService,
         private entrepriseService: EntrepriseService,
+        private referenceDataService: ReferenceDataService,
         private route: ActivatedRoute,
         private router: Router,
         private message: MessageService
@@ -44,6 +49,7 @@ export class UtilisateurFormPageComponent implements OnInit {
     ngOnInit(): void {
         this.clientService.lister().subscribe((clients) => (this.clients = clients));
         this.entrepriseService.lister().subscribe((entreprises) => (this.entreprises = entreprises));
+        this.referenceDataService.listerControleTiers().subscribe((controleTiersListe) => (this.controleTiersListe = controleTiersListe));
 
         const clientId = this.route.snapshot.queryParamMap.get('clientId');
         if (clientId) {
@@ -70,7 +76,8 @@ export class UtilisateurFormPageComponent implements OnInit {
             password: value.password!,
             roles: value.roles!,
             entrepriseId: value.entrepriseId || undefined,
-            clientId: value.clientId || undefined
+            clientId: value.clientId || undefined,
+            controleTiersId: value.controleTiersId || undefined
         }).subscribe({
             next: () => this.router.navigate(['/configuration']),
             error: () => {

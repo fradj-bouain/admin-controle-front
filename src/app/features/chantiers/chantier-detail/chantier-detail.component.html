@@ -170,6 +170,7 @@
                 <i class="pi pi-chart-bar"></i>
                 <h6 class="m-0">Statistiques</h6>
             </div>
+            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherStatistiques" (click)="afficherStatistiques = false"></button>
         </div>
 
         <div *ngIf="!afficherStatistiques" class="flex align-items-center justify-content-between">
@@ -179,21 +180,43 @@
 
         <ng-container *ngIf="afficherStatistiques">
             <div class="mb-4">
-                <div class="text-500 mb-3">Salariés</div>
-                <div class="flex flex-wrap gap-5">
-                    <app-stat-tile [compact]="true" label="Total" [value]="statsSalariesParStatutAcces.total" color="blue"></app-stat-tile>
-                    <app-stat-tile [compact]="true" label="Accord d'accès" [value]="statsSalariesParStatutAcces.accorde" color="green"></app-stat-tile>
-                    <app-stat-tile [compact]="true" label="Refus d'accès" [value]="statsSalariesParStatutAcces.refuse" color="red"></app-stat-tile>
-                    <app-stat-tile [compact]="true" label="En attente" [value]="statsSalariesParStatutAcces.enAttente" color="yellow"></app-stat-tile>
-                    <app-stat-tile [compact]="true" *ngFor="let s of statsSalariesParContrat" [label]="s.libelle" [value]="s.total" color="purple"></app-stat-tile>
+                <div class="flex align-items-center gap-2 mb-3">
+                    <i class="pi pi-users text-600 text-sm"></i>
+                    <span class="text-600 font-semibold text-sm uppercase" style="letter-spacing:.04em">Salariés</span>
+                </div>
+                <div class="grid">
+                    <div class="col-6 sm:col-4 md:col-3 xl:col-2">
+                        <app-stat-tile [compact]="true" icon="users" label="Total" [value]="statsSalariesParStatutAcces.total" color="blue"></app-stat-tile>
+                    </div>
+                    <div class="col-6 sm:col-4 md:col-3 xl:col-2">
+                        <app-stat-tile [compact]="true" icon="check-circle" label="Accord d'accès" [value]="statsSalariesParStatutAcces.accorde" color="green"></app-stat-tile>
+                    </div>
+                    <div class="col-6 sm:col-4 md:col-3 xl:col-2">
+                        <app-stat-tile [compact]="true" icon="times-circle" label="Refus d'accès" [value]="statsSalariesParStatutAcces.refuse" color="red"></app-stat-tile>
+                    </div>
+                    <div class="col-6 sm:col-4 md:col-3 xl:col-2">
+                        <app-stat-tile [compact]="true" icon="clock" label="En attente" [value]="statsSalariesParStatutAcces.enAttente" color="yellow"></app-stat-tile>
+                    </div>
+                    <div class="col-6 sm:col-4 md:col-3 xl:col-2" *ngFor="let s of statsSalariesParContrat">
+                        <app-stat-tile [compact]="true" icon="file" [label]="s.libelle" [value]="s.total" color="purple"></app-stat-tile>
+                    </div>
                 </div>
             </div>
             <div>
-                <div class="text-500 mb-3">Entreprises</div>
-                <div class="flex flex-wrap gap-5">
-                    <app-stat-tile [compact]="true" label="Total" [value]="statsEntreprises.total" color="blue"></app-stat-tile>
-                    <app-stat-tile [compact]="true" label="Actives" [value]="statsEntreprises.actif" color="green"></app-stat-tile>
-                    <app-stat-tile [compact]="true" label="Inactives" [value]="statsEntreprises.inactif" color="red"></app-stat-tile>
+                <div class="flex align-items-center gap-2 mb-3">
+                    <i class="pi pi-building text-600 text-sm"></i>
+                    <span class="text-600 font-semibold text-sm uppercase" style="letter-spacing:.04em">Entreprises</span>
+                </div>
+                <div class="grid">
+                    <div class="col-6 sm:col-4 md:col-3 xl:col-2">
+                        <app-stat-tile [compact]="true" icon="building" label="Total" [value]="statsEntreprises.total" color="blue"></app-stat-tile>
+                    </div>
+                    <div class="col-6 sm:col-4 md:col-3 xl:col-2">
+                        <app-stat-tile [compact]="true" icon="check-circle" label="Actives" [value]="statsEntreprises.actif" color="green"></app-stat-tile>
+                    </div>
+                    <div class="col-6 sm:col-4 md:col-3 xl:col-2">
+                        <app-stat-tile [compact]="true" icon="ban" label="Inactives" [value]="statsEntreprises.inactif" color="red"></app-stat-tile>
+                    </div>
                 </div>
             </div>
         </ng-container>
@@ -201,9 +224,12 @@
 
     <!-- Contrôles -->
     <div class="card mb-3">
-        <div class="flex align-items-center gap-2 mb-4">
-            <i class="pi pi-pencil"></i>
-            <h6 class="m-0">Contrôles ({{ controles.length }})</h6>
+        <div class="flex align-items-center justify-content-between mb-4">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-pencil"></i>
+                <h6 class="m-0">Contrôles ({{ controles.length }})</h6>
+            </div>
+            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherControles" (click)="afficherControles = false"></button>
         </div>
 
         <div *ngIf="!afficherControles" class="flex align-items-center justify-content-between">
@@ -267,9 +293,12 @@
 
     <!-- Utilisateurs du Back Office -->
     <div class="card mb-3">
-        <div class="flex align-items-center gap-2 mb-4">
-            <i class="pi pi-users"></i>
-            <h6 class="m-0">Utilisateurs du Back Office ({{ chantierUtilisateurIds.length }})</h6>
+        <div class="flex align-items-center justify-content-between mb-4">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-users"></i>
+                <h6 class="m-0">Utilisateurs du Back Office ({{ chantierUtilisateurIds.length }})</h6>
+            </div>
+            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherUtilisateurs" (click)="afficherUtilisateurs = false"></button>
         </div>
 
         <div *ngIf="!afficherUtilisateurs" class="flex align-items-center justify-content-between">
@@ -307,9 +336,12 @@
 
     <!-- Entreprises affectées -->
     <div class="card mb-3">
-        <div class="flex align-items-center gap-2 mb-4">
-            <i class="pi pi-building"></i>
-            <h6 class="m-0">Entreprises ({{ affectationsEntreprise.length }})</h6>
+        <div class="flex align-items-center justify-content-between mb-4">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-building"></i>
+                <h6 class="m-0">Entreprises ({{ affectationsEntreprise.length }})</h6>
+            </div>
+            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherEntreprises" (click)="afficherEntreprises = false"></button>
         </div>
 
         <div *ngIf="!afficherEntreprises" class="flex align-items-center justify-content-between">
@@ -363,9 +395,12 @@
 
     <!-- Salariés affectés -->
     <div class="card mb-3">
-        <div class="flex align-items-center gap-2 mb-4">
-            <i class="pi pi-users"></i>
-            <h6 class="m-0">Salariés ({{ affectationsSalarie.length }})</h6>
+        <div class="flex align-items-center justify-content-between mb-4">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-users"></i>
+                <h6 class="m-0">Salariés ({{ affectationsSalarie.length }})</h6>
+            </div>
+            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherSalaries" (click)="afficherSalaries = false"></button>
         </div>
 
         <div *ngIf="!afficherSalaries" class="flex align-items-center justify-content-between">

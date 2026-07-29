@@ -14,8 +14,11 @@
 
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
-                <label for="evenementDeclencheur">Événement déclencheur *</label>
-                <p-dropdown id="evenementDeclencheur" [options]="evenements" formControlName="evenementDeclencheur" optionLabel="label" optionValue="value"></p-dropdown>
+                <label for="champSurveillableId">Événement déclencheur *</label>
+                <p-dropdown id="champSurveillableId" [options]="champsSurveillables" formControlName="champSurveillableId" optionValue="id" placeholder="-- Choisir --">
+                    <ng-template let-c pTemplate="item">{{ c?.entiteLibelle }} — {{ c?.champLibelle }}</ng-template>
+                    <ng-template let-c pTemplate="selectedItem">{{ c?.entiteLibelle }} — {{ c?.champLibelle }}</ng-template>
+                </p-dropdown>
             </div>
             <div class="field col-12 md:col-6">
                 <label for="nbJoursAvant">Jours avant l'événement *</label>

@@ -16,6 +16,7 @@ interface JwtClaims {
     roles: string[];
     entreprise_id?: string;
     client_id?: string;
+    controle_tiers_id?: string;
     exp: number;
 }
 
@@ -72,6 +73,10 @@ export class AuthService {
 
     get clientId(): string | undefined {
         return this.claims()?.client_id;
+    }
+
+    get controleTiersId(): string | undefined {
+        return this.claims()?.controle_tiers_id;
     }
 
     private claims(): JwtClaims | null {

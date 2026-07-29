@@ -55,6 +55,17 @@
                 placeholder="Sélectionner un client"
             ></p-dropdown>
         </div>
+        <div class="field" *ngIf="form.value.roles?.includes('CONTROLEUR')">
+            <label for="controleTiersId">Organisme de contrôle de rattachement</label>
+            <p-dropdown
+                id="controleTiersId"
+                [options]="controleTiersListe"
+                formControlName="controleTiersId"
+                optionLabel="nom"
+                optionValue="id"
+                placeholder="Sélectionner un organisme de contrôle"
+            ></p-dropdown>
+        </div>
 
         <div class="flex justify-content-end gap-2 mt-4">
             <button pButton type="button" label="Annuler" class="p-button-text" (click)="annuler()"></button>

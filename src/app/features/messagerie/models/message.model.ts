@@ -20,14 +20,21 @@ export interface SendMessageRequest {
 
 export type CibleGroupe = 'SPECIFIQUE' | 'TOUS_UTILISATEURS' | 'TOUS_CLIENTS' | 'TOUTES_ENTREPRISES';
 
-export type EvenementDeclencheur = 'DOCUMENT_EXPIRATION' | 'CHANTIER_CONTROLE_A_VENIR';
-
 export type StatutMessagePlanifie = 'EN_ATTENTE' | 'ENVOYE' | 'ANNULE';
+
+// Catalogue dynamique servi par GET /champs-surveillables : la liste des sources
+// disponibles n'est plus figée côté frontend, elle reflète ce que le backend
+// sait réellement détecter (voir ChampSurveillableRegistry côté backend).
+export interface ChampSurveillable {
+    id: string;
+    entiteLibelle: string;
+    champLibelle: string;
+}
 
 export interface RegleAutomatisation {
     id: string;
     nom: string;
-    evenementDeclencheur: EvenementDeclencheur;
+    champSurveillableId: string;
     nbJoursAvant: number;
     actif: boolean;
     cibleGroupe: CibleGroupe;
@@ -39,7 +46,7 @@ export interface RegleAutomatisation {
 
 export interface CreateRegleAutomatisationRequest {
     nom: string;
-    evenementDeclencheur: EvenementDeclencheur;
+    champSurveillableId: string;
     nbJoursAvant: number;
     cibleGroupe: CibleGroupe;
     destinataireType: DestinataireType | null;

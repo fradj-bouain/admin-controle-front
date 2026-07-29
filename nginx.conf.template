@@ -4,12 +4,13 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # DNS publics (Google/Cloudflare) : on a constaté que la résolution DNS
-    # privée Railway (admin-controle.railway.internal) n'est pas fiable
-    # depuis ce conteneur (resolver 127.0.0.11 : connexion refusée). On
-    # proxifie donc vers l'URL PUBLIQUE du backend, qui elle est résolue
-    # par le DNS public normal.
-    resolver 8.8.8.8 1.1.1.1 valid=30s;
+    # Résolveur DNS réel du conteneur, auto-détecté par le script officiel de
+    # l'image nginx (15-local-resolvers.envsh, à partir de /etc/resolv.conf)
+    # et exposé via cette variable, substituée ici par envsubst au démarrage.
+    # (Un essai précédent avec un resolver Docker "standard" codé en dur,
+    # 127.0.0.11, a échoué avec "connection refused" : Railway n'expose pas
+    # de DNS embarqué à cette adresse, contrairement à Docker Compose.)
+    ${NGINX_ENTRYPOINT_LOCAL_RESOLVERS}
 
     # SPA : toute route inconnue retombe sur index.html (routing Angular en mode PathLocationStrategy)
     location / {
@@ -17,14 +18,14 @@ server {
     }
 
     location /api/ {
-        # Variable (pas un hôte littéral) pour forcer une résolution DNS
-        # dynamique à chaque requête plutôt qu'une seule fois au démarrage.
-        set $backend_upstream "${BACKEND_PUBLIC_HOST}";
-        proxy_pass https://$backend_upstream/api/;
-        proxy_ssl_server_name on;
-        # Host = domaine public du backend (et non $host, qui serait celui
-        # du frontend) : l'edge Railway route par nom de domaine (SNI/Host).
-        proxy_set_header Host $backend_upstream;
+        # Réseau privé Railway plutôt que l'URL publique : un essai précédent
+        # via l'URL publique fonctionnait pour les requêtes directes mais
+        # échouait (401 vide) spécifiquement pour le trafic sortant de ce
+        # conteneur vers l'edge public Railway — cause non identifiée côté
+        # edge. Le réseau privé contourne l'edge public entièrement.
+        set $backend_upstream "${BACKEND_INTERNAL_HOST}:${BACKEND_INTERNAL_PORT}";
+        proxy_pass http://$backend_upstream/api/;
+        proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_connect_timeout 10s;
     }

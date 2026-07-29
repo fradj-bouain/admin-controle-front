@@ -70,6 +70,7 @@ export interface Utilisateur {
     roles: string[];
     entrepriseId?: string;
     clientId?: string;
+    controleTiersId?: string;
     actif: boolean;
 }
 
@@ -83,4 +84,5 @@ export interface CreateUtilisateurRequest {
     roles: string[];
     entrepriseId?: string;
     clientId?: string;
+    controleTiersId?: string;
 }

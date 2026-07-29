@@ -165,15 +165,18 @@
             <i class="pi pi-map-marker"></i>
             <h6 class="m-0">Liste des chantiers</h6>
         </div>
-        <button
-            pButton
-            type="button"
-            icon="pi pi-plus"
-            label="Ajouter un chantier"
-            [disabled]="isNew"
-            [routerLink]="['/chantiers/nouveau']"
-            [queryParams]="{ clientId: clientId }"
-        ></button>
+        <div class="flex align-items-center gap-2">
+            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="!isNew && afficherChantiers" (click)="afficherChantiers = false"></button>
+            <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                label="Ajouter un chantier"
+                [disabled]="isNew"
+                [routerLink]="['/chantiers/nouveau']"
+                [queryParams]="{ clientId: clientId }"
+            ></button>
+        </div>
     </div>
 
     <small class="text-500 block" *ngIf="isNew">Enregistrez le client pour activer cette section.</small>

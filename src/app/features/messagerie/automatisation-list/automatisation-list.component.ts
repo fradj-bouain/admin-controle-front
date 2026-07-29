@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { RegleAutomatisation } from '../models/message.model';
 import { RegleAutomatisationService } from '../services/regle-automatisation.service';
+import { ChampSurveillableService } from '../services/champ-surveillable.service';
 
 @Component({
     selector: 'app-automatisation-list',
@@ -13,10 +14,9 @@ export class AutomatisationListComponent implements OnInit {
     regles: RegleAutomatisation[] = [];
     loading = false;
 
-    evenementLabels: Record<string, string> = {
-        DOCUMENT_EXPIRATION: 'Document arrivant à expiration',
-        CHANTIER_CONTROLE_A_VENIR: 'Contrôle de chantier à venir'
-    };
+    // Alimenté par GET /champs-surveillables (voir ChampSurveillableRegistry
+    // côté backend) — plus une liste figée de 2 libellés ici.
+    evenementLabels: Record<string, string> = {};
 
     cibleLabels: Record<string, string> = {
         SPECIFIQUE: 'Destinataire spécifique',
@@ -27,11 +27,15 @@ export class AutomatisationListComponent implements OnInit {
 
     constructor(
         private regleService: RegleAutomatisationService,
+        private champSurveillableService: ChampSurveillableService,
         private confirmation: ConfirmationService,
         private message: MessageService
     ) { }
 
     ngOnInit(): void {
+        this.champSurveillableService.lister().subscribe((champs) => {
+            this.evenementLabels = Object.fromEntries(champs.map((c) => [c.id, `${c.entiteLibelle} — ${c.champLibelle}`]));
+        });
         this.charger();
     }
 

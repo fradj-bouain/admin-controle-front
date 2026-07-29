@@ -23,7 +23,7 @@
         <ng-template pTemplate="body" let-regle>
             <tr>
                 <td>{{ regle.nom }}</td>
-                <td>{{ evenementLabels[regle.evenementDeclencheur] }}</td>
+                <td>{{ evenementLabels[regle.champSurveillableId] }}</td>
                 <td>{{ regle.nbJoursAvant }} jour(s) avant</td>
                 <td>{{ cibleLabels[regle.cibleGroupe] }}</td>
                 <td><p-tag [severity]="regle.actif ? 'success' : 'danger'" [value]="regle.actif ? 'ACTIVE' : 'INACTIVE'"></p-tag></td>

@@ -4,39 +4,36 @@ export type StatTileColor = 'blue' | 'green' | 'orange' | 'red' | 'yellow' | 'pu
 
 /**
  * Tuile de statistique réutilisable (Dashboard, blocs "Statistiques" des pages détail).
- * En mode normal : badge icône coloré + libellé + valeur.
- * En mode compact (grilles de chiffres denses) : pastille de couleur + libellé + valeur,
- * la couleur ne porte jamais sur le chiffre lui-même (il reste en encre neutre).
+ * En mode normal : badge icône coloré + libellé + valeur, pensée pour occuper sa
+ * propre carte (Dashboard).
+ * En mode compact (grilles de plusieurs métriques dans un même bloc) : même principe
+ * mais resserré en mini-carte à fond teinté, pour que chaque métrique reste
+ * visuellement délimitée dans une grille dense.
  */
 @Component({
     selector: 'app-stat-tile',
     template: `
-        <div class="flex align-items-center" [class.gap-3]="!compact" [class.gap-2]="compact">
+        <div
+            class="flex align-items-center gap-3 h-full"
+            [class.p-3]="compact"
+            [class.border-round-lg]="compact"
+            [ngClass]="compact ? 'bg-' + color + '-50' : ''"
+        >
             <div
-                *ngIf="!compact && icon"
-                class="flex align-items-center justify-content-center border-round flex-shrink-0"
+                *ngIf="icon"
+                class="flex align-items-center justify-content-center border-round-lg flex-shrink-0"
                 [ngClass]="'bg-' + color + '-100'"
-                style="width:2.5rem;height:2.5rem"
+                [style.width]="compact ? '2.25rem' : '2.5rem'"
+                [style.height]="compact ? '2.25rem' : '2.5rem'"
             >
-                <i class="pi text-xl" [ngClass]="['pi-' + icon, 'text-' + color + '-500']"></i>
+                <i class="pi" [ngClass]="['pi-' + icon, 'text-' + color + '-600']" [class.text-base]="compact" [class.text-xl]="!compact"></i>
             </div>
             <div>
-                <span class="block text-500 font-medium" [class.mb-2]="!compact" [class.text-sm]="compact">{{ label }}</span>
-                <div class="text-900 font-bold flex align-items-center gap-2" [class.text-xl]="!compact" [class.text-2xl]="!compact">
-                    <span *ngIf="compact" class="stat-tile-dot" [ngClass]="'bg-' + color + '-500'"></span>
-                    {{ value }}
-                </div>
+                <span class="block text-600 font-medium mb-1" [class.text-xs]="compact" [class.text-sm]="!compact">{{ label }}</span>
+                <div class="text-900 font-bold" [class.text-xl]="compact" [class.text-2xl]="!compact">{{ value }}</div>
             </div>
         </div>
-    `,
-    styles: [`
-        .stat-tile-dot {
-            display: inline-block;
-            width: 0.6rem;
-            height: 0.6rem;
-            border-radius: 50%;
-        }
-    `]
+    `
 })
 export class StatTileComponent {
     @Input() label = '';
