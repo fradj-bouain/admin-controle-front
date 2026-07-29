@@ -9,8 +9,6 @@ node_modules
 .idea
 sassdoc
 
-src/assets/theme/*/*.css
-src/assets/layout/css/*.css
 src/assets/sass/theme/_vendor_extensions
 
 # compiled output
@@ -56,10 +54,9 @@ testem.log
 .DS_Store
 Thumbs.db
 
-# Compiled files
-theme.css
+# Compiled files (kept out of git except the ones actually <link>-referenced
+# at runtime by index.html — theme.css and preloading.css — see index.html)
 layout.css
 src/assets/demo/styles/badges.css
 src/assets/demo/styles/code.css
-src/assets/layout/styles/layout/preloading.css
 src/assets/layout/styles/theme/designer
