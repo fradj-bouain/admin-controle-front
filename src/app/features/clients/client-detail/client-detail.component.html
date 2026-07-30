@@ -25,7 +25,7 @@
     <div class="col-12 lg:col-8">
         <!-- Coordonnées -->
         <div class="card mb-3">
-            <div class="flex align-items-center gap-2 mb-4">
+            <div class="card-head">
                 <i class="pi pi-building"></i>
                 <h6 class="m-0">Coordonnées</h6>
             </div>
@@ -133,7 +133,7 @@
     <div class="col-12 lg:col-4">
         <!-- Utilisateurs -->
         <div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
-            <div class="flex align-items-center gap-2 mb-4">
+            <div class="card-head">
                 <i class="pi pi-users"></i>
                 <h6 class="m-0">Utilisateurs</h6>
             </div>
@@ -160,7 +160,7 @@
 
 <!-- Liste des chantiers -->
 <div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
-    <div class="flex align-items-center justify-content-between mb-4">
+    <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-map-marker"></i>
             <h6 class="m-0">Liste des chantiers</h6>
@@ -183,7 +183,7 @@
 
     <div *ngIf="!isNew && !afficherChantiers" class="flex align-items-center justify-content-between">
         <a class="cursor-pointer text-primary" (click)="afficherChantiers = true">{{ chantiers.length }} chantier(s) — voir la liste</a>
-        <button pButton type="button" label="Afficher" (click)="afficherChantiers = true"></button>
+        <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="afficherChantiers = true"></button>
     </div>
 
     <p-table [value]="chantiers" dataKey="id" *ngIf="!isNew && afficherChantiers">

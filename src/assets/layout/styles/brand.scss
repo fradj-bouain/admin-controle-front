@@ -1,0 +1,408 @@
+/*
+ * Habillage ADMIN-CONTROL'BTP — surcharge volontaire du thème Sakai/PrimeOne
+ * "indigo" par défaut (voir memory: le thème compilé fige les couleurs en
+ * hexadécimal dans chaque règle, une simple variable CSS ne suffit pas à le
+ * re-teinter ; ce fichier réécrit donc directement les sélecteurs PrimeNG
+ * concernés). Chargé en dernier dans styles.scss pour gagner la cascade.
+ */
+
+@font-face {
+    font-family: 'Archivo';
+    font-weight: 600 800;
+    font-style: normal;
+    font-display: swap;
+    src: url('/assets/fonts/archivo-variable.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'IBM Plex Sans';
+    font-weight: 400 600;
+    font-style: normal;
+    font-display: swap;
+    src: url('/assets/fonts/plex-sans-variable.woff2') format('woff2');
+}
+
+:root {
+    /* Palette de marque */
+    --brand-accent: #B5691C;
+    --brand-accent-hover: #935517;
+    --brand-accent-active: #7A470F;
+    --brand-accent-tint: #FBEEE0;
+    --brand-accent-ink: #7A470F;
+    --brand-focus-ring: rgba(181, 105, 28, 0.22);
+
+    --brand-success: #2F8558;
+    --brand-success-tint: #E4F3EA;
+    --brand-danger: #C2453D;
+    --brand-danger-tint: #FBE9E7;
+    --brand-warning: #B9862B;
+    --brand-warning-tint: #FBF1DE;
+    --brand-info: #3B6FA0;
+    --brand-info-tint: #E7EFF7;
+
+    --brand-sidebar: #14171D;
+    --brand-sidebar-ink: #C7CAD3;
+    --brand-sidebar-ink-dim: #80858F;
+    --brand-sidebar-active-tint: rgba(181, 105, 28, 0.16);
+
+    --brand-border: #E1E4EA;
+    --brand-surface-alt: #F7F8FA;
+
+    /* Variables PrimeNG effectivement lues dynamiquement par certains composants */
+    --font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --primary-color: var(--brand-accent);
+    --primary-color-text: #ffffff;
+    --surface-border: var(--brand-border);
+    --card-shadow: 0 1px 2px rgba(23, 26, 33, 0.06);
+}
+
+body {
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.tabular-nums, td.tabular, .p-datatable td { font-variant-numeric: tabular-nums; }
+
+/* ---------- Cartes ---------- */
+.card {
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+}
+
+/* En-tête de carte : icône en pastille + bandeau séparé du corps, au lieu
+   d'une icône nue accolée au titre. `.card` a un padding de 2rem (voir
+   layout/_utils.scss) ; on ressort le bandeau jusqu'aux bords avec des
+   marges négatives puis on redonne son propre padding horizontal. */
+.card-head {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin: -2rem -2rem 1.5rem -2rem;
+    padding: 1.1rem 2rem;
+    border-bottom: 1px solid var(--brand-border);
+}
+.card-head h6 {
+    margin: 0;
+}
+.card-head i:first-child {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--brand-accent-tint);
+    color: var(--brand-accent-ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+/* ---------- Boutons ---------- */
+.p-button {
+    background: var(--brand-accent);
+    border-color: var(--brand-accent);
+    border-radius: 8px;
+    font-weight: 600;
+}
+.p-button:not(:disabled):hover {
+    background: var(--brand-accent-hover);
+    border-color: var(--brand-accent-hover);
+}
+.p-button:not(:disabled):active {
+    background: var(--brand-accent-active);
+    border-color: var(--brand-accent-active);
+}
+.p-button:enabled:focus {
+    box-shadow: 0 0 0 0.2rem var(--brand-focus-ring);
+}
+.p-button.p-button-text {
+    background: transparent;
+    border-color: transparent;
+    color: var(--brand-accent-ink);
+}
+.p-button.p-button-text:not(:disabled):hover {
+    background: var(--brand-accent-tint);
+    border-color: transparent;
+    color: var(--brand-accent-ink);
+}
+.p-button.p-button-text:not(:disabled):active {
+    background: var(--brand-accent-tint);
+    border-color: transparent;
+}
+.p-button.p-button-text.p-button-secondary,
+.p-button.p-button-text.p-button-plain {
+    color: var(--ink-soft, #5C6270);
+}
+.p-button.p-button-text.p-button-secondary:not(:disabled):hover,
+.p-button.p-button-text.p-button-plain:not(:disabled):hover {
+    background: var(--brand-surface-alt);
+    color: var(--ink-soft, #5C6270);
+}
+.p-button.p-button-outlined {
+    background: transparent;
+    color: var(--brand-accent-ink);
+    border-color: var(--brand-accent);
+}
+.p-button.p-button-outlined:not(:disabled):hover {
+    background: var(--brand-accent-tint);
+    border-color: var(--brand-accent);
+}
+.p-button.p-button-outlined:not(:disabled):active {
+    background: var(--brand-accent-tint);
+    border-color: var(--brand-accent-hover);
+}
+/* Boutons ronds icône-seule : rester circulaires (action ponctuelle) mais
+   recolorer au survol pour rester cohérents avec l'accent de marque. */
+.p-button.p-button-rounded.p-button-text:not(:disabled):hover {
+    background: var(--brand-accent-tint);
+    color: var(--brand-accent-ink);
+}
+
+/* ---------- Statuts (tags) : pastille teintée, pas de pavé plein ---------- */
+.p-tag {
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.72rem;
+    letter-spacing: 0.01em;
+    padding: 0.3rem 0.65rem;
+    background: var(--brand-accent-tint);
+    color: var(--brand-accent-ink);
+}
+.p-tag.p-tag-success { background: var(--brand-success-tint); color: var(--brand-success); }
+.p-tag.p-tag-danger  { background: var(--brand-danger-tint);  color: var(--brand-danger); }
+.p-tag.p-tag-warning { background: var(--brand-warning-tint); color: var(--brand-warning); }
+.p-tag.p-tag-info    { background: var(--brand-info-tint);    color: var(--brand-info); }
+
+/* ---------- Champs ---------- */
+/* theme.css code en dur border-color: #6366f1 (l'indigo Sakai) sur le hover
+   de tous les champs, sans passer par --primary-color — jamais remplacé par
+   un simple changement de variable, donc survole en bleu même après le
+   reskin. On réécrit chaque sélecteur concerné avec la couleur de marque. */
+.p-inputtext:enabled:hover,
+.p-dropdown:not(.p-disabled):hover,
+.p-multiselect:not(.p-disabled):hover,
+.p-cascadeselect:not(.p-disabled):hover,
+.p-chips:not(.p-disabled):hover .p-chips-multiple-container,
+.p-autocomplete:not(.p-disabled):hover .p-autocomplete-multiple-container,
+.p-treeselect:not(.p-disabled):hover {
+    border-color: var(--brand-accent);
+}
+.p-inputtext:enabled:focus,
+.p-inputtextarea:enabled:focus {
+    border-color: var(--brand-accent);
+    box-shadow: 0 0 0 0.2rem var(--brand-focus-ring);
+}
+.p-dropdown:not(.p-disabled).p-focus,
+.p-multiselect:not(.p-disabled).p-focus,
+.p-calendar.p-calendar-w-btn.p-focus {
+    border-color: var(--brand-accent);
+    box-shadow: 0 0 0 0.2rem var(--brand-focus-ring);
+}
+/* Calendrier avec bouton (date) : le bouton hérite du rayon de bordure
+   générique .p-button (8px, sur les 4 coins) au lieu de ne s'arrondir que
+   du côté extérieur, ce qui le fait paraître détaché du champ ; il a aussi
+   sa propre bordure ambrée à gauche qui double celle, grise, du champ à
+   droite. On complète les rayons et on ne garde qu'une seule bordure. */
+.p-calendar-w-btn .p-inputtext {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none;
+}
+.p-calendar-w-btn .p-datepicker-trigger {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+.p-checkbox .p-checkbox-box.p-highlight,
+.p-inputswitch.p-inputswitch-checked .p-inputswitch-slider {
+    border-color: var(--brand-accent);
+    background: var(--brand-accent);
+}
+.p-checkbox:not(.p-checkbox-disabled) .p-checkbox-box:hover {
+    border-color: var(--brand-accent);
+}
+.p-radiobutton .p-radiobutton-box.p-highlight {
+    border-color: var(--brand-accent);
+    background: var(--brand-accent);
+}
+.p-radiobutton .p-radiobutton-box.p-highlight:not(.p-disabled):hover {
+    border-color: var(--brand-accent-hover);
+    background: var(--brand-accent-hover);
+}
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item.p-highlight,
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item.p-highlight {
+    background: var(--brand-accent-tint);
+    color: var(--brand-accent-ink);
+}
+.p-datepicker table td > span.p-highlight {
+    background: var(--brand-accent);
+    color: #fff;
+}
+
+/* ---------- Tables ---------- */
+.p-datatable .p-datatable-thead > tr > th {
+    background: var(--brand-surface-alt);
+    color: var(--ink-soft, #5C6270);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-color: var(--brand-border);
+}
+.p-datatable .p-datatable-tbody > tr {
+    transition: background-color .1s ease;
+}
+.p-datatable .p-datatable-tbody > tr:not(.p-highlight):hover {
+    background: var(--brand-surface-alt);
+}
+.p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+    background: var(--brand-accent);
+    color: #fff;
+    border-color: var(--brand-accent);
+}
+
+/* ---------- Liens ---------- */
+a { color: var(--brand-accent-ink); }
+
+/* ================================================================
+ * Coquille de l'application : sidebar toujours sombre avec accent
+ * ambre sur l'item actif, quel que soit le mode colorScheme sous-jacent.
+ * ================================================================ */
+.layout-sidebar {
+    background: var(--brand-sidebar) !important;
+    border-right: none !important;
+    /* Le template (_sidebar_vertical.scss etc.) lit ces variables directement
+       (color: var(--menuitem-text-color) ...) plutôt que de coder les couleurs
+       en dur ; les redéclarer ici, sur un descendant du wrapper .layout-*-menu
+       qui les définit par défaut, gagne par proximité d'héritage — pas besoin
+       de sur-spécifier chaque sélecteur du template. */
+    --menuitem-text-color: var(--brand-sidebar-ink);
+    --menuitem-icon-color: var(--brand-sidebar-ink-dim);
+    --menuitem-hover-bg-color: rgba(255, 255, 255, 0.06);
+    --root-menuitem-text-color: var(--brand-sidebar-ink);
+    --menu-bg: var(--brand-sidebar);
+    --logo-color: #ffffff;
+}
+.layout-sidebar .app-logo-normal,
+.layout-sidebar .app-logo-small {
+    filter: brightness(0) invert(1);
+}
+.layout-menu .layout-menuitem-root-text {
+    color: var(--brand-sidebar-ink-dim);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.layout-menu a {
+    border-radius: 8px;
+    border-left: 3px solid transparent;
+    transition: background-color .12s ease, color .12s ease;
+}
+/* États hover/actif : ces sélecteurs reprennent exactement la chaîne du
+   template (.layout-sidebar .layout-menu .layout-root-menuitem > a) pour
+   égaler/dépasser sa spécificité — sinon sa règle de base (color: var(--menuitem-text-color),
+   sans condition d'état) continue de gagner même en hover/actif. */
+.layout-sidebar .layout-menu .layout-root-menuitem > a:hover,
+.layout-sidebar .layout-menu .layout-root-menuitem > a:hover .layout-menuitem-text {
+    color: #fff;
+}
+.layout-sidebar .layout-menu .layout-root-menuitem > a:hover .layout-menuitem-icon {
+    color: var(--brand-sidebar-ink);
+}
+.layout-sidebar .layout-menu .layout-root-menuitem > a.active-route,
+.layout-sidebar .layout-menu li.active-menuitem > a {
+    background: var(--brand-sidebar-active-tint);
+    border-left-color: var(--brand-accent);
+}
+.layout-sidebar .layout-menu .layout-root-menuitem > a.active-route,
+.layout-sidebar .layout-menu .layout-root-menuitem > a.active-route .layout-menuitem-text,
+.layout-sidebar .layout-menu li.active-menuitem > a,
+.layout-sidebar .layout-menu li.active-menuitem > a .layout-menuitem-text {
+    color: #fff;
+}
+.layout-sidebar .layout-menu .layout-root-menuitem > a.active-route .layout-menuitem-icon,
+.layout-sidebar .layout-menu li.active-menuitem > a .layout-menuitem-icon {
+    color: var(--brand-accent);
+}
+
+/* Topbar : bordure nette plutôt que l'ombre par défaut du thème */
+.layout-topbar {
+    box-shadow: none !important;
+    border-bottom: 1px solid var(--brand-border);
+}
+
+/* ---------- Page de connexion ---------- */
+.login-frame {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(160deg, var(--brand-sidebar) 0%, var(--brand-sidebar) 42%, var(--surface-ground) 42%);
+}
+.login-frame::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        repeating-linear-gradient(0deg, rgba(181, 105, 28, 0.06) 0 1px, transparent 1px 44px),
+        repeating-linear-gradient(90deg, rgba(181, 105, 28, 0.06) 0 1px, transparent 1px 44px);
+    pointer-events: none;
+}
+.login-card {
+    position: relative;
+    width: 380px;
+    max-width: calc(100vw - 2rem);
+    background: var(--surface-card);
+    border-radius: 16px;
+    padding: 40px 36px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+}
+.login-card .login-sub {
+    font-size: 13.5px;
+    color: var(--ink-soft, #5C6270);
+    margin: 8px 0 0;
+}
+
+/* ---------- Variantes sémantiques de boutons (succès/danger/info/attention) ---------- */
+.p-button.p-button-success { background: var(--brand-success); border-color: var(--brand-success); }
+.p-button.p-button-success:not(:disabled):hover { background: #256B46; border-color: #256B46; }
+.p-button.p-button-success:not(:disabled):active { background: #1E5738; border-color: #1E5738; }
+.p-button.p-button-danger { background: var(--brand-danger); border-color: var(--brand-danger); }
+.p-button.p-button-danger:not(:disabled):hover { background: #A63930; border-color: #A63930; }
+.p-button.p-button-danger:not(:disabled):active { background: #8C2F28; border-color: #8C2F28; }
+.p-button.p-button-warning { background: var(--brand-warning); border-color: var(--brand-warning); }
+.p-button.p-button-warning:not(:disabled):hover { background: #9C6F22; border-color: #9C6F22; }
+.p-button.p-button-info { background: var(--brand-info); border-color: var(--brand-info); }
+.p-button.p-button-info:not(:disabled):hover { background: #305C85; border-color: #305C85; }
+
+.p-button.p-button-text.p-button-success { background: transparent; border-color: transparent; color: var(--brand-success); }
+.p-button.p-button-text.p-button-success:not(:disabled):hover,
+.p-button.p-button-rounded.p-button-text.p-button-success:not(:disabled):hover {
+    background: var(--brand-success-tint);
+    color: var(--brand-success);
+    border-color: transparent;
+}
+.p-button.p-button-text.p-button-danger { background: transparent; border-color: transparent; color: var(--brand-danger); }
+.p-button.p-button-text.p-button-danger:not(:disabled):hover,
+.p-button.p-button-rounded.p-button-text.p-button-danger:not(:disabled):hover {
+    background: var(--brand-danger-tint);
+    color: var(--brand-danger);
+    border-color: transparent;
+}
+
+/* ---------- Lignes "Documents" (fiches Entreprise / Salarié) ---------- */
+.doc-row {
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+}
+.doc-row.missing {
+    background: var(--brand-danger-tint);
+}

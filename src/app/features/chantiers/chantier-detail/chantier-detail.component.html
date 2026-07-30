@@ -25,7 +25,7 @@
     <div class="col-12 lg:col-8">
         <!-- Détail du chantier -->
         <div class="card mb-3">
-            <div class="flex align-items-center gap-2 mb-4">
+            <div class="card-head">
                 <i class="pi pi-map-marker"></i>
                 <h6 class="m-0">Détail du chantier</h6>
             </div>
@@ -118,7 +118,7 @@
     <div class="col-12 lg:col-4">
         <!-- Responsable du chantier -->
         <div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
-            <div class="flex align-items-center gap-2 mb-4">
+            <div class="card-head">
                 <i class="pi pi-user"></i>
                 <h6 class="m-0">Responsable du chantier</h6>
             </div>
@@ -165,7 +165,7 @@
 <ng-container *ngIf="!isNew">
     <!-- Statistiques -->
     <div class="card mb-3">
-        <div class="flex align-items-center justify-content-between mb-4">
+        <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-chart-bar"></i>
                 <h6 class="m-0">Statistiques</h6>
@@ -175,7 +175,7 @@
 
         <div *ngIf="!afficherStatistiques" class="flex align-items-center justify-content-between">
             <a class="cursor-pointer text-primary">Statistiques masquées</a>
-            <button pButton type="button" label="Afficher" (click)="afficherStatistiques = true"></button>
+            <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="afficherStatistiques = true"></button>
         </div>
 
         <ng-container *ngIf="afficherStatistiques">
@@ -224,7 +224,7 @@
 
     <!-- Contrôles -->
     <div class="card mb-3">
-        <div class="flex align-items-center justify-content-between mb-4">
+        <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-pencil"></i>
                 <h6 class="m-0">Contrôles ({{ controles.length }})</h6>
@@ -234,7 +234,7 @@
 
         <div *ngIf="!afficherControles" class="flex align-items-center justify-content-between">
             <a class="cursor-pointer text-primary" (click)="afficherControles = true">{{ controles.length }} contrôle(s)</a>
-            <button pButton type="button" label="Gérer les contrôles" (click)="afficherControles = true"></button>
+            <button pButton type="button" label="Gérer les contrôles" class="p-button-outlined" (click)="afficherControles = true"></button>
         </div>
 
         <ng-container *ngIf="afficherControles">
@@ -248,7 +248,7 @@
                 <p-calendar id="dateProchainControle" formControlName="dateProchainControle" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-calendar>
             </div>
             <div class="field col-12 md:col-2">
-                <button pButton type="submit" label="Enregistrer" class="w-full"></button>
+                <button pButton type="submit" label="Enregistrer" class="w-full p-button-outlined"></button>
             </div>
         </form>
 
@@ -293,7 +293,7 @@
 
     <!-- Utilisateurs du Back Office -->
     <div class="card mb-3">
-        <div class="flex align-items-center justify-content-between mb-4">
+        <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-users"></i>
                 <h6 class="m-0">Utilisateurs du Back Office ({{ chantierUtilisateurIds.length }})</h6>
@@ -303,7 +303,7 @@
 
         <div *ngIf="!afficherUtilisateurs" class="flex align-items-center justify-content-between">
             <a class="cursor-pointer text-primary" (click)="afficherUtilisateurs = true">{{ chantierUtilisateurIds.length }} utilisateur(s)</a>
-            <button pButton type="button" label="Gérer les utilisateurs" (click)="afficherUtilisateurs = true"></button>
+            <button pButton type="button" label="Gérer les utilisateurs" class="p-button-outlined" (click)="afficherUtilisateurs = true"></button>
         </div>
 
         <ng-container *ngIf="afficherUtilisateurs">
@@ -336,7 +336,7 @@
 
     <!-- Entreprises affectées -->
     <div class="card mb-3">
-        <div class="flex align-items-center justify-content-between mb-4">
+        <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-building"></i>
                 <h6 class="m-0">Entreprises ({{ affectationsEntreprise.length }})</h6>
@@ -346,7 +346,7 @@
 
         <div *ngIf="!afficherEntreprises" class="flex align-items-center justify-content-between">
             <a class="cursor-pointer text-primary" (click)="afficherEntreprises = true">{{ affectationsEntreprise.length }} entreprise(s) affectée(s)</a>
-            <button pButton type="button" label="Gérer les entreprises" (click)="afficherEntreprises = true"></button>
+            <button pButton type="button" label="Gérer les entreprises" class="p-button-outlined" (click)="afficherEntreprises = true"></button>
         </div>
 
         <ng-container *ngIf="afficherEntreprises">
@@ -395,7 +395,7 @@
 
     <!-- Salariés affectés -->
     <div class="card mb-3">
-        <div class="flex align-items-center justify-content-between mb-4">
+        <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-users"></i>
                 <h6 class="m-0">Salariés ({{ affectationsSalarie.length }})</h6>
@@ -405,7 +405,7 @@
 
         <div *ngIf="!afficherSalaries" class="flex align-items-center justify-content-between">
             <a class="cursor-pointer text-primary" (click)="afficherSalaries = true">{{ affectationsSalarie.length }} salarié(s) affecté(s)</a>
-            <button pButton type="button" label="Gérer les salariés" (click)="afficherSalaries = true"></button>
+            <button pButton type="button" label="Gérer les salariés" class="p-button-outlined" (click)="afficherSalaries = true"></button>
         </div>
 
         <ng-container *ngIf="afficherSalaries">

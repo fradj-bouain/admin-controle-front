@@ -23,3 +23,7 @@ $gutter: 1rem; //for primeflex grid system
 @import "assets/demo/styles/flags/flags.css";
 @import "assets/demo/styles/badges.scss";
 @import "assets/demo/styles/code.scss";
+
+/* Habillage de marque ADMIN-CONTROL'BTP : importé en dernier pour gagner la
+   cascade sur le thème Sakai/PrimeOne "indigo" par défaut (voir brand.scss). */
+@import "assets/layout/styles/brand.scss";

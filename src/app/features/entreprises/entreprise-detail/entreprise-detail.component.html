@@ -23,7 +23,7 @@
 
 <!-- Coordonnées -->
 <div class="card mb-3">
-    <div class="flex align-items-center gap-2 mb-4">
+    <div class="card-head">
         <i class="pi pi-building"></i>
         <h6 class="m-0">Coordonnées</h6>
     </div>
@@ -148,7 +148,7 @@
 
 <!-- Affectation à un chantier -->
 <div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
-    <div class="flex align-items-center justify-content-between mb-4">
+    <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-map-marker"></i>
             <h6 class="m-0">Affectation de l'entreprise à un chantier</h6>
@@ -160,7 +160,7 @@
 
     <div *ngIf="!isNew && !afficherAffectation" class="flex align-items-center justify-content-between">
         <a class="cursor-pointer text-primary" (click)="afficherAffectation = true">{{ mesAffectations.length }} chantier(s) affecté(s)</a>
-        <button pButton type="button" label="Gérer les affectations" (click)="afficherAffectation = true"></button>
+        <button pButton type="button" label="Gérer les affectations" class="p-button-outlined" (click)="afficherAffectation = true"></button>
     </div>
 
     <ng-container *ngIf="!isNew && afficherAffectation">
@@ -236,7 +236,7 @@
 
 <!-- Documents -->
 <div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
-    <div class="flex align-items-center justify-content-between mb-4">
+    <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-folder"></i>
             <h6 class="m-0">Documents</h6>
@@ -259,14 +259,14 @@
 
     <div *ngIf="!isNew && !afficherDocuments" class="flex align-items-center justify-content-between">
         <a class="cursor-pointer text-primary" (click)="afficherDocuments = true">{{ nbDocumentsManquants }} documents cachés</a>
-        <button pButton type="button" label="Mettre à jour les documents" (click)="afficherDocuments = true"></button>
+        <button pButton type="button" label="Mettre à jour les documents" class="p-button-outlined" (click)="afficherDocuments = true"></button>
     </div>
 
     <div *ngIf="!isNew && afficherDocuments">
         <div
             *ngFor="let type of typesPourEntreprise"
-            class="border-bottom-1 surface-border py-3"
-            [ngStyle]="{ 'background-color': (type.obligatoire && !documentsByType[type.id]) ? '#fdecea' : 'transparent' }"
+            class="doc-row"
+            [class.missing]="type.obligatoire && !documentsByType[type.id]"
         >
             <div class="formgrid grid align-items-end px-2">
                 <div class="field col-12 md:col-3 mb-0">
