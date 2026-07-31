@@ -18,9 +18,19 @@ export interface SendMessageRequest {
     contenu: string;
 }
 
-export type CibleGroupe = 'SPECIFIQUE' | 'TOUS_UTILISATEURS' | 'TOUS_CLIENTS' | 'TOUTES_ENTREPRISES';
+export type CibleGroupe = 'SPECIFIQUE' | 'TOUS_UTILISATEURS' | 'TOUS_CLIENTS' | 'TOUTES_ENTREPRISES' | 'TOUS_SALARIES';
 
 export type StatutMessagePlanifie = 'EN_ATTENTE' | 'ENVOYE' | 'ANNULE';
+
+// Pas de compte/boîte de réception propre aux salariés dans cette appli :
+// TOUS_SALARIES route côté backend vers l'entreprise employeuse.
+export type TypeDeclencheur =
+    | 'CHAMP_SURVEILLABLE'
+    | 'CREATION_SALARIE'
+    | 'CREATION_ENTREPRISE'
+    | 'AFFECTATION_ENTREPRISE_CHANTIER'
+    | 'PERIODIQUE'
+    | 'MANUEL';
 
 // Catalogue dynamique servi par GET /champs-surveillables : la liste des sources
 // disponibles n'est plus figée côté frontend, elle reflète ce que le backend
@@ -34,7 +44,8 @@ export interface ChampSurveillable {
 export interface RegleAutomatisation {
     id: string;
     nom: string;
-    champSurveillableId: string;
+    typeDeclencheur: TypeDeclencheur;
+    champSurveillableId: string | null;
     nbJoursAvant: number;
     actif: boolean;
     cibleGroupe: CibleGroupe;
@@ -42,17 +53,24 @@ export interface RegleAutomatisation {
     destinataireId: string | null;
     sujet: string;
     contenu: string;
+    numeroInterne: string | null;
+    titreInterne: string | null;
+    nbEnvois: number;
+    dernierEnvoi: string | null;
 }
 
 export interface CreateRegleAutomatisationRequest {
     nom: string;
-    champSurveillableId: string;
+    typeDeclencheur: TypeDeclencheur;
+    champSurveillableId: string | null;
     nbJoursAvant: number;
     cibleGroupe: CibleGroupe;
     destinataireType: DestinataireType | null;
     destinataireId: string | null;
     sujet: string;
     contenu: string;
+    numeroInterne: string | null;
+    titreInterne: string | null;
 }
 
 export interface MessagePlanifie {

@@ -38,4 +38,8 @@ export class RegleAutomatisationService {
     supprimer(id: string): Observable<void> {
         return this.http.delete<void>(`${this.baseUrl}/${id}`);
     }
+
+    envoyerMaintenant(id: string): Observable<void> {
+        return this.http.post<void>(`${this.baseUrl}/${id}/envoyer-maintenant`, {});
+    }
 }

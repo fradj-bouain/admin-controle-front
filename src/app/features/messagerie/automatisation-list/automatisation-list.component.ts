@@ -22,7 +22,17 @@ export class AutomatisationListComponent implements OnInit {
         SPECIFIQUE: 'Destinataire spécifique',
         TOUS_UTILISATEURS: 'Tous les utilisateurs',
         TOUS_CLIENTS: 'Tous les clients',
-        TOUTES_ENTREPRISES: 'Toutes les entreprises'
+        TOUTES_ENTREPRISES: 'Toutes les entreprises',
+        TOUS_SALARIES: 'Tous les salariés'
+    };
+
+    declencheurLabels: Record<string, string> = {
+        CHAMP_SURVEILLABLE: 'Champ surveillé',
+        CREATION_SALARIE: "Création d'un salarié",
+        CREATION_ENTREPRISE: "Création d'une entreprise",
+        AFFECTATION_ENTREPRISE_CHANTIER: 'Affectation entreprise-chantier',
+        PERIODIQUE: 'Automatique (périodique)',
+        MANUEL: 'Manuellement'
     };
 
     constructor(
@@ -72,6 +82,33 @@ export class AutomatisationListComponent implements OnInit {
                 this.regleService.supprimer(regle.id).subscribe({
                     next: () => this.charger(),
                     error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Suppression impossible' })
+                });
+            }
+        });
+    }
+
+    libelleDeclencheur(regle: RegleAutomatisation): string {
+        if (regle.typeDeclencheur === 'CHAMP_SURVEILLABLE' && regle.champSurveillableId) {
+            return this.evenementLabels[regle.champSurveillableId] ?? this.declencheurLabels[regle.typeDeclencheur];
+        }
+        return this.declencheurLabels[regle.typeDeclencheur] ?? regle.typeDeclencheur;
+    }
+
+    afficherDelai(regle: RegleAutomatisation): boolean {
+        return regle.typeDeclencheur === 'CHAMP_SURVEILLABLE' || regle.typeDeclencheur === 'PERIODIQUE';
+    }
+
+    confirmerEnvoyerMaintenant(regle: RegleAutomatisation) {
+        this.confirmation.confirm({
+            header: 'Confirmation',
+            message: 'Envoyer immédiatement un message pour la règle "' + regle.nom + '" ?',
+            accept: () => {
+                this.regleService.envoyerMaintenant(regle.id).subscribe({
+                    next: () => {
+                        this.message.add({ severity: 'success', summary: 'Succès', detail: 'Envoi déclenché' });
+                        this.charger();
+                    },
+                    error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Envoi impossible' })
                 });
             }
         });

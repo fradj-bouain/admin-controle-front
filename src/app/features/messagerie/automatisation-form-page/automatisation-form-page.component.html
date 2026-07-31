@@ -7,23 +7,39 @@
     </div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
-        <div class="field">
-            <label for="nom">Nom *</label>
-            <input id="nom" type="text" pInputText formControlName="nom" [class.ng-dirty]="form.controls.nom.touched" />
-            <small class="p-error" *ngIf="form.controls.nom.invalid && form.controls.nom.touched">Ce champ est requis.</small>
-        </div>
-
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
-                <label for="champSurveillableId">Événement déclencheur *</label>
+                <label for="nom">Nom *</label>
+                <input id="nom" type="text" pInputText formControlName="nom" [class.ng-dirty]="form.controls.nom.touched" />
+                <small class="p-error" *ngIf="form.controls.nom.invalid && form.controls.nom.touched">Ce champ est requis.</small>
+            </div>
+            <div class="field col-12 md:col-3">
+                <label for="numeroInterne">Numéro interne</label>
+                <input id="numeroInterne" type="text" pInputText formControlName="numeroInterne" />
+            </div>
+            <div class="field col-12 md:col-3">
+                <label for="titreInterne">Titre interne</label>
+                <input id="titreInterne" type="text" pInputText formControlName="titreInterne" />
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="typeDeclencheur">Déclencheur *</label>
+            <p-dropdown id="typeDeclencheur" [options]="typesDeclencheur" formControlName="typeDeclencheur" optionLabel="label" optionValue="value" [class.ng-dirty]="form.controls.typeDeclencheur.touched"></p-dropdown>
+            <small class="p-error" *ngIf="form.controls.typeDeclencheur.invalid && form.controls.typeDeclencheur.touched">Ce champ est requis.</small>
+        </div>
+
+        <div class="formgrid grid" *ngIf="estChampSurveillable || afficherNbJoursAvant">
+            <div class="field col-12 md:col-6" *ngIf="estChampSurveillable">
+                <label for="champSurveillableId">Champ surveillé *</label>
                 <p-dropdown id="champSurveillableId" [options]="champsSurveillables" formControlName="champSurveillableId" optionValue="id" placeholder="-- Choisir --" [class.ng-dirty]="form.controls.champSurveillableId.touched">
                     <ng-template let-c pTemplate="item">{{ c?.entiteLibelle }} — {{ c?.champLibelle }}</ng-template>
                     <ng-template let-c pTemplate="selectedItem">{{ c?.entiteLibelle }} — {{ c?.champLibelle }}</ng-template>
                 </p-dropdown>
                 <small class="p-error" *ngIf="form.controls.champSurveillableId.invalid && form.controls.champSurveillableId.touched">Ce champ est requis.</small>
             </div>
-            <div class="field col-12 md:col-6">
-                <label for="nbJoursAvant">Jours avant l'événement *</label>
+            <div class="field col-12 md:col-6" *ngIf="afficherNbJoursAvant">
+                <label for="nbJoursAvant">{{ libelleNbJoursAvant }} *</label>
                 <input id="nbJoursAvant" type="number" min="0" pInputText formControlName="nbJoursAvant" [class.ng-dirty]="form.controls.nbJoursAvant.touched" />
                 <small class="p-error" *ngIf="form.controls.nbJoursAvant.invalid && form.controls.nbJoursAvant.touched">Doit être un nombre de jours positif ou nul.</small>
             </div>

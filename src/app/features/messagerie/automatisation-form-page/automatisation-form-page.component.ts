@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { AbstractControl, FormBuilder, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService as ToastService } from 'primeng/api';
-import { ChampSurveillable, CibleGroupe, DestinataireType } from '../models/message.model';
+import { ChampSurveillable, CibleGroupe, DestinataireType, TypeDeclencheur } from '../models/message.model';
 import { RegleAutomatisationService } from '../services/regle-automatisation.service';
 import { ChampSurveillableService } from '../services/champ-surveillable.service';
 import { Client } from 'src/app/features/clients/models/client.model';
@@ -28,10 +28,20 @@ export class AutomatisationFormPageComponent implements OnInit {
     // (nouvelle entité/champ) n'implique aucun changement de ce composant.
     champsSurveillables: ChampSurveillable[] = [];
 
+    typesDeclencheur: Array<{ label: string; value: TypeDeclencheur }> = [
+        { label: 'Champ surveillé (N jours avant une échéance)', value: 'CHAMP_SURVEILLABLE' },
+        { label: "Création d'un salarié", value: 'CREATION_SALARIE' },
+        { label: "Création d'une entreprise", value: 'CREATION_ENTREPRISE' },
+        { label: "Affectation d'une entreprise à un chantier", value: 'AFFECTATION_ENTREPRISE_CHANTIER' },
+        { label: 'Automatique (récurrence périodique)', value: 'PERIODIQUE' },
+        { label: 'Manuellement', value: 'MANUEL' }
+    ];
+
     ciblesGroupe = [
         { label: 'Tous les utilisateurs', value: 'TOUS_UTILISATEURS' },
         { label: 'Tous les clients', value: 'TOUS_CLIENTS' },
         { label: 'Toutes les entreprises', value: 'TOUTES_ENTREPRISES' },
+        { label: 'Tous les salariés (via leur entreprise employeuse)', value: 'TOUS_SALARIES' },
         { label: 'Destinataire spécifique', value: 'SPECIFIQUE' }
     ];
 
@@ -47,13 +57,16 @@ export class AutomatisationFormPageComponent implements OnInit {
 
     form = this.fb.group({
         nom: ['', Validators.required],
+        typeDeclencheur: ['CHAMP_SURVEILLABLE' as TypeDeclencheur, Validators.required],
         champSurveillableId: ['', Validators.required],
         nbJoursAvant: [3, [Validators.required, Validators.min(0)]],
         cibleGroupe: ['TOUS_CLIENTS' as CibleGroupe, Validators.required],
         destinataireType: ['UTILISATEUR' as DestinataireType],
         destinataireId: [''],
         sujet: ['', Validators.required],
-        contenu: ['', Validators.required]
+        contenu: ['', Validators.required],
+        numeroInterne: [''],
+        titreInterne: ['']
     });
 
     constructor(
@@ -80,7 +93,11 @@ export class AutomatisationFormPageComponent implements OnInit {
         this.utilisateurService.lister().subscribe((utilisateurs) => { this.utilisateurs = utilisateurs; this.recalculerDestinataires(); });
         this.form.controls.destinataireType.valueChanges.subscribe(() => this.recalculerDestinataires());
         this.form.controls.cibleGroupe.valueChanges.subscribe((cibleGroupe) => {
-            this.majValidateurConditionnel(this.form.controls.destinataireId, cibleGroupe === 'SPECIFIQUE');
+            this.majValidateurConditionnel(this.form.controls.destinataireId, cibleGroupe === 'SPECIFIQUE', Validators.required);
+        });
+        this.form.controls.typeDeclencheur.valueChanges.subscribe((type) => {
+            this.majValidateurConditionnel(this.form.controls.champSurveillableId, type === 'CHAMP_SURVEILLABLE', Validators.required);
+            this.majValidateurConditionnel(this.form.controls.nbJoursAvant, this.afficherNbJoursAvant, [Validators.required, Validators.min(0)], 0);
         });
 
         this.route.paramMap.subscribe((params) => {
@@ -91,13 +108,16 @@ export class AutomatisationFormPageComponent implements OnInit {
                 this.regleService.obtenir(id).subscribe((regle) => {
                     this.form.patchValue({
                         nom: regle.nom,
-                        champSurveillableId: regle.champSurveillableId,
+                        typeDeclencheur: regle.typeDeclencheur,
+                        champSurveillableId: regle.champSurveillableId ?? '',
                         nbJoursAvant: regle.nbJoursAvant,
                         cibleGroupe: regle.cibleGroupe,
                         destinataireType: regle.destinataireType ?? 'UTILISATEUR',
                         destinataireId: regle.destinataireId ?? '',
                         sujet: regle.sujet,
-                        contenu: regle.contenu
+                        contenu: regle.contenu,
+                        numeroInterne: regle.numeroInterne ?? '',
+                        titreInterne: regle.titreInterne ?? ''
                     });
                 });
             }
@@ -108,11 +128,28 @@ export class AutomatisationFormPageComponent implements OnInit {
         return this.form.value.cibleGroupe === 'SPECIFIQUE';
     }
 
-    private majValidateurConditionnel(control: AbstractControl, requis: boolean) {
+    get estChampSurveillable(): boolean {
+        return this.form.value.typeDeclencheur === 'CHAMP_SURVEILLABLE';
+    }
+
+    get estPeriodique(): boolean {
+        return this.form.value.typeDeclencheur === 'PERIODIQUE';
+    }
+
+    get afficherNbJoursAvant(): boolean {
+        return this.estChampSurveillable || this.estPeriodique;
+    }
+
+    get libelleNbJoursAvant(): string {
+        return this.estPeriodique ? "Tous les combien de jours" : "Jours avant l'événement";
+    }
+
+    private majValidateurConditionnel(control: AbstractControl, requis: boolean, validateurs: ValidatorFn | ValidatorFn[], valeurSinon: unknown = '') {
         if (requis) {
-            control.setValidators(Validators.required);
+            control.setValidators(validateurs);
         } else {
             control.clearValidators();
+            control.setValue(valeurSinon);
         }
         control.updateValueAndValidity();
     }
@@ -141,15 +178,19 @@ export class AutomatisationFormPageComponent implements OnInit {
         }
         const value = this.form.getRawValue();
         const specifique = value.cibleGroupe === 'SPECIFIQUE';
+        const champSurveillable = value.typeDeclencheur === 'CHAMP_SURVEILLABLE';
         const payload = {
             nom: value.nom!,
-            champSurveillableId: value.champSurveillableId!,
+            typeDeclencheur: value.typeDeclencheur!,
+            champSurveillableId: champSurveillable ? value.champSurveillableId! : null,
             nbJoursAvant: value.nbJoursAvant!,
             cibleGroupe: value.cibleGroupe!,
             destinataireType: specifique ? value.destinataireType! : null,
             destinataireId: specifique ? value.destinataireId! : null,
             sujet: value.sujet!,
-            contenu: value.contenu!
+            contenu: value.contenu!,
+            numeroInterne: value.numeroInterne || null,
+            titreInterne: value.titreInterne || null
         };
         this.saving = true;
         const obs = this.isNew ? this.regleService.creer(payload) : this.regleService.modifier(this.regleId!, payload);
