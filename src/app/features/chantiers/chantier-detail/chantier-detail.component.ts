@@ -46,12 +46,12 @@ export class ChantierDetailComponent implements OnInit {
         ipsAllowed: [''],
         nom: ['', Validators.required],
         prestation: [''],
-        adresse: [''],
+        adresse: ['', Validators.required],
         adresse2: [''],
         adresse3: [''],
-        ville: [''],
-        paysId: [''],
-        dateDebut: [null as Date | null],
+        ville: ['', Validators.required],
+        paysId: ['', Validators.required],
+        dateDebut: [null as Date | null, Validators.required],
         dateFinPrevue: [null as Date | null]
     });
 
@@ -120,7 +120,17 @@ export class ChantierDetailComponent implements OnInit {
         private confirmation: ConfirmationService,
         private message: MessageService
     ) {
-        this.affecterEntrepriseForm.controls.role.valueChanges.subscribe(() => this.recalculerParentsDisponibles());
+        this.affecterEntrepriseForm.controls.role.valueChanges.subscribe((role) => {
+            this.recalculerParentsDisponibles();
+            const parenteControl = this.affecterEntrepriseForm.controls.affectationParenteId;
+            if (role === 'PRINCIPALE') {
+                parenteControl.clearValidators();
+                parenteControl.setValue('');
+            } else {
+                parenteControl.setValidators(Validators.required);
+            }
+            parenteControl.updateValueAndValidity();
+        });
     }
 
     ngOnInit(): void {

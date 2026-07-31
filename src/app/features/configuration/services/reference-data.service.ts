@@ -23,12 +23,20 @@ export class ReferenceDataService {
         return this.http.post<Pays>(`${this.baseUrl}/pays`, request);
     }
 
+    modifierPays(id: string, request: CreatePaysRequest): Observable<Pays> {
+        return this.http.put<Pays>(`${this.baseUrl}/pays/${id}`, request);
+    }
+
     listerCorpsDeMetier(): Observable<CorpsDeMetier[]> {
         return this.http.get<CorpsDeMetier[]>(`${this.baseUrl}/corps-de-metier`);
     }
 
     creerCorpsDeMetier(request: CreateCorpsDeMetierRequest): Observable<CorpsDeMetier> {
         return this.http.post<CorpsDeMetier>(`${this.baseUrl}/corps-de-metier`, request);
+    }
+
+    modifierCorpsDeMetier(id: string, request: CreateCorpsDeMetierRequest): Observable<CorpsDeMetier> {
+        return this.http.put<CorpsDeMetier>(`${this.baseUrl}/corps-de-metier/${id}`, request);
     }
 
     listerTypeSalarie(): Observable<TypeSalarie[]> {
@@ -39,12 +47,20 @@ export class ReferenceDataService {
         return this.http.post<TypeSalarie>(`${this.baseUrl}/types-salarie`, request);
     }
 
+    modifierTypeSalarie(id: string, request: CreateTypeSalarieRequest): Observable<TypeSalarie> {
+        return this.http.put<TypeSalarie>(`${this.baseUrl}/types-salarie/${id}`, request);
+    }
+
     listerTypeContratSalarie(): Observable<TypeContratSalarie[]> {
         return this.http.get<TypeContratSalarie[]>(`${this.baseUrl}/types-contrat-salarie`);
     }
 
     creerTypeContratSalarie(request: CreateTypeContratSalarieRequest): Observable<TypeContratSalarie> {
         return this.http.post<TypeContratSalarie>(`${this.baseUrl}/types-contrat-salarie`, request);
+    }
+
+    modifierTypeContratSalarie(id: string, request: CreateTypeContratSalarieRequest): Observable<TypeContratSalarie> {
+        return this.http.put<TypeContratSalarie>(`${this.baseUrl}/types-contrat-salarie/${id}`, request);
     }
 
     listerSalarieFonction(): Observable<SalarieFonction[]> {
@@ -55,11 +71,19 @@ export class ReferenceDataService {
         return this.http.post<SalarieFonction>(`${this.baseUrl}/salarie-fonctions`, request);
     }
 
+    modifierSalarieFonction(id: string, request: CreateSalarieFonctionRequest): Observable<SalarieFonction> {
+        return this.http.put<SalarieFonction>(`${this.baseUrl}/salarie-fonctions/${id}`, request);
+    }
+
     listerControleTiers(): Observable<ControleTiers[]> {
         return this.http.get<ControleTiers[]>(`${this.baseUrl}/controle-tiers`);
     }
 
     creerControleTiers(request: CreateControleTiersRequest): Observable<ControleTiers> {
         return this.http.post<ControleTiers>(`${this.baseUrl}/controle-tiers`, request);
+    }
+
+    modifierControleTiers(id: string, request: CreateControleTiersRequest): Observable<ControleTiers> {
+        return this.http.put<ControleTiers>(`${this.baseUrl}/controle-tiers/${id}`, request);
     }
 }

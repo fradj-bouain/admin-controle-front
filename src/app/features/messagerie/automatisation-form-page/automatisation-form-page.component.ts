@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService as ToastService } from 'primeng/api';
 import { ChampSurveillable, CibleGroupe, DestinataireType } from '../models/message.model';
@@ -79,6 +79,9 @@ export class AutomatisationFormPageComponent implements OnInit {
         this.entrepriseService.lister().subscribe((entreprises) => { this.entreprises = entreprises; this.recalculerDestinataires(); });
         this.utilisateurService.lister().subscribe((utilisateurs) => { this.utilisateurs = utilisateurs; this.recalculerDestinataires(); });
         this.form.controls.destinataireType.valueChanges.subscribe(() => this.recalculerDestinataires());
+        this.form.controls.cibleGroupe.valueChanges.subscribe((cibleGroupe) => {
+            this.majValidateurConditionnel(this.form.controls.destinataireId, cibleGroupe === 'SPECIFIQUE');
+        });
 
         this.route.paramMap.subscribe((params) => {
             const id = params.get('id');
@@ -105,6 +108,15 @@ export class AutomatisationFormPageComponent implements OnInit {
         return this.form.value.cibleGroupe === 'SPECIFIQUE';
     }
 
+    private majValidateurConditionnel(control: AbstractControl, requis: boolean) {
+        if (requis) {
+            control.setValidators(Validators.required);
+        } else {
+            control.clearValidators();
+        }
+        control.updateValueAndValidity();
+    }
+
     private recalculerDestinataires() {
         switch (this.form.value.destinataireType) {
             case 'CLIENT':
@@ -119,7 +131,7 @@ export class AutomatisationFormPageComponent implements OnInit {
     }
 
     annuler() {
-        this.router.navigate(['/messagerie/automatisation']);
+        this.router.navigate(['/messagerie'], { queryParams: { tab: 'automatisation' } });
     }
 
     submit() {
@@ -142,7 +154,7 @@ export class AutomatisationFormPageComponent implements OnInit {
         this.saving = true;
         const obs = this.isNew ? this.regleService.creer(payload) : this.regleService.modifier(this.regleId!, payload);
         obs.subscribe({
-            next: () => this.router.navigate(['/messagerie/automatisation']),
+            next: () => this.router.navigate(['/messagerie'], { queryParams: { tab: 'automatisation' } }),
             error: () => {
                 this.saving = false;
                 this.toast.add({ severity: 'error', summary: 'Erreur', detail: 'Enregistrement impossible' });

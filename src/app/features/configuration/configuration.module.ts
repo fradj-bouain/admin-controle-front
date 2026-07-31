@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TabViewModule } from 'primeng/tabview';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { TooltipModule } from 'primeng/tooltip';
 
 import { SharedModule } from '../../shared/shared.module';
 import { ConfigurationRoutingModule } from './configuration-routing.module';
@@ -26,6 +27,6 @@ import { UtilisateurFormPageComponent } from './utilisateur-form-page/utilisateu
         ControleTiersFormDialogComponent,
         UtilisateurFormPageComponent
     ],
-    imports: [SharedModule, ConfigurationRoutingModule, FormsModule, TabViewModule, MultiSelectModule, RouterModule]
+    imports: [SharedModule, ConfigurationRoutingModule, FormsModule, TabViewModule, MultiSelectModule, RouterModule, TooltipModule]
 })
 export class ConfigurationModule { }

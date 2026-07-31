@@ -3,23 +3,26 @@
 <div class="card" style="max-width: 720px;">
     <div class="flex align-items-center gap-3 mb-4">
         <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="annuler()"></button>
-        <h5 class="m-0">Nouveau type de document</h5>
+        <h5 class="m-0">{{ editingId ? 'Modifier le type de document' : 'Nouveau type de document' }}</h5>
     </div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
         <div class="field">
             <label for="libelle">Libellé *</label>
-            <input id="libelle" type="text" pInputText formControlName="libelle" />
+            <input id="libelle" type="text" pInputText formControlName="libelle" [class.ng-dirty]="form.controls.libelle.touched" />
+            <small class="p-error" *ngIf="form.controls.libelle.invalid && form.controls.libelle.touched">Ce champ est requis.</small>
         </div>
 
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
                 <label for="cible">Cible *</label>
-                <p-dropdown id="cible" [options]="cibles" formControlName="cible"></p-dropdown>
+                <p-dropdown id="cible" [options]="cibles" formControlName="cible" [class.ng-dirty]="form.controls.cible.touched"></p-dropdown>
+                <small class="p-error" *ngIf="form.controls.cible.invalid && form.controls.cible.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-6">
                 <label for="format">Format *</label>
-                <p-dropdown id="format" [options]="formats" formControlName="format"></p-dropdown>
+                <p-dropdown id="format" [options]="formats" formControlName="format" [class.ng-dirty]="form.controls.format.touched"></p-dropdown>
+                <small class="p-error" *ngIf="form.controls.format.invalid && form.controls.format.touched">Ce champ est requis.</small>
             </div>
         </div>
 

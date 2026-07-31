@@ -17,7 +17,9 @@
                 optionValue="id"
                 placeholder="Sélectionner un type"
                 class="w-full"
+                [class.ng-dirty]="form.controls.typeDocumentId.touched"
             ></p-dropdown>
+            <small class="p-error" *ngIf="form.controls.typeDocumentId.invalid && form.controls.typeDocumentId.touched">Ce champ est requis.</small>
         </div>
         <div class="field">
             <label for="fichierUrl">URL du fichier</label>

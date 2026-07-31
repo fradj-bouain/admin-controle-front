@@ -1,5 +1,5 @@
 <p-dialog
-    header="Nouveau contrôleur tiers"
+    [header]="itemToEdit ? 'Modifier le contrôleur tiers' : 'Nouveau contrôleur tiers'"
     [(visible)]="visible"
     (visibleChange)="visibleChange.emit($event)"
     [modal]="true"
@@ -9,7 +9,8 @@
     <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
         <div class="field">
             <label for="nom">Nom *</label>
-            <input id="nom" type="text" pInputText formControlName="nom" class="w-full" />
+            <input id="nom" type="text" pInputText formControlName="nom" class="w-full" [class.ng-dirty]="form.controls.nom.touched" />
+            <small class="p-error" *ngIf="form.controls.nom.invalid && form.controls.nom.touched">Ce champ est requis.</small>
         </div>
     </form>
 

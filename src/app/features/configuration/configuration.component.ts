@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import {
     ControleTiers, CorpsDeMetier, CreateControleTiersRequest, CreateCorpsDeMetierRequest,
     CreatePaysRequest, CreateSalarieFonctionRequest, CreateTypeContratSalarieRequest,
@@ -11,7 +11,7 @@ import { UtilisateurService } from './services/utilisateur.service';
 @Component({
     selector: 'app-configuration',
     templateUrl: './configuration.component.html',
-    providers: [MessageService]
+    providers: [MessageService, ConfirmationService]
 })
 export class ConfigurationComponent implements OnInit {
 
@@ -30,10 +30,18 @@ export class ConfigurationComponent implements OnInit {
     dialogSalarieFonctionVisible = false;
     dialogControleTiersVisible = false;
 
+    paysToEdit: Pays | null = null;
+    corpsToEdit: CorpsDeMetier | null = null;
+    typeSalarieToEdit: TypeSalarie | null = null;
+    typeContratSalarieToEdit: TypeContratSalarie | null = null;
+    salarieFonctionToEdit: SalarieFonction | null = null;
+    controleTiersToEdit: ControleTiers | null = null;
+
     constructor(
         private referenceDataService: ReferenceDataService,
         private utilisateurService: UtilisateurService,
-        private message: MessageService
+        private message: MessageService,
+        private confirmation: ConfirmationService
     ) { }
 
     ngOnInit(): void {
@@ -74,10 +82,51 @@ export class ConfigurationComponent implements OnInit {
         this.utilisateurService.lister().subscribe((utilisateurs) => (this.utilisateurs = utilisateurs));
     }
 
+    confirmerBasculeStatutUtilisateur(utilisateur: Utilisateur) {
+        this.confirmation.confirm({
+            header: 'Confirmation',
+            message: 'Voulez-vous ' + (utilisateur.actif ? 'désactiver' : 'activer') + ' cet utilisateur ?',
+            accept: () => {
+                const obs = utilisateur.actif
+                    ? this.utilisateurService.desactiver(utilisateur.id)
+                    : this.utilisateurService.activer(utilisateur.id);
+                obs.subscribe({
+                    next: () => this.chargerUtilisateurs(),
+                    error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
+                });
+            }
+        });
+    }
+
+    ouvrirCreationPays() { this.paysToEdit = null; this.dialogPaysVisible = true; }
+    ouvrirEditionPays(item: Pays) { this.paysToEdit = item; this.dialogPaysVisible = true; }
+
+    ouvrirCreationCorps() { this.corpsToEdit = null; this.dialogCorpsVisible = true; }
+    ouvrirEditionCorps(item: CorpsDeMetier) { this.corpsToEdit = item; this.dialogCorpsVisible = true; }
+
+    ouvrirCreationTypeSalarie() { this.typeSalarieToEdit = null; this.dialogTypeSalarieVisible = true; }
+    ouvrirEditionTypeSalarie(item: TypeSalarie) { this.typeSalarieToEdit = item; this.dialogTypeSalarieVisible = true; }
+
+    ouvrirCreationTypeContratSalarie() { this.typeContratSalarieToEdit = null; this.dialogTypeContratSalarieVisible = true; }
+    ouvrirEditionTypeContratSalarie(item: TypeContratSalarie) { this.typeContratSalarieToEdit = item; this.dialogTypeContratSalarieVisible = true; }
+
+    ouvrirCreationSalarieFonction() { this.salarieFonctionToEdit = null; this.dialogSalarieFonctionVisible = true; }
+    ouvrirEditionSalarieFonction(item: SalarieFonction) { this.salarieFonctionToEdit = item; this.dialogSalarieFonctionVisible = true; }
+
+    ouvrirCreationControleTiers() { this.controleTiersToEdit = null; this.dialogControleTiersVisible = true; }
+    ouvrirEditionControleTiers(item: ControleTiers) { this.controleTiersToEdit = item; this.dialogControleTiersVisible = true; }
+
     creerPays(request: CreatePaysRequest) {
         this.referenceDataService.creerPays(request).subscribe({
             next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Pays ajouté' }); this.chargerPays(); },
             error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Création impossible' })
+        });
+    }
+
+    modifierPays(event: { id: string; request: CreatePaysRequest }) {
+        this.referenceDataService.modifierPays(event.id, event.request).subscribe({
+            next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Pays modifié' }); this.chargerPays(); },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Modification impossible' })
         });
     }
 
@@ -88,10 +137,24 @@ export class ConfigurationComponent implements OnInit {
         });
     }
 
+    modifierCorpsDeMetier(event: { id: string; request: CreateCorpsDeMetierRequest }) {
+        this.referenceDataService.modifierCorpsDeMetier(event.id, event.request).subscribe({
+            next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Corps de métier modifié' }); this.chargerCorpsDeMetier(); },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Modification impossible' })
+        });
+    }
+
     creerTypeSalarie(request: CreateTypeSalarieRequest) {
         this.referenceDataService.creerTypeSalarie(request).subscribe({
             next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Type de salarié ajouté' }); this.chargerTypesSalarie(); },
             error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Création impossible' })
+        });
+    }
+
+    modifierTypeSalarie(event: { id: string; request: CreateTypeSalarieRequest }) {
+        this.referenceDataService.modifierTypeSalarie(event.id, event.request).subscribe({
+            next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Type de salarié modifié' }); this.chargerTypesSalarie(); },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Modification impossible' })
         });
     }
 
@@ -102,6 +165,13 @@ export class ConfigurationComponent implements OnInit {
         });
     }
 
+    modifierTypeContratSalarie(event: { id: string; request: CreateTypeContratSalarieRequest }) {
+        this.referenceDataService.modifierTypeContratSalarie(event.id, event.request).subscribe({
+            next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Type de contrat modifié' }); this.chargerTypesContratSalarie(); },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Modification impossible' })
+        });
+    }
+
     creerSalarieFonction(request: CreateSalarieFonctionRequest) {
         this.referenceDataService.creerSalarieFonction(request).subscribe({
             next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Fonction ajoutée' }); this.chargerSalarieFonctions(); },
@@ -109,10 +179,24 @@ export class ConfigurationComponent implements OnInit {
         });
     }
 
+    modifierSalarieFonction(event: { id: string; request: CreateSalarieFonctionRequest }) {
+        this.referenceDataService.modifierSalarieFonction(event.id, event.request).subscribe({
+            next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Fonction modifiée' }); this.chargerSalarieFonctions(); },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Modification impossible' })
+        });
+    }
+
     creerControleTiers(request: CreateControleTiersRequest) {
         this.referenceDataService.creerControleTiers(request).subscribe({
             next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Contrôleur tiers ajouté' }); this.chargerControleTiers(); },
             error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Création impossible' })
+        });
+    }
+
+    modifierControleTiers(event: { id: string; request: CreateControleTiersRequest }) {
+        this.referenceDataService.modifierControleTiers(event.id, event.request).subscribe({
+            next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Contrôleur tiers modifié' }); this.chargerControleTiers(); },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Modification impossible' })
         });
     }
 }

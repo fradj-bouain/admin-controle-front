@@ -12,9 +12,10 @@ import { Chantier } from 'src/app/features/chantiers/models/chantier.model';
 import { ChantierService } from 'src/app/features/chantiers/services/chantier.service';
 import { Pays, SalarieFonction, TypeContratSalarie } from 'src/app/features/configuration/models/configuration.model';
 import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
-import { DocumentItem, TypeDocument } from 'src/app/features/documents/models/document.model';
+import { DocumentEtat, DocumentItem, TypeDocument } from 'src/app/features/documents/models/document.model';
 import { DocumentService } from 'src/app/features/documents/services/document.service';
 import { TypeDocumentService } from 'src/app/features/documents/services/type-document.service';
+import { DocumentEtatService } from 'src/app/features/documents/services/document-etat.service';
 
 interface LigneDocument {
     dateDebutValidite: Date | null;
@@ -43,9 +44,9 @@ export class SalarieDetailComponent implements OnInit {
         nom: ['', Validators.required],
         prenom: ['', Validators.required],
         nationalitePaysId: [''],
-        fonctionId: [''],
+        fonctionId: ['', Validators.required],
         entrepriseEmployeurId: ['', Validators.required],
-        typeContratId: ['']
+        typeContratId: ['', Validators.required]
     });
 
     // --- Affectation à un chantier ---
@@ -67,6 +68,10 @@ export class SalarieDetailComponent implements OnInit {
     afficherObligatoireSeulement = false;
     documentsByType: Record<string, DocumentItem> = {};
     lignesDocument: Record<string, LigneDocument> = {};
+    etats: DocumentEtat[] = [];
+    etatsPourRefus: DocumentEtat[] = [];
+    dialogRefuserVisible = false;
+    documentARefuser: DocumentItem | null = null;
 
     constructor(
         private fb: FormBuilder,
@@ -80,6 +85,7 @@ export class SalarieDetailComponent implements OnInit {
         private referenceDataService: ReferenceDataService,
         private documentService: DocumentService,
         private typeDocumentService: TypeDocumentService,
+        private documentEtatService: DocumentEtatService,
         private confirmation: ConfirmationService,
         private message: MessageService
     ) {
@@ -99,6 +105,10 @@ export class SalarieDetailComponent implements OnInit {
             this.types = types;
             this.typesPourSalarie = types.filter((t) => t.cible === 'SALARIE');
         });
+        this.documentEtatService.lister().subscribe((etats) => {
+            this.etats = etats;
+            this.etatsPourRefus = etats.filter((e) => !e.valideLeDocument);
+        });
 
         this.route.paramMap.subscribe((params) => {
             const id = params.get('id');
@@ -108,6 +118,11 @@ export class SalarieDetailComponent implements OnInit {
                 this.chargerSalarie(id);
                 this.chargerMesAffectations(id);
                 this.chargerDocuments(id);
+            } else {
+                const preselectionnee = this.route.snapshot.queryParamMap.get('entrepriseId');
+                if (preselectionnee) {
+                    this.coordonneesForm.patchValue({ entrepriseEmployeurId: preselectionnee });
+                }
             }
         });
     }
@@ -300,8 +315,29 @@ export class SalarieDetailComponent implements OnInit {
         this.documentService.valider(document.id).subscribe({ next: () => this.chargerDocuments(this.salarieId!) });
     }
 
-    refuserDocument(document: DocumentItem) {
-        this.documentService.refuser(document.id).subscribe({ next: () => this.chargerDocuments(this.salarieId!) });
+    libelleEtat(documentEtatId?: string): string {
+        if (!documentEtatId) {
+            return '—';
+        }
+        return this.etats.find((e) => e.id === documentEtatId)?.titre ?? documentEtatId;
+    }
+
+    ouvrirRefus(document: DocumentItem) {
+        this.documentARefuser = document;
+        this.dialogRefuserVisible = true;
+    }
+
+    confirmerRefus(documentEtatId: string) {
+        if (!this.documentARefuser) {
+            return;
+        }
+        this.documentService.refuser(this.documentARefuser.id, documentEtatId).subscribe({
+            next: () => {
+                this.documentARefuser = null;
+                this.chargerDocuments(this.salarieId!);
+            },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Refus impossible' })
+        });
     }
 
     private toIsoDate(date: Date): string {

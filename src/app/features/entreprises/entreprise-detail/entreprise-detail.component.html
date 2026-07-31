@@ -31,11 +31,12 @@
     <form [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
         <div class="field">
             <label for="raisonSociale">Nom *</label>
-            <input id="raisonSociale" type="text" pInputText formControlName="raisonSociale" />
+            <input id="raisonSociale" type="text" pInputText formControlName="raisonSociale" [class.ng-dirty]="coordonneesForm.controls.raisonSociale.touched" />
+            <small class="p-error" *ngIf="coordonneesForm.controls.raisonSociale.invalid && coordonneesForm.controls.raisonSociale.touched">Ce champ est requis.</small>
         </div>
 
         <div class="field">
-            <label for="corpsDeMetierId">Corps de métier</label>
+            <label for="corpsDeMetierId">Corps de métier *</label>
             <p-dropdown
                 id="corpsDeMetierId"
                 [options]="corpsDeMetiers"
@@ -45,13 +46,16 @@
                 [filter]="true"
                 filterBy="libelle"
                 placeholder="Sélectionner un corps de métier"
+                [class.ng-dirty]="coordonneesForm.controls.corpsDeMetierId.touched"
             ></p-dropdown>
+            <small class="p-error" *ngIf="coordonneesForm.controls.corpsDeMetierId.invalid && coordonneesForm.controls.corpsDeMetierId.touched">Ce champ est requis.</small>
         </div>
 
         <div class="formgrid grid">
             <div class="field col-12 md:col-4">
-                <label for="adresse">Adresse</label>
-                <input id="adresse" type="text" pInputText formControlName="adresse" />
+                <label for="adresse">Adresse *</label>
+                <input id="adresse" type="text" pInputText formControlName="adresse" [class.ng-dirty]="coordonneesForm.controls.adresse.touched" />
+                <small class="p-error" *ngIf="coordonneesForm.controls.adresse.invalid && coordonneesForm.controls.adresse.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-4">
                 <label for="adresse2">Adresse complément n°1</label>
@@ -65,11 +69,12 @@
 
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
-                <label for="ville">Ville</label>
-                <input id="ville" type="text" pInputText formControlName="ville" />
+                <label for="ville">Ville *</label>
+                <input id="ville" type="text" pInputText formControlName="ville" [class.ng-dirty]="coordonneesForm.controls.ville.touched" />
+                <small class="p-error" *ngIf="coordonneesForm.controls.ville.invalid && coordonneesForm.controls.ville.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-6">
-                <label for="paysId">Pays</label>
+                <label for="paysId">Pays *</label>
                 <p-dropdown
                     id="paysId"
                     [options]="pays"
@@ -79,14 +84,17 @@
                     [filter]="true"
                     filterBy="nom"
                     placeholder="Sélectionner un pays"
+                    [class.ng-dirty]="coordonneesForm.controls.paysId.touched"
                 ></p-dropdown>
+                <small class="p-error" *ngIf="coordonneesForm.controls.paysId.invalid && coordonneesForm.controls.paysId.touched">Ce champ est requis.</small>
             </div>
         </div>
 
         <div class="formgrid grid">
             <div class="field col-12 md:col-4">
-                <label for="telephone">Tel</label>
-                <input id="telephone" type="text" pInputText formControlName="telephone" />
+                <label for="telephone">Tel *</label>
+                <input id="telephone" type="text" pInputText formControlName="telephone" [class.ng-dirty]="coordonneesForm.controls.telephone.touched" />
+                <small class="p-error" *ngIf="coordonneesForm.controls.telephone.invalid && coordonneesForm.controls.telephone.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-4">
                 <label for="telephone2">Tel 2</label>
@@ -100,21 +108,25 @@
 
         <div class="field">
             <label for="email">Email</label>
-            <input id="email" type="email" pInputText formControlName="email" />
+            <input id="email" type="email" pInputText formControlName="email" [class.ng-dirty]="coordonneesForm.controls.email.touched" />
+            <small class="p-error" *ngIf="coordonneesForm.controls.email.invalid && coordonneesForm.controls.email.touched">Adresse email invalide.</small>
         </div>
 
         <div class="formgrid grid">
             <div class="field col-12 md:col-4">
-                <label for="siren">Siren</label>
-                <input id="siren" type="text" pInputText formControlName="siren" />
+                <label for="siren">Siren *</label>
+                <input id="siren" type="text" pInputText formControlName="siren" [class.ng-dirty]="coordonneesForm.controls.siren.touched" />
+                <small class="p-error" *ngIf="coordonneesForm.controls.siren.invalid && coordonneesForm.controls.siren.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-4">
-                <label for="siret">Siret</label>
-                <input id="siret" type="text" pInputText formControlName="siret" />
+                <label for="siret">Siret *</label>
+                <input id="siret" type="text" pInputText formControlName="siret" [class.ng-dirty]="coordonneesForm.controls.siret.touched" />
+                <small class="p-error" *ngIf="coordonneesForm.controls.siret.invalid && coordonneesForm.controls.siret.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-4">
-                <label for="rcsRci">RCS / RCI</label>
-                <input id="rcsRci" type="text" pInputText formControlName="rcsRci" />
+                <label for="rcsRci">RCS / RCI *</label>
+                <input id="rcsRci" type="text" pInputText formControlName="rcsRci" [class.ng-dirty]="coordonneesForm.controls.rcsRci.touched" />
+                <small class="p-error" *ngIf="coordonneesForm.controls.rcsRci.invalid && coordonneesForm.controls.rcsRci.touched">Ce champ est requis.</small>
             </div>
         </div>
 
@@ -167,7 +179,7 @@
     <form [formGroup]="affectationForm" (ngSubmit)="submitAffectation()">
         <div class="formgrid grid">
             <div class="field col-12 md:col-3">
-                <label for="chantierId">Chantier</label>
+                <label for="chantierId">Chantier *</label>
                 <p-dropdown
                     id="chantierId"
                     [options]="chantiersDisponibles"
@@ -178,15 +190,17 @@
                     [filter]="true"
                     filterBy="nom"
                     styleClass="w-full"
+                    [class.ng-dirty]="affectationForm.controls.chantierId.touched"
                 ></p-dropdown>
+                <small class="p-error" *ngIf="affectationForm.controls.chantierId.invalid && affectationForm.controls.chantierId.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-3">
-                <label for="role">Rôle de l'entreprise</label>
+                <label for="role">Rôle de l'entreprise *</label>
                 <p-dropdown id="role" [options]="roles" formControlName="role" styleClass="w-full"></p-dropdown>
             </div>
             <div class="field col-12 md:col-4" *ngIf="affectationForm.value.role !== 'PRINCIPALE'">
                 <label for="affectationParenteId">
-                    Rattachée à ({{ affectationForm.value.role === 'STT1' ? 'la Principale' : 'un STT1' }})
+                    Rattachée à ({{ affectationForm.value.role === 'STT1' ? 'la Principale' : 'un STT1' }}) *
                 </label>
                 <p-dropdown
                     id="affectationParenteId"
@@ -196,7 +210,9 @@
                     optionValue="id"
                     placeholder="-- Choisir --"
                     styleClass="w-full"
+                    [class.ng-dirty]="affectationForm.controls.affectationParenteId.touched"
                 ></p-dropdown>
+                <small class="p-error" *ngIf="affectationForm.controls.affectationParenteId.invalid && affectationForm.controls.affectationParenteId.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-2 flex align-items-end">
                 <button pButton type="submit" label="Ajouter" [disabled]="isNew" class="w-full"></button>
@@ -232,6 +248,57 @@
         </ng-template>
     </p-table>
     </ng-container>
+</div>
+
+<!-- Salariés (raccourci) -->
+<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
+    <div class="card-head justify-content-between">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-users"></i>
+            <h6 class="m-0">Salariés</h6>
+        </div>
+        <div class="flex align-items-center gap-2">
+            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="!isNew && afficherSalaries" (click)="afficherSalaries = false"></button>
+            <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                label="Ajouter un salarié"
+                [disabled]="isNew"
+                [routerLink]="['/salaries/nouveau']"
+                [queryParams]="{ entrepriseId: entrepriseId }"
+            ></button>
+        </div>
+    </div>
+
+    <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez l'entreprise pour activer cette section.</small>
+
+    <div *ngIf="!isNew && !afficherSalaries" class="flex align-items-center justify-content-between">
+        <a class="cursor-pointer text-primary" (click)="afficherSalaries = true">{{ salaries.length }} salarié(s)</a>
+        <button pButton type="button" label="Afficher" (click)="afficherSalaries = true"></button>
+    </div>
+
+    <p-table [value]="salaries" dataKey="id" *ngIf="!isNew && afficherSalaries">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Identité</th>
+                <th>Statut</th>
+                <th style="width: 4rem"></th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-salarie>
+            <tr>
+                <td>{{ salarie.prenom }} {{ salarie.nom }}</td>
+                <td><p-tag [severity]="salarie.statut === 'ACTIF' ? 'success' : 'danger'" [value]="salarie.statut"></p-tag></td>
+                <td>
+                    <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/salaries', salarie.id]"></button>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr><td colspan="3" class="text-center text-500">Aucun salarié pour cette entreprise.</td></tr>
+        </ng-template>
+    </p-table>
 </div>
 
 <!-- Documents -->
@@ -316,7 +383,7 @@
                     </div>
                     <div class="field col-12 md:col-2 mb-0 flex gap-2">
                         <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="documentsByType[type.id].statutValidation !== 'VALIDE'" (click)="valider(documentsByType[type.id])"></button>
-                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="documentsByType[type.id].statutValidation !== 'REFUSE'" (click)="refuser(documentsByType[type.id])"></button>
+                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="documentsByType[type.id].statutValidation !== 'REFUSE'" (click)="ouvrirRefus(documentsByType[type.id])"></button>
                     </div>
                 </ng-template>
             </div>
@@ -325,3 +392,5 @@
         <p class="text-500 text-center py-3" *ngIf="typesPourEntreprise.length === 0">Aucun type de document configuré pour les entreprises.</p>
     </div>
 </div>
+
+<app-refuser-document-dialog [(visible)]="dialogRefuserVisible" [etatsDisponibles]="etatsPourRefus" (confirme)="confirmerRefus($event)"></app-refuser-document-dialog>

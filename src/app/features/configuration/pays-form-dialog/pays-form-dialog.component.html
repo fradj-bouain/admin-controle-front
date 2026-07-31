@@ -1,5 +1,5 @@
 <p-dialog
-    header="Nouveau pays"
+    [header]="itemToEdit ? 'Modifier le pays' : 'Nouveau pays'"
     [(visible)]="visible"
     (visibleChange)="visibleChange.emit($event)"
     [modal]="true"
@@ -9,11 +9,13 @@
     <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
         <div class="field">
             <label for="codeIso">Code ISO *</label>
-            <input id="codeIso" type="text" pInputText formControlName="codeIso" class="w-full" maxlength="3" />
+            <input id="codeIso" type="text" pInputText formControlName="codeIso" class="w-full" maxlength="3" [class.ng-dirty]="form.controls.codeIso.touched" />
+            <small class="p-error" *ngIf="form.controls.codeIso.invalid && form.controls.codeIso.touched">Ce champ est requis.</small>
         </div>
         <div class="field">
             <label for="nom">Nom *</label>
-            <input id="nom" type="text" pInputText formControlName="nom" class="w-full" />
+            <input id="nom" type="text" pInputText formControlName="nom" class="w-full" [class.ng-dirty]="form.controls.nom.touched" />
+            <small class="p-error" *ngIf="form.controls.nom.invalid && form.controls.nom.touched">Ce champ est requis.</small>
         </div>
         <div class="field">
             <label for="zone">Zone</label>

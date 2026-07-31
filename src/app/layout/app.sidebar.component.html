@@ -1,12 +1,15 @@
 <div class="layout-sidebar" (mouseenter)="onMouseEnter()" (mouseleave)="onMouseLeave()">
     <div class="sidebar-header">
-        <a [routerLink]="['/']" class="app-logo">
-            <img src="assets/layout/images/admincontrol-logo.png" alt="ADMIN-CONTROL'BTP" class="app-logo-normal" />
-            <img src="assets/layout/images/admincontrol-logo-icon.png" alt="ADMIN-CONTROL'BTP" class="app-logo-small" />
-        </a>
+        <div class="sidebar-user-card">
+            <div class="sidebar-user-avatar">{{ initiales }}</div>
+            <div class="sidebar-user-meta">
+                <span class="sidebar-user-name">{{ username }}</span>
+                <span class="sidebar-user-role">{{ roleLabel }}</span>
+            </div>
+        </div>
         <button class="layout-sidebar-anchor p-link z-2 mb-2" type="button" (click)="anchor()"></button>
     </div>
- 
+
 
     <div #menuContainer class="layout-menu-container">
         <app-menu></app-menu>

@@ -9,9 +9,12 @@ import { Chantier } from 'src/app/features/chantiers/models/chantier.model';
 import { ChantierService } from 'src/app/features/chantiers/services/chantier.service';
 import { CorpsDeMetier, Pays } from 'src/app/features/configuration/models/configuration.model';
 import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
-import { DocumentItem, TypeDocument } from 'src/app/features/documents/models/document.model';
+import { DocumentEtat, DocumentItem, TypeDocument } from 'src/app/features/documents/models/document.model';
 import { DocumentService } from 'src/app/features/documents/services/document.service';
 import { TypeDocumentService } from 'src/app/features/documents/services/type-document.service';
+import { DocumentEtatService } from 'src/app/features/documents/services/document-etat.service';
+import { Salarie } from 'src/app/features/salaries/models/salarie.model';
+import { SalarieService } from 'src/app/features/salaries/services/salarie.service';
 
 interface LigneDocument {
     dateDebutValidite: Date | null;
@@ -36,19 +39,19 @@ export class EntrepriseDetailComponent implements OnInit {
 
     coordonneesForm = this.fb.group({
         raisonSociale: ['', Validators.required],
-        corpsDeMetierId: [''],
-        adresse: [''],
+        corpsDeMetierId: ['', Validators.required],
+        adresse: ['', Validators.required],
         adresse2: [''],
         adresse3: [''],
-        ville: [''],
-        paysId: [''],
-        telephone: [''],
+        ville: ['', Validators.required],
+        paysId: ['', Validators.required],
+        telephone: ['', Validators.required],
         telephone2: [''],
         telephone3: [''],
         email: ['', Validators.email],
-        siren: [''],
-        siret: [''],
-        rcsRci: [''],
+        siren: ['', Validators.required],
+        siret: ['', Validators.required],
+        rcsRci: ['', Validators.required],
         tvaIntra: [''],
         numCotisant: [''],
         responsableSignataireAgrement: [''],
@@ -79,6 +82,14 @@ export class EntrepriseDetailComponent implements OnInit {
     afficherObligatoireSeulement = false;
     documentsByType: Record<string, DocumentItem> = {};
     lignesDocument: Record<string, LigneDocument> = {};
+    etats: DocumentEtat[] = [];
+    etatsPourRefus: DocumentEtat[] = [];
+    dialogRefuserVisible = false;
+    documentARefuser: DocumentItem | null = null;
+
+    // --- Salariés (raccourci vers les salariés de cette entreprise) ---
+    salaries: Salarie[] = [];
+    afficherSalaries = false;
 
     constructor(
         private fb: FormBuilder,
@@ -90,11 +101,23 @@ export class EntrepriseDetailComponent implements OnInit {
         private referenceDataService: ReferenceDataService,
         private documentService: DocumentService,
         private typeDocumentService: TypeDocumentService,
+        private documentEtatService: DocumentEtatService,
+        private salarieService: SalarieService,
         private confirmation: ConfirmationService,
         private message: MessageService
     ) {
         this.affectationForm.controls.chantierId.valueChanges.subscribe((chantierId) => this.onChantierChange(chantierId));
-        this.affectationForm.controls.role.valueChanges.subscribe(() => this.recalculerParentsDisponibles());
+        this.affectationForm.controls.role.valueChanges.subscribe((role) => {
+            this.recalculerParentsDisponibles();
+            const parenteControl = this.affectationForm.controls.affectationParenteId;
+            if (role === 'PRINCIPALE') {
+                parenteControl.clearValidators();
+                parenteControl.setValue('');
+            } else {
+                parenteControl.setValidators(Validators.required);
+            }
+            parenteControl.updateValueAndValidity();
+        });
     }
 
     ngOnInit(): void {
@@ -109,6 +132,10 @@ export class EntrepriseDetailComponent implements OnInit {
             this.types = types;
             this.recalculerTypesPourEntreprise();
         });
+        this.documentEtatService.lister().subscribe((etats) => {
+            this.etats = etats;
+            this.etatsPourRefus = etats.filter((e) => !e.valideLeDocument);
+        });
 
         this.route.paramMap.subscribe((params) => {
             const id = params.get('id');
@@ -118,8 +145,13 @@ export class EntrepriseDetailComponent implements OnInit {
                 this.chargerEntreprise(id);
                 this.chargerMesAffectations();
                 this.chargerDocuments();
+                this.chargerSalaries(id);
             }
         });
+    }
+
+    chargerSalaries(entrepriseId: string) {
+        this.salarieService.lister(entrepriseId).subscribe((salaries) => (this.salaries = salaries));
     }
 
     private chargerEntreprise(id: string) {
@@ -346,8 +378,29 @@ export class EntrepriseDetailComponent implements OnInit {
         this.documentService.valider(document.id).subscribe({ next: () => this.chargerDocuments() });
     }
 
-    refuser(document: DocumentItem) {
-        this.documentService.refuser(document.id).subscribe({ next: () => this.chargerDocuments() });
+    libelleEtat(documentEtatId?: string): string {
+        if (!documentEtatId) {
+            return '—';
+        }
+        return this.etats.find((e) => e.id === documentEtatId)?.titre ?? documentEtatId;
+    }
+
+    ouvrirRefus(document: DocumentItem) {
+        this.documentARefuser = document;
+        this.dialogRefuserVisible = true;
+    }
+
+    confirmerRefus(documentEtatId: string) {
+        if (!this.documentARefuser) {
+            return;
+        }
+        this.documentService.refuser(this.documentARefuser.id, documentEtatId).subscribe({
+            next: () => {
+                this.documentARefuser = null;
+                this.chargerDocuments();
+            },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Refus impossible' })
+        });
     }
 
     private toIsoDate(date: Date): string {

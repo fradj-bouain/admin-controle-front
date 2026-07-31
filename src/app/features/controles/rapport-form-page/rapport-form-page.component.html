@@ -12,31 +12,37 @@
     <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
         <div class="field">
             <label for="nbSalariesControles">Nombre de salariés contrôlés</label>
-            <p-inputNumber id="nbSalariesControles" formControlName="nbSalariesControles"></p-inputNumber>
+            <p-inputNumber id="nbSalariesControles" formControlName="nbSalariesControles" [min]="0"></p-inputNumber>
+            <small class="p-error" *ngIf="form.controls.nbSalariesControles.invalid && form.controls.nbSalariesControles.touched">La valeur ne peut pas être négative.</small>
         </div>
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
                 <label for="nbAccords">Accords</label>
-                <p-inputNumber id="nbAccords" formControlName="nbAccords"></p-inputNumber>
+                <p-inputNumber id="nbAccords" formControlName="nbAccords" [min]="0"></p-inputNumber>
+                <small class="p-error" *ngIf="form.controls.nbAccords.invalid && form.controls.nbAccords.touched">La valeur ne peut pas être négative.</small>
             </div>
             <div class="field col-12 md:col-6">
                 <label for="nbRefus">Refus</label>
-                <p-inputNumber id="nbRefus" formControlName="nbRefus"></p-inputNumber>
+                <p-inputNumber id="nbRefus" formControlName="nbRefus" [min]="0"></p-inputNumber>
+                <small class="p-error" *ngIf="form.controls.nbRefus.invalid && form.controls.nbRefus.touched">La valeur ne peut pas être négative.</small>
             </div>
         </div>
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
                 <label for="nbNouvellesEntreprises">Nouvelles entreprises</label>
-                <p-inputNumber id="nbNouvellesEntreprises" formControlName="nbNouvellesEntreprises"></p-inputNumber>
+                <p-inputNumber id="nbNouvellesEntreprises" formControlName="nbNouvellesEntreprises" [min]="0"></p-inputNumber>
+                <small class="p-error" *ngIf="form.controls.nbNouvellesEntreprises.invalid && form.controls.nbNouvellesEntreprises.touched">La valeur ne peut pas être négative.</small>
             </div>
             <div class="field col-12 md:col-6">
                 <label for="nbNouveauxSalaries">Nouveaux salariés</label>
-                <p-inputNumber id="nbNouveauxSalaries" formControlName="nbNouveauxSalaries"></p-inputNumber>
+                <p-inputNumber id="nbNouveauxSalaries" formControlName="nbNouveauxSalaries" [min]="0"></p-inputNumber>
+                <small class="p-error" *ngIf="form.controls.nbNouveauxSalaries.invalid && form.controls.nbNouveauxSalaries.touched">La valeur ne peut pas être négative.</small>
             </div>
         </div>
         <div class="field">
             <label for="nbSalariesDetaches">Salariés détachés</label>
-            <p-inputNumber id="nbSalariesDetaches" formControlName="nbSalariesDetaches"></p-inputNumber>
+            <p-inputNumber id="nbSalariesDetaches" formControlName="nbSalariesDetaches" [min]="0"></p-inputNumber>
+            <small class="p-error" *ngIf="form.controls.nbSalariesDetaches.invalid && form.controls.nbSalariesDetaches.touched">La valeur ne peut pas être négative.</small>
         </div>
 
         <div class="flex justify-content-end gap-2 mt-4">

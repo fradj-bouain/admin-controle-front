@@ -9,7 +9,8 @@
     <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
         <div class="field">
             <label for="cibleGroupe">Destinataires *</label>
-            <p-dropdown id="cibleGroupe" [options]="ciblesGroupe" formControlName="cibleGroupe" optionLabel="label" optionValue="value"></p-dropdown>
+            <p-dropdown id="cibleGroupe" [options]="ciblesGroupe" formControlName="cibleGroupe" optionLabel="label" optionValue="value" [class.ng-dirty]="form.controls.cibleGroupe.touched"></p-dropdown>
+            <small class="p-error" *ngIf="form.controls.cibleGroupe.invalid && form.controls.cibleGroupe.touched">Ce champ est requis.</small>
         </div>
 
         <div class="formgrid grid" *ngIf="estSpecifique">
@@ -28,23 +29,28 @@
                     [filter]="true"
                     filterBy="label"
                     placeholder="Sélectionner"
+                    [class.ng-dirty]="form.controls.destinataireId.touched"
                 ></p-dropdown>
+                <small class="p-error" *ngIf="form.controls.destinataireId.invalid && form.controls.destinataireId.touched">Ce champ est requis.</small>
             </div>
         </div>
 
         <div class="field">
             <label for="dateEnvoiPrevue">Date et heure d'envoi *</label>
-            <p-calendar id="dateEnvoiPrevue" formControlName="dateEnvoiPrevue" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body"></p-calendar>
+            <p-calendar id="dateEnvoiPrevue" formControlName="dateEnvoiPrevue" [showTime]="true" dateFormat="dd/mm/yy" appendTo="body" [class.ng-dirty]="form.controls.dateEnvoiPrevue.touched"></p-calendar>
+            <small class="p-error" *ngIf="form.controls.dateEnvoiPrevue.invalid && form.controls.dateEnvoiPrevue.touched">Ce champ est requis.</small>
         </div>
 
         <div class="field">
             <label for="sujet">Sujet *</label>
-            <input id="sujet" type="text" pInputText formControlName="sujet" />
+            <input id="sujet" type="text" pInputText formControlName="sujet" [class.ng-dirty]="form.controls.sujet.touched" />
+            <small class="p-error" *ngIf="form.controls.sujet.invalid && form.controls.sujet.touched">Ce champ est requis.</small>
         </div>
 
         <div class="field">
             <label for="contenu">Message *</label>
-            <textarea id="contenu" pInputTextarea formControlName="contenu" rows="6"></textarea>
+            <textarea id="contenu" pInputTextarea formControlName="contenu" rows="6" [class.ng-dirty]="form.controls.contenu.touched"></textarea>
+            <small class="p-error" *ngIf="form.controls.contenu.invalid && form.controls.contenu.touched">Ce champ est requis.</small>
         </div>
 
         <div class="flex justify-content-end gap-2 mt-4">

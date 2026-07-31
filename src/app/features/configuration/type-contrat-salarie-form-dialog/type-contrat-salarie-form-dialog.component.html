@@ -1,5 +1,5 @@
 <p-dialog
-    header="Nouveau type de contrat"
+    [header]="itemToEdit ? 'Modifier le type de contrat' : 'Nouveau type de contrat'"
     [(visible)]="visible"
     (visibleChange)="visibleChange.emit($event)"
     [modal]="true"
@@ -9,11 +9,13 @@
     <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
         <div class="field">
             <label for="code">Code *</label>
-            <input id="code" type="text" pInputText formControlName="code" class="w-full" placeholder="CDD" />
+            <input id="code" type="text" pInputText formControlName="code" class="w-full" placeholder="CDD" [class.ng-dirty]="form.controls.code.touched" />
+            <small class="p-error" *ngIf="form.controls.code.invalid && form.controls.code.touched">Ce champ est requis.</small>
         </div>
         <div class="field">
             <label for="libelle">Libellé *</label>
-            <input id="libelle" type="text" pInputText formControlName="libelle" class="w-full" />
+            <input id="libelle" type="text" pInputText formControlName="libelle" class="w-full" [class.ng-dirty]="form.controls.libelle.touched" />
+            <small class="p-error" *ngIf="form.controls.libelle.invalid && form.controls.libelle.touched">Ce champ est requis.</small>
         </div>
     </form>
 

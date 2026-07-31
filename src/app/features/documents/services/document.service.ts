@@ -27,7 +27,7 @@ export class DocumentService {
         return this.http.post<DocumentItem>(`${this.baseUrl}/${id}/valider`, {});
     }
 
-    refuser(id: string): Observable<DocumentItem> {
-        return this.http.post<DocumentItem>(`${this.baseUrl}/${id}/refuser`, {});
+    refuser(id: string, documentEtatId: string): Observable<DocumentItem> {
+        return this.http.post<DocumentItem>(`${this.baseUrl}/${id}/refuser`, { documentEtatId });
     }
 }

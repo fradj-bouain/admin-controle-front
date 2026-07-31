@@ -42,7 +42,9 @@
                         [filter]="true"
                         filterBy="raisonSociale"
                         placeholder="-- Sélectionner un client --"
+                        [class.ng-dirty]="coordonneesForm.controls.clientId.touched"
                     ></p-dropdown>
+                    <small class="p-error" *ngIf="coordonneesForm.controls.clientId.invalid && coordonneesForm.controls.clientId.touched">Ce champ est requis.</small>
                 </div>
 
                 <div class="field">
@@ -53,7 +55,8 @@
                 <div class="formgrid grid">
                     <div class="field col-12 md:col-6">
                         <label for="nom">Nom *</label>
-                        <input id="nom" type="text" pInputText formControlName="nom" />
+                        <input id="nom" type="text" pInputText formControlName="nom" [class.ng-dirty]="coordonneesForm.controls.nom.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.nom.invalid && coordonneesForm.controls.nom.touched">Ce champ est requis.</small>
                     </div>
                     <div class="field col-12 md:col-6">
                         <label for="prestation">Prestation</label>
@@ -63,8 +66,9 @@
 
                 <div class="formgrid grid">
                     <div class="field col-12 md:col-4">
-                        <label for="adresse">Adresse</label>
-                        <input id="adresse" type="text" pInputText formControlName="adresse" />
+                        <label for="adresse">Adresse *</label>
+                        <input id="adresse" type="text" pInputText formControlName="adresse" [class.ng-dirty]="coordonneesForm.controls.adresse.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.adresse.invalid && coordonneesForm.controls.adresse.touched">Ce champ est requis.</small>
                     </div>
                     <div class="field col-12 md:col-4">
                         <label for="adresse2">Adresse (bis)</label>
@@ -78,11 +82,12 @@
 
                 <div class="formgrid grid">
                     <div class="field col-12 md:col-6">
-                        <label for="ville">Ville</label>
-                        <input id="ville" type="text" pInputText formControlName="ville" />
+                        <label for="ville">Ville *</label>
+                        <input id="ville" type="text" pInputText formControlName="ville" [class.ng-dirty]="coordonneesForm.controls.ville.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.ville.invalid && coordonneesForm.controls.ville.touched">Ce champ est requis.</small>
                     </div>
                     <div class="field col-12 md:col-6">
-                        <label for="paysId">Pays</label>
+                        <label for="paysId">Pays *</label>
                         <p-dropdown
                             id="paysId"
                             [options]="pays"
@@ -92,14 +97,17 @@
                             [filter]="true"
                             filterBy="nom"
                             placeholder="Sélectionner un pays"
+                            [class.ng-dirty]="coordonneesForm.controls.paysId.touched"
                         ></p-dropdown>
+                        <small class="p-error" *ngIf="coordonneesForm.controls.paysId.invalid && coordonneesForm.controls.paysId.touched">Ce champ est requis.</small>
                     </div>
                 </div>
 
                 <div class="formgrid grid">
                     <div class="field col-12 md:col-6">
-                        <label for="dateDebut">Date de début</label>
-                        <p-calendar id="dateDebut" formControlName="dateDebut" dateFormat="dd/mm/yy" [showIcon]="true"></p-calendar>
+                        <label for="dateDebut">Date de début *</label>
+                        <p-calendar id="dateDebut" formControlName="dateDebut" dateFormat="dd/mm/yy" [showIcon]="true" [class.ng-dirty]="coordonneesForm.controls.dateDebut.touched"></p-calendar>
+                        <small class="p-error" *ngIf="coordonneesForm.controls.dateDebut.invalid && coordonneesForm.controls.dateDebut.touched">Ce champ est requis.</small>
                     </div>
                     <div class="field col-12 md:col-6">
                         <label for="dateFinPrevue">Date de fin</label>
@@ -274,7 +282,8 @@
         <form [formGroup]="nouveauControleForm" (ngSubmit)="submitNouveauControle()" class="formgrid grid align-items-end mt-4">
             <div class="field col-12 md:col-3">
                 <label for="dateControle">Date du contrôle *</label>
-                <p-calendar id="dateControle" formControlName="dateControle" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-calendar>
+                <p-calendar id="dateControle" formControlName="dateControle" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" [class.ng-dirty]="nouveauControleForm.controls.dateControle.touched"></p-calendar>
+                <small class="p-error" *ngIf="nouveauControleForm.controls.dateControle.invalid && nouveauControleForm.controls.dateControle.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-3">
                 <label for="controleTiersId">Effectué par</label>
@@ -375,16 +384,18 @@
 
         <form [formGroup]="affecterEntrepriseForm" (ngSubmit)="submitAffecterEntreprise()" class="formgrid grid align-items-end mt-3">
             <div class="field col-12 md:col-4">
-                <label for="entrepriseId">Entreprise</label>
-                <p-dropdown id="entrepriseId" [options]="entreprisesDisponibles" formControlName="entrepriseId" optionLabel="raisonSociale" optionValue="id" [filter]="true" filterBy="raisonSociale" placeholder="-- Choisir --" styleClass="w-full"></p-dropdown>
+                <label for="entrepriseId">Entreprise *</label>
+                <p-dropdown id="entrepriseId" [options]="entreprisesDisponibles" formControlName="entrepriseId" optionLabel="raisonSociale" optionValue="id" [filter]="true" filterBy="raisonSociale" placeholder="-- Choisir --" styleClass="w-full" [class.ng-dirty]="affecterEntrepriseForm.controls.entrepriseId.touched"></p-dropdown>
+                <small class="p-error" *ngIf="affecterEntrepriseForm.controls.entrepriseId.invalid && affecterEntrepriseForm.controls.entrepriseId.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-3">
-                <label for="role">Rôle</label>
+                <label for="role">Rôle *</label>
                 <p-dropdown id="role" [options]="roles" formControlName="role" styleClass="w-full"></p-dropdown>
             </div>
             <div class="field col-12 md:col-3" *ngIf="affecterEntrepriseForm.value.role !== 'PRINCIPALE'">
-                <label for="affectationParenteId">Rattachée à</label>
-                <p-dropdown id="affectationParenteId" [options]="parentsDisponibles" formControlName="affectationParenteId" optionLabel="label" optionValue="id" placeholder="-- Choisir --" styleClass="w-full"></p-dropdown>
+                <label for="affectationParenteId">Rattachée à *</label>
+                <p-dropdown id="affectationParenteId" [options]="parentsDisponibles" formControlName="affectationParenteId" optionLabel="label" optionValue="id" placeholder="-- Choisir --" styleClass="w-full" [class.ng-dirty]="affecterEntrepriseForm.controls.affectationParenteId.touched"></p-dropdown>
+                <small class="p-error" *ngIf="affecterEntrepriseForm.controls.affectationParenteId.invalid && affecterEntrepriseForm.controls.affectationParenteId.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-2">
                 <button pButton type="submit" label="Ajouter" class="w-full"></button>
@@ -426,8 +437,10 @@
                     </td>
                     <td>{{ contratDuSalarie(affectation.salarieId) }}</td>
                     <td>
-                        <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="affectation.statutAcces !== 'ACCORDE'" (click)="accorderAcces(affectation)"></button>
-                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="affectation.statutAcces !== 'REFUSE'" (click)="refuserAcces(affectation)"></button>
+                        <div class="flex align-items-center gap-1 flex-nowrap">
+                            <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="affectation.statutAcces !== 'ACCORDE'" (click)="accorderAcces(affectation)"></button>
+                            <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="affectation.statutAcces !== 'REFUSE'" (click)="refuserAcces(affectation)"></button>
+                        </div>
                     </td>
                 </tr>
             </ng-template>
@@ -435,18 +448,20 @@
 
         <form [formGroup]="affecterSalarieForm" (ngSubmit)="submitAffecterSalarie()" class="formgrid grid align-items-end mt-3">
             <div class="field col-12 md:col-5">
-                <label for="salarieId">Salarié</label>
-                <p-dropdown id="salarieId" [options]="salariesDisponibles" formControlName="salarieId" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Choisir --" styleClass="w-full">
+                <label for="salarieId">Salarié *</label>
+                <p-dropdown id="salarieId" [options]="salariesDisponibles" formControlName="salarieId" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Choisir --" styleClass="w-full" [class.ng-dirty]="affecterSalarieForm.controls.salarieId.touched">
                     <ng-template let-s pTemplate="item">{{ s?.prenom }} {{ s?.nom }}</ng-template>
                     <ng-template let-s pTemplate="selectedItem">{{ s?.prenom }} {{ s?.nom }}</ng-template>
                 </p-dropdown>
+                <small class="p-error" *ngIf="affecterSalarieForm.controls.salarieId.invalid && affecterSalarieForm.controls.salarieId.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-5">
-                <label for="affectationEntrepriseChantierId">Entreprise (sur ce chantier)</label>
-                <p-dropdown id="affectationEntrepriseChantierId" [options]="affectationsEntreprise" formControlName="affectationEntrepriseChantierId" optionValue="id" placeholder="-- Choisir --" styleClass="w-full">
+                <label for="affectationEntrepriseChantierId">Entreprise (sur ce chantier) *</label>
+                <p-dropdown id="affectationEntrepriseChantierId" [options]="affectationsEntreprise" formControlName="affectationEntrepriseChantierId" optionValue="id" placeholder="-- Choisir --" styleClass="w-full" [class.ng-dirty]="affecterSalarieForm.controls.affectationEntrepriseChantierId.touched">
                     <ng-template let-a pTemplate="item">{{ nomEntreprise(a?.entrepriseId) }}</ng-template>
                     <ng-template let-a pTemplate="selectedItem">{{ nomEntreprise(a?.entrepriseId) }}</ng-template>
                 </p-dropdown>
+                <small class="p-error" *ngIf="affecterSalarieForm.controls.affectationEntrepriseChantierId.invalid && affecterSalarieForm.controls.affectationEntrepriseChantierId.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-2">
                 <button pButton type="submit" label="Ajouter" class="w-full"></button>

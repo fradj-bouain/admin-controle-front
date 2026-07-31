@@ -8,15 +8,21 @@
         </ng-template>
     </p-toolbar>
 
-    <p-tabView>
+    <p-tabView [(activeIndex)]="activeTabIndex">
         <p-tabPanel header="Boîte de réception">
-            <p-table [value]="reception" dataKey="id">
+            <p-table #dtReception [value]="reception" dataKey="id">
                 <ng-template pTemplate="header">
                     <tr>
                         <th></th>
                         <th>Sujet</th>
                         <th>Message</th>
                         <th>Date</th>
+                    </tr>
+                    <tr>
+                        <th></th>
+                        <th><p-columnFilter type="text" field="sujet" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th><p-columnFilter type="text" field="contenu" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th></th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-message>
@@ -34,13 +40,25 @@
         </p-tabPanel>
 
         <p-tabPanel header="Envoyés">
-            <p-table [value]="envoyes" dataKey="id">
+            <p-table #dtEnvoyes [value]="envoyes" dataKey="id">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Destinataire</th>
                         <th>Sujet</th>
                         <th>Message</th>
                         <th>Date</th>
+                    </tr>
+                    <tr>
+                        <th>
+                            <p-columnFilter field="destinataireType" matchMode="equals" [showMenu]="false">
+                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                    <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Client', value: 'CLIENT'}, {label: 'Entreprise', value: 'ENTREPRISE'}, {label: 'Utilisateur', value: 'UTILISATEUR'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                                </ng-template>
+                            </p-columnFilter>
+                        </th>
+                        <th><p-columnFilter type="text" field="sujet" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th><p-columnFilter type="text" field="contenu" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th></th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-message>

@@ -11,7 +11,7 @@
         </ng-template>
     </p-toolbar>
 
-    <p-table [value]="salaries" [loading]="loading" [paginator]="true" [rows]="10" dataKey="id">
+    <p-table #dt [value]="salaries" [loading]="loading" [paginator]="true" [rows]="10" dataKey="id">
         <ng-template pTemplate="header">
             <tr>
                 <th>Nom</th>
@@ -19,6 +19,19 @@
                 <th>Entreprise employeur</th>
                 <th>Statut</th>
                 <th style="width: 9rem"></th>
+            </tr>
+            <tr>
+                <th><p-columnFilter type="text" field="nom" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th><p-columnFilter type="text" field="prenom" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th></th>
+                <th>
+                    <p-columnFilter field="statut" matchMode="equals" [showMenu]="false">
+                        <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                            <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Actif', value: 'ACTIF'}, {label: 'Inactif', value: 'INACTIF'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                        </ng-template>
+                    </p-columnFilter>
+                </th>
+                <th></th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-salarie>
@@ -28,31 +41,33 @@
                 <td>{{ nomEntreprise(salarie.entrepriseEmployeurId) }}</td>
                 <td><p-tag [severity]="salarie.statut === 'ACTIF' ? 'success' : 'danger'" [value]="salarie.statut"></p-tag></td>
                 <td>
-                    <button
-                        pButton
-                        type="button"
-                        icon="pi pi-pencil"
-                        class="p-button-text p-button-rounded"
-                        pTooltip="Modifier"
-                        [routerLink]="['/salaries', salarie.id]"
-                        (click)="$event.stopPropagation()"
-                    ></button>
-                    <button
-                        pButton
-                        type="button"
-                        icon="pi pi-qrcode"
-                        class="p-button-text p-button-rounded"
-                        pTooltip="Carte d'identité numérique"
-                        (click)="ouvrirQrCode(salarie); $event.stopPropagation()"
-                    ></button>
-                    <button
-                        pButton
-                        type="button"
-                        [icon]="salarie.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"
-                        class="p-button-text p-button-rounded"
-                        pTooltip="{{ salarie.statut === 'ACTIF' ? 'Désactiver' : 'Activer' }}"
-                        (click)="confirmerBasculeStatut(salarie); $event.stopPropagation()"
-                    ></button>
+                    <div class="flex align-items-center gap-1 flex-nowrap">
+                        <button
+                            pButton
+                            type="button"
+                            icon="pi pi-pencil"
+                            class="p-button-text p-button-rounded"
+                            pTooltip="Modifier"
+                            [routerLink]="['/salaries', salarie.id]"
+                            (click)="$event.stopPropagation()"
+                        ></button>
+                        <button
+                            pButton
+                            type="button"
+                            icon="pi pi-qrcode"
+                            class="p-button-text p-button-rounded"
+                            pTooltip="Carte d'identité numérique"
+                            (click)="ouvrirQrCode(salarie); $event.stopPropagation()"
+                        ></button>
+                        <button
+                            pButton
+                            type="button"
+                            [icon]="salarie.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"
+                            class="p-button-text p-button-rounded"
+                            pTooltip="{{ salarie.statut === 'ACTIF' ? 'Désactiver' : 'Activer' }}"
+                            (click)="confirmerBasculeStatut(salarie); $event.stopPropagation()"
+                        ></button>
+                    </div>
                 </td>
             </tr>
         </ng-template>

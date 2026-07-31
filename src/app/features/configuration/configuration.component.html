@@ -1,4 +1,5 @@
 <p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
 
 <p-tabView>
     <p-tabPanel header="Utilisateurs">
@@ -8,12 +9,25 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" routerLink="/configuration/utilisateurs/nouveau"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table [value]="utilisateurs" dataKey="id">
+            <p-table #dtUtilisateurs [value]="utilisateurs" dataKey="id">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Utilisateur</th>
                         <th>Rôles</th>
                         <th>Statut</th>
+                        <th style="width: 4rem"></th>
+                    </tr>
+                    <tr>
+                        <th><p-columnFilter type="text" field="username" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th></th>
+                        <th>
+                            <p-columnFilter field="actif" matchMode="equals" [showMenu]="false">
+                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                    <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Actif', value: true}, {label: 'Inactif', value: false}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                                </ng-template>
+                            </p-columnFilter>
+                        </th>
+                        <th></th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-utilisateur>
@@ -23,6 +37,16 @@
                             <p-tag *ngFor="let role of utilisateur.roles" [value]="role" class="mr-1"></p-tag>
                         </td>
                         <td><p-tag [severity]="utilisateur.actif ? 'success' : 'danger'" [value]="utilisateur.actif ? 'ACTIF' : 'INACTIF'"></p-tag></td>
+                        <td>
+                            <button
+                                pButton
+                                type="button"
+                                [icon]="utilisateur.actif ? 'pi pi-ban' : 'pi pi-check'"
+                                class="p-button-text p-button-rounded"
+                                [pTooltip]="utilisateur.actif ? 'Désactiver' : 'Activer'"
+                                (click)="confirmerBasculeStatutUtilisateur(utilisateur)"
+                            ></button>
+                        </td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -33,15 +57,28 @@
         <div class="card">
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="right">
-                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="dialogPaysVisible = true"></button>
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationPays()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table [value]="pays" dataKey="id">
+            <p-table #dtPays [value]="pays" dataKey="id">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Code ISO</th>
                         <th>Nom</th>
                         <th>Zone</th>
+                        <th style="width: 4rem"></th>
+                    </tr>
+                    <tr>
+                        <th><p-columnFilter type="text" field="codeIso" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th><p-columnFilter type="text" field="nom" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th>
+                            <p-columnFilter field="zone" matchMode="equals" [showMenu]="false">
+                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                    <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'France', value: 'FRANCE'}, {label: 'UE', value: 'UE'}, {label: 'Hors UE', value: 'HORS_UE'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                                </ng-template>
+                            </p-columnFilter>
+                        </th>
+                        <th></th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-p>
@@ -49,6 +86,9 @@
                         <td>{{ p.codeIso }}</td>
                         <td>{{ p.nom }}</td>
                         <td>{{ p.zone }}</td>
+                        <td>
+                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionPays(p)"></button>
+                        </td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -59,15 +99,27 @@
         <div class="card">
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="right">
-                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="dialogCorpsVisible = true"></button>
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationCorps()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table [value]="corpsDeMetier" dataKey="id">
+            <p-table #dtCorps [value]="corpsDeMetier" dataKey="id">
                 <ng-template pTemplate="header">
-                    <tr><th>Libellé</th></tr>
+                    <tr>
+                        <th>Libellé</th>
+                        <th style="width: 4rem"></th>
+                    </tr>
+                    <tr>
+                        <th><p-columnFilter type="text" field="libelle" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th></th>
+                    </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-corps>
-                    <tr><td>{{ corps.libelle }}</td></tr>
+                    <tr>
+                        <td>{{ corps.libelle }}</td>
+                        <td>
+                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionCorps(corps)"></button>
+                        </td>
+                    </tr>
                 </ng-template>
             </p-table>
         </div>
@@ -77,15 +129,30 @@
         <div class="card">
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="right">
-                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="dialogTypeSalarieVisible = true"></button>
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationTypeSalarie()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table [value]="typesSalarie" dataKey="id">
+            <p-table #dtTypeSalarie [value]="typesSalarie" dataKey="id">
                 <ng-template pTemplate="header">
-                    <tr><th>Code</th><th>Libellé</th></tr>
+                    <tr>
+                        <th>Code</th>
+                        <th>Libellé</th>
+                        <th style="width: 4rem"></th>
+                    </tr>
+                    <tr>
+                        <th><p-columnFilter type="text" field="code" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th><p-columnFilter type="text" field="libelle" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th></th>
+                    </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-type>
-                    <tr><td>{{ type.code }}</td><td>{{ type.libelle }}</td></tr>
+                    <tr>
+                        <td>{{ type.code }}</td>
+                        <td>{{ type.libelle }}</td>
+                        <td>
+                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionTypeSalarie(type)"></button>
+                        </td>
+                    </tr>
                 </ng-template>
             </p-table>
         </div>
@@ -95,15 +162,30 @@
         <div class="card">
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="right">
-                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="dialogTypeContratSalarieVisible = true"></button>
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationTypeContratSalarie()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table [value]="typesContratSalarie" dataKey="id">
+            <p-table #dtTypeContrat [value]="typesContratSalarie" dataKey="id">
                 <ng-template pTemplate="header">
-                    <tr><th>Code</th><th>Libellé</th></tr>
+                    <tr>
+                        <th>Code</th>
+                        <th>Libellé</th>
+                        <th style="width: 4rem"></th>
+                    </tr>
+                    <tr>
+                        <th><p-columnFilter type="text" field="code" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th><p-columnFilter type="text" field="libelle" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th></th>
+                    </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-type>
-                    <tr><td>{{ type.code }}</td><td>{{ type.libelle }}</td></tr>
+                    <tr>
+                        <td>{{ type.code }}</td>
+                        <td>{{ type.libelle }}</td>
+                        <td>
+                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionTypeContratSalarie(type)"></button>
+                        </td>
+                    </tr>
                 </ng-template>
             </p-table>
         </div>
@@ -113,15 +195,27 @@
         <div class="card">
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="right">
-                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="dialogSalarieFonctionVisible = true"></button>
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationSalarieFonction()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table [value]="salarieFonctions" dataKey="id">
+            <p-table #dtFonctions [value]="salarieFonctions" dataKey="id">
                 <ng-template pTemplate="header">
-                    <tr><th>Libellé</th></tr>
+                    <tr>
+                        <th>Libellé</th>
+                        <th style="width: 4rem"></th>
+                    </tr>
+                    <tr>
+                        <th><p-columnFilter type="text" field="libelle" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th></th>
+                    </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-fonction>
-                    <tr><td>{{ fonction.libelle }}</td></tr>
+                    <tr>
+                        <td>{{ fonction.libelle }}</td>
+                        <td>
+                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionSalarieFonction(fonction)"></button>
+                        </td>
+                    </tr>
                 </ng-template>
             </p-table>
         </div>
@@ -131,24 +225,36 @@
         <div class="card">
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="right">
-                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="dialogControleTiersVisible = true"></button>
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationControleTiers()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table [value]="controleTiers" dataKey="id">
+            <p-table #dtControleTiers [value]="controleTiers" dataKey="id">
                 <ng-template pTemplate="header">
-                    <tr><th>Nom</th></tr>
+                    <tr>
+                        <th>Nom</th>
+                        <th style="width: 4rem"></th>
+                    </tr>
+                    <tr>
+                        <th><p-columnFilter type="text" field="nom" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th></th>
+                    </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-tiers>
-                    <tr><td>{{ tiers.nom }}</td></tr>
+                    <tr>
+                        <td>{{ tiers.nom }}</td>
+                        <td>
+                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionControleTiers(tiers)"></button>
+                        </td>
+                    </tr>
                 </ng-template>
             </p-table>
         </div>
     </p-tabPanel>
 </p-tabView>
 
-<app-pays-form-dialog [(visible)]="dialogPaysVisible" (created)="creerPays($event)"></app-pays-form-dialog>
-<app-corps-de-metier-form-dialog [(visible)]="dialogCorpsVisible" (created)="creerCorpsDeMetier($event)"></app-corps-de-metier-form-dialog>
-<app-type-salarie-form-dialog [(visible)]="dialogTypeSalarieVisible" (created)="creerTypeSalarie($event)"></app-type-salarie-form-dialog>
-<app-type-contrat-salarie-form-dialog [(visible)]="dialogTypeContratSalarieVisible" (created)="creerTypeContratSalarie($event)"></app-type-contrat-salarie-form-dialog>
-<app-salarie-fonction-form-dialog [(visible)]="dialogSalarieFonctionVisible" (created)="creerSalarieFonction($event)"></app-salarie-fonction-form-dialog>
-<app-controle-tiers-form-dialog [(visible)]="dialogControleTiersVisible" (created)="creerControleTiers($event)"></app-controle-tiers-form-dialog>
+<app-pays-form-dialog [(visible)]="dialogPaysVisible" [itemToEdit]="paysToEdit" (created)="creerPays($event)" (updated)="modifierPays($event)"></app-pays-form-dialog>
+<app-corps-de-metier-form-dialog [(visible)]="dialogCorpsVisible" [itemToEdit]="corpsToEdit" (created)="creerCorpsDeMetier($event)" (updated)="modifierCorpsDeMetier($event)"></app-corps-de-metier-form-dialog>
+<app-type-salarie-form-dialog [(visible)]="dialogTypeSalarieVisible" [itemToEdit]="typeSalarieToEdit" (created)="creerTypeSalarie($event)" (updated)="modifierTypeSalarie($event)"></app-type-salarie-form-dialog>
+<app-type-contrat-salarie-form-dialog [(visible)]="dialogTypeContratSalarieVisible" [itemToEdit]="typeContratSalarieToEdit" (created)="creerTypeContratSalarie($event)" (updated)="modifierTypeContratSalarie($event)"></app-type-contrat-salarie-form-dialog>
+<app-salarie-fonction-form-dialog [(visible)]="dialogSalarieFonctionVisible" [itemToEdit]="salarieFonctionToEdit" (created)="creerSalarieFonction($event)" (updated)="modifierSalarieFonction($event)"></app-salarie-fonction-form-dialog>
+<app-controle-tiers-form-dialog [(visible)]="dialogControleTiersVisible" [itemToEdit]="controleTiersToEdit" (created)="creerControleTiers($event)" (updated)="modifierControleTiers($event)"></app-controle-tiers-form-dialog>

@@ -11,7 +11,7 @@
         </ng-template>
     </p-toolbar>
 
-    <p-table [value]="entreprises" [loading]="loading" [paginator]="true" [rows]="10" dataKey="id">
+    <p-table #dt [value]="entreprises" [loading]="loading" [paginator]="true" [rows]="10" dataKey="id">
         <ng-template pTemplate="header">
             <tr>
                 <th>Raison sociale</th>
@@ -20,6 +20,20 @@
                 <th>Email</th>
                 <th>Statut</th>
                 <th style="width: 6rem"></th>
+            </tr>
+            <tr>
+                <th><p-columnFilter type="text" field="raisonSociale" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th><p-columnFilter type="text" field="siret" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th><p-columnFilter type="text" field="telephone" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th><p-columnFilter type="text" field="email" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th>
+                    <p-columnFilter field="actif" matchMode="equals" [showMenu]="false">
+                        <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                            <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Actif', value: true}, {label: 'Inactif', value: false}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                        </ng-template>
+                    </p-columnFilter>
+                </th>
+                <th></th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-entreprise>
@@ -30,23 +44,25 @@
                 <td>{{ entreprise.email }}</td>
                 <td><p-tag [severity]="entreprise.actif ? 'success' : 'danger'" [value]="entreprise.actif ? 'ACTIF' : 'INACTIF'"></p-tag></td>
                 <td>
-                    <button
-                        pButton
-                        type="button"
-                        icon="pi pi-pencil"
-                        class="p-button-text p-button-rounded"
-                        pTooltip="Modifier"
-                        [routerLink]="['/entreprises', entreprise.id]"
-                        (click)="$event.stopPropagation()"
-                    ></button>
-                    <button
-                        pButton
-                        type="button"
-                        [icon]="entreprise.actif ? 'pi pi-ban' : 'pi pi-check'"
-                        class="p-button-text p-button-rounded"
-                        [pTooltip]="entreprise.actif ? 'Désactiver' : 'Activer'"
-                        (click)="confirmerBasculeStatut(entreprise); $event.stopPropagation()"
-                    ></button>
+                    <div class="flex align-items-center gap-1 flex-nowrap">
+                        <button
+                            pButton
+                            type="button"
+                            icon="pi pi-pencil"
+                            class="p-button-text p-button-rounded"
+                            pTooltip="Modifier"
+                            [routerLink]="['/entreprises', entreprise.id]"
+                            (click)="$event.stopPropagation()"
+                        ></button>
+                        <button
+                            pButton
+                            type="button"
+                            [icon]="entreprise.actif ? 'pi pi-ban' : 'pi pi-check'"
+                            class="p-button-text p-button-rounded"
+                            [pTooltip]="entreprise.actif ? 'Désactiver' : 'Activer'"
+                            (click)="confirmerBasculeStatut(entreprise); $event.stopPropagation()"
+                        ></button>
+                    </div>
                 </td>
             </tr>
         </ng-template>

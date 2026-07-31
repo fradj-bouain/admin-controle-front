@@ -63,6 +63,10 @@ export class AuthService {
         return this.claims()?.username ?? '';
     }
 
+    get roles(): string[] {
+        return this.claims()?.roles ?? [];
+    }
+
     get userId(): string {
         return this.claims()?.sub ?? '';
     }

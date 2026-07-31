@@ -43,6 +43,22 @@ export interface DocumentItem {
     dateRelance?: string;
     mentions?: string;
     statutValidation: StatutValidation;
+    documentEtatId?: string;
+}
+
+export interface DocumentEtat {
+    id: string;
+    titre: string;
+    parDefaut: boolean;
+    dateExpiree: boolean;
+    valideLeDocument: boolean;
+}
+
+export interface CreateDocumentEtatRequest {
+    titre: string;
+    parDefaut: boolean;
+    dateExpiree: boolean;
+    valideLeDocument: boolean;
 }
 
 export interface CreateDocumentRequest {

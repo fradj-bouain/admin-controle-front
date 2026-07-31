@@ -10,31 +10,38 @@
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
                 <label for="nom">Nom *</label>
-                <input id="nom" type="text" pInputText formControlName="nom" />
+                <input id="nom" type="text" pInputText formControlName="nom" [class.ng-dirty]="form.controls.nom.touched" />
+                <small class="p-error" *ngIf="form.controls.nom.invalid && form.controls.nom.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-6">
                 <label for="prenom">Prénom *</label>
-                <input id="prenom" type="text" pInputText formControlName="prenom" />
+                <input id="prenom" type="text" pInputText formControlName="prenom" [class.ng-dirty]="form.controls.prenom.touched" />
+                <small class="p-error" *ngIf="form.controls.prenom.invalid && form.controls.prenom.touched">Ce champ est requis.</small>
             </div>
         </div>
         <div class="field">
             <label for="email">Email *</label>
-            <input id="email" type="email" pInputText formControlName="email" />
+            <input id="email" type="email" pInputText formControlName="email" [class.ng-dirty]="form.controls.email.touched" />
+            <small class="p-error" *ngIf="form.controls.email.hasError('required') && form.controls.email.touched">Ce champ est requis.</small>
+            <small class="p-error" *ngIf="form.controls.email.hasError('email') && form.controls.email.touched">Adresse email invalide.</small>
         </div>
         <div class="field">
             <label for="username">Nom d'utilisateur *</label>
-            <input id="username" type="text" pInputText formControlName="username" />
+            <input id="username" type="text" pInputText formControlName="username" [class.ng-dirty]="form.controls.username.touched" />
+            <small class="p-error" *ngIf="form.controls.username.invalid && form.controls.username.touched">Ce champ est requis.</small>
         </div>
         <div class="field">
             <label for="password">Mot de passe *</label>
-            <input id="password" type="password" pInputText formControlName="password" />
+            <input id="password" type="password" pInputText formControlName="password" [class.ng-dirty]="form.controls.password.touched" />
+            <small class="p-error" *ngIf="form.controls.password.invalid && form.controls.password.touched">Ce champ est requis.</small>
         </div>
         <div class="field">
             <label for="roles">Rôles *</label>
-            <p-multiSelect id="roles" [options]="roles" formControlName="roles" placeholder="Sélectionner des rôles"></p-multiSelect>
+            <p-multiSelect id="roles" [options]="roles" formControlName="roles" placeholder="Sélectionner des rôles" [class.ng-dirty]="form.controls.roles.touched"></p-multiSelect>
+            <small class="p-error" *ngIf="form.controls.roles.invalid && form.controls.roles.touched">Sélectionnez au moins un rôle.</small>
         </div>
         <div class="field" *ngIf="form.value.roles?.includes('ENTREPRISE')">
-            <label for="entrepriseId">Entreprise de rattachement</label>
+            <label for="entrepriseId">Entreprise de rattachement *</label>
             <p-dropdown
                 id="entrepriseId"
                 [options]="entreprises"
@@ -42,10 +49,12 @@
                 optionLabel="raisonSociale"
                 optionValue="id"
                 placeholder="Sélectionner une entreprise"
+                [class.ng-dirty]="form.controls.entrepriseId.touched"
             ></p-dropdown>
+            <small class="p-error" *ngIf="form.controls.entrepriseId.invalid && form.controls.entrepriseId.touched">Ce champ est requis.</small>
         </div>
         <div class="field" *ngIf="form.value.roles?.includes('CLIENT')">
-            <label for="clientId">Client de rattachement</label>
+            <label for="clientId">Client de rattachement *</label>
             <p-dropdown
                 id="clientId"
                 [options]="clients"
@@ -53,10 +62,12 @@
                 optionLabel="raisonSociale"
                 optionValue="id"
                 placeholder="Sélectionner un client"
+                [class.ng-dirty]="form.controls.clientId.touched"
             ></p-dropdown>
+            <small class="p-error" *ngIf="form.controls.clientId.invalid && form.controls.clientId.touched">Ce champ est requis.</small>
         </div>
         <div class="field" *ngIf="form.value.roles?.includes('CONTROLEUR')">
-            <label for="controleTiersId">Organisme de contrôle de rattachement</label>
+            <label for="controleTiersId">Organisme de contrôle de rattachement *</label>
             <p-dropdown
                 id="controleTiersId"
                 [options]="controleTiersListe"
@@ -64,7 +75,9 @@
                 optionLabel="nom"
                 optionValue="id"
                 placeholder="Sélectionner un organisme de contrôle"
+                [class.ng-dirty]="form.controls.controleTiersId.touched"
             ></p-dropdown>
+            <small class="p-error" *ngIf="form.controls.controleTiersId.invalid && form.controls.controleTiersId.touched">Ce champ est requis.</small>
         </div>
 
         <div class="flex justify-content-end gap-2 mt-4">

@@ -7,13 +7,15 @@
 
         <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
             <div class="field">
-                <label for="username">Utilisateur</label>
-                <input id="username" type="text" pInputText formControlName="username" class="w-full" autocomplete="username" />
+                <label for="username">Utilisateur *</label>
+                <input id="username" type="text" pInputText formControlName="username" class="w-full" autocomplete="username" [class.ng-dirty]="form.controls.username.touched" />
+                <small class="p-error" *ngIf="form.controls.username.invalid && form.controls.username.touched">Ce champ est requis.</small>
             </div>
 
             <div class="field">
-                <label for="password">Mot de passe</label>
-                <input id="password" type="password" pInputText formControlName="password" class="w-full" autocomplete="current-password" />
+                <label for="password">Mot de passe *</label>
+                <input id="password" type="password" pInputText formControlName="password" class="w-full" autocomplete="current-password" [class.ng-dirty]="form.controls.password.touched" />
+                <small class="p-error" *ngIf="form.controls.password.invalid && form.controls.password.touched">Ce champ est requis.</small>
             </div>
 
             <p *ngIf="error" class="text-red-500 text-sm m-0">Identifiants invalides.</p>

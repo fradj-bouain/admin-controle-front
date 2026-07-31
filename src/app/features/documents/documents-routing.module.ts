@@ -5,7 +5,8 @@ import { TypeDocumentFormPageComponent } from './type-document-form-page/type-do
 
 const routes: Routes = [
     { path: '', component: DocumentListComponent },
-    { path: 'types/nouveau', component: TypeDocumentFormPageComponent }
+    { path: 'types/nouveau', component: TypeDocumentFormPageComponent },
+    { path: 'types/:id', component: TypeDocumentFormPageComponent }
 ];
 
 @NgModule({

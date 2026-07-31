@@ -3,19 +3,34 @@
 
 <div class="card">
     <p-toolbar styleClass="mb-4">
-        <ng-template pTemplate="left"><h5 class="m-0">Planification des envois</h5></ng-template>
+        <ng-template pTemplate="left">
+            <h5 class="m-0">Planification des envois</h5>
+        </ng-template>
         <ng-template pTemplate="right">
             <button pButton type="button" icon="pi pi-plus" label="Planifier un envoi" routerLink="/messagerie/planification/nouveau"></button>
         </ng-template>
     </p-toolbar>
 
-    <p-table [value]="messages" dataKey="id" [loading]="loading">
+    <p-table #dt [value]="messages" dataKey="id" [loading]="loading">
         <ng-template pTemplate="header">
             <tr>
                 <th>Destinataires</th>
                 <th>Sujet</th>
                 <th>Date d'envoi prévue</th>
                 <th>Statut</th>
+                <th></th>
+            </tr>
+            <tr>
+                <th></th>
+                <th><p-columnFilter type="text" field="sujet" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th></th>
+                <th>
+                    <p-columnFilter field="statut" matchMode="equals" [showMenu]="false">
+                        <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                            <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'En attente', value: 'EN_ATTENTE'}, {label: 'Envoyé', value: 'ENVOYE'}, {label: 'Annulé', value: 'ANNULE'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                        </ng-template>
+                    </p-columnFilter>
+                </th>
                 <th></th>
             </tr>
         </ng-template>

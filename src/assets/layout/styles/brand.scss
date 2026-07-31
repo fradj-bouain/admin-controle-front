@@ -287,9 +287,51 @@ a { color: var(--brand-accent-ink); }
     --menu-bg: var(--brand-sidebar);
     --logo-color: #ffffff;
 }
-.layout-sidebar .app-logo-normal,
-.layout-sidebar .app-logo-small {
-    filter: brightness(0) invert(1);
+/* Bloc utilisateur connecté, en lieu et place du logo, en tête de sidebar */
+.sidebar-header {
+    padding: 1.5rem 1.25rem 1.25rem !important;
+}
+.sidebar-user-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.sidebar-user-avatar {
+    flex-shrink: 0;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    background: var(--brand-accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+    box-shadow: 0 0 0 3px rgba(181, 105, 28, 0.22);
+}
+.sidebar-user-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+.sidebar-user-name {
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.sidebar-user-role {
+    color: var(--brand-sidebar-ink-dim);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 .layout-menu .layout-menuitem-root-text {
     color: var(--brand-sidebar-ink-dim);
@@ -330,10 +372,90 @@ a { color: var(--brand-accent-ink); }
     color: var(--brand-accent);
 }
 
-/* Topbar : bordure nette plutôt que l'ombre par défaut du thème */
+/* Topbar : bordure nette plutôt que l'ombre par défaut du thème, et hauteur
+   resserrée — tous les contrôles (burger, langue, déconnexion) sont calés
+   sur la même hauteur (2.25rem) pour que la barre s'ajuste à son contenu
+   au lieu de flotter avec un contrôle nettement plus petit qu'elle. */
 .layout-topbar {
     box-shadow: none !important;
     border-bottom: 1px solid var(--brand-border);
+    padding: 0.4rem 1.75rem;
+    margin-bottom: 2rem;
+}
+.layout-content-wrapper {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+.layout-topbar .topbar-menu {
+    gap: 0.85rem;
+}
+.layout-topbar .topbar-menu > li {
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+.layout-topbar .topbar-divider {
+    width: 1px;
+    height: 1.5rem;
+    background: var(--brand-border);
+}
+.layout-topbar .topbar-menubutton {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    margin-right: 1rem !important;
+}
+.layout-topbar .topbar-menubutton i {
+    font-size: 1.1rem !important;
+}
+.layout-topbar .topbar-menubutton:hover {
+    background-color: var(--brand-accent-tint);
+}
+.layout-topbar .topbar-menubutton:hover i {
+    color: var(--brand-accent-ink);
+}
+.layout-topbar .p-button.p-button-rounded {
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+}
+
+/* Sélecteur de langue : dropdown compact plutôt qu'un <select> natif brut,
+   calé sur la même hauteur (2.25rem) que les boutons voisins. */
+.topbar-lang-dropdown.p-dropdown {
+    width: 5.25rem;
+    height: 2.25rem;
+    min-width: 0;
+    border-radius: 999px;
+    border-color: var(--brand-border);
+    display: flex;
+    align-items: center;
+}
+.topbar-lang-dropdown .p-dropdown-label {
+    padding: 0 0 0 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--brand-accent-ink);
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+.topbar-lang-dropdown .p-dropdown-trigger {
+    height: 100%;
+}
+.topbar-lang-dropdown .p-dropdown-trigger {
+    width: 1.75rem;
+    color: var(--ink-soft, #5C6270);
+}
+.topbar-lang-dropdown:not(.p-disabled):hover {
+    border-color: var(--brand-accent);
+}
+.topbar-lang-dropdown.p-focus {
+    border-color: var(--brand-accent);
+    box-shadow: 0 0 0 0.2rem var(--brand-focus-ring);
+}
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+    font-size: 0.8rem;
 }
 
 /* ---------- Page de connexion ---------- */

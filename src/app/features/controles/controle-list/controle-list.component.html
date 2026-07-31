@@ -29,7 +29,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table [value]="controles" dataKey="id">
+            <p-table #dtControles [value]="controles" dataKey="id">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Début</th>
@@ -37,6 +37,19 @@
                         <th>Remarques</th>
                         <th>Statut</th>
                         <th style="width: 10rem"></th>
+                    </tr>
+                    <tr>
+                        <th></th>
+                        <th></th>
+                        <th><p-columnFilter type="text" field="remarques" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th>
+                            <p-columnFilter field="termine" matchMode="equals" [showMenu]="false">
+                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                    <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Terminé', value: true}, {label: 'En cours', value: false}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                                </ng-template>
+                            </p-columnFilter>
+                        </th>
+                        <th></th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-controle>
@@ -61,7 +74,7 @@
 
     <p-tabPanel header="Rapports">
         <div class="card">
-            <p-table [value]="rapports" dataKey="id">
+            <p-table #dtRapports [value]="rapports" dataKey="id">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Salariés contrôlés</th>
@@ -72,6 +85,16 @@
                         <th>Détachés</th>
                         <th>Envoi</th>
                         <th style="width: 8rem"></th>
+                    </tr>
+                    <tr>
+                        <th><p-columnFilter type="numeric" field="nbSalariesControles" matchMode="equals" [showMenu]="false" [showButtons]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th><p-columnFilter type="numeric" field="nbAccords" matchMode="equals" [showMenu]="false" [showButtons]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th><p-columnFilter type="numeric" field="nbRefus" matchMode="equals" [showMenu]="false" [showButtons]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-rapport>

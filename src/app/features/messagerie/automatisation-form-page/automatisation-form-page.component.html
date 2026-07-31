@@ -9,26 +9,30 @@
     <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
         <div class="field">
             <label for="nom">Nom *</label>
-            <input id="nom" type="text" pInputText formControlName="nom" />
+            <input id="nom" type="text" pInputText formControlName="nom" [class.ng-dirty]="form.controls.nom.touched" />
+            <small class="p-error" *ngIf="form.controls.nom.invalid && form.controls.nom.touched">Ce champ est requis.</small>
         </div>
 
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
                 <label for="champSurveillableId">Événement déclencheur *</label>
-                <p-dropdown id="champSurveillableId" [options]="champsSurveillables" formControlName="champSurveillableId" optionValue="id" placeholder="-- Choisir --">
+                <p-dropdown id="champSurveillableId" [options]="champsSurveillables" formControlName="champSurveillableId" optionValue="id" placeholder="-- Choisir --" [class.ng-dirty]="form.controls.champSurveillableId.touched">
                     <ng-template let-c pTemplate="item">{{ c?.entiteLibelle }} — {{ c?.champLibelle }}</ng-template>
                     <ng-template let-c pTemplate="selectedItem">{{ c?.entiteLibelle }} — {{ c?.champLibelle }}</ng-template>
                 </p-dropdown>
+                <small class="p-error" *ngIf="form.controls.champSurveillableId.invalid && form.controls.champSurveillableId.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-6">
                 <label for="nbJoursAvant">Jours avant l'événement *</label>
-                <input id="nbJoursAvant" type="number" min="0" pInputText formControlName="nbJoursAvant" />
+                <input id="nbJoursAvant" type="number" min="0" pInputText formControlName="nbJoursAvant" [class.ng-dirty]="form.controls.nbJoursAvant.touched" />
+                <small class="p-error" *ngIf="form.controls.nbJoursAvant.invalid && form.controls.nbJoursAvant.touched">Doit être un nombre de jours positif ou nul.</small>
             </div>
         </div>
 
         <div class="field">
             <label for="cibleGroupe">Destinataires *</label>
-            <p-dropdown id="cibleGroupe" [options]="ciblesGroupe" formControlName="cibleGroupe" optionLabel="label" optionValue="value"></p-dropdown>
+            <p-dropdown id="cibleGroupe" [options]="ciblesGroupe" formControlName="cibleGroupe" optionLabel="label" optionValue="value" [class.ng-dirty]="form.controls.cibleGroupe.touched"></p-dropdown>
+            <small class="p-error" *ngIf="form.controls.cibleGroupe.invalid && form.controls.cibleGroupe.touched">Ce champ est requis.</small>
         </div>
 
         <div class="formgrid grid" *ngIf="estSpecifique">
@@ -47,19 +51,23 @@
                     [filter]="true"
                     filterBy="label"
                     placeholder="Sélectionner"
+                    [class.ng-dirty]="form.controls.destinataireId.touched"
                 ></p-dropdown>
+                <small class="p-error" *ngIf="form.controls.destinataireId.invalid && form.controls.destinataireId.touched">Ce champ est requis.</small>
             </div>
         </div>
 
         <div class="field">
             <label for="sujet">Sujet *</label>
-            <input id="sujet" type="text" pInputText formControlName="sujet" />
+            <input id="sujet" type="text" pInputText formControlName="sujet" [class.ng-dirty]="form.controls.sujet.touched" />
+            <small class="p-error" *ngIf="form.controls.sujet.invalid && form.controls.sujet.touched">Ce champ est requis.</small>
         </div>
 
         <div class="field">
             <label for="contenu">Message *</label>
-            <textarea id="contenu" pInputTextarea formControlName="contenu" rows="6"></textarea>
-            <small class="text-500">Balises disponibles : [DATE], [CHANTIER_NOM], [DOCUMENT_LIBELLE]</small>
+            <textarea id="contenu" pInputTextarea formControlName="contenu" rows="6" [class.ng-dirty]="form.controls.contenu.touched"></textarea>
+            <small class="p-error" *ngIf="form.controls.contenu.invalid && form.controls.contenu.touched">Ce champ est requis.</small>
+            <small class="text-500 block">Balises disponibles : [DATE], [CHANTIER_NOM], [DOCUMENT_LIBELLE]</small>
         </div>
 
         <div class="flex justify-content-end gap-2 mt-4">

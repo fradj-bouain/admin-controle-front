@@ -10,7 +10,8 @@
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
                 <label for="dateControle">Date de début *</label>
-                <p-calendar id="dateControle" formControlName="dateControle" dateFormat="dd/mm/yy" [showIcon]="true"></p-calendar>
+                <p-calendar id="dateControle" formControlName="dateControle" dateFormat="dd/mm/yy" [showIcon]="true" [class.ng-dirty]="form.controls.dateControle.touched"></p-calendar>
+                <small class="p-error" *ngIf="form.controls.dateControle.invalid && form.controls.dateControle.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-6">
                 <label for="dateFin">Date de fin</label>

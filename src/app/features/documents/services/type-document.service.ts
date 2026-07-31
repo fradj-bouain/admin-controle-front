@@ -15,7 +15,15 @@ export class TypeDocumentService {
         return this.http.get<TypeDocument[]>(this.baseUrl);
     }
 
+    obtenir(id: string): Observable<TypeDocument> {
+        return this.http.get<TypeDocument>(`${this.baseUrl}/${id}`);
+    }
+
     creer(request: CreateTypeDocumentRequest): Observable<TypeDocument> {
         return this.http.post<TypeDocument>(this.baseUrl, request);
+    }
+
+    modifier(id: string, request: CreateTypeDocumentRequest): Observable<TypeDocument> {
+        return this.http.put<TypeDocument>(`${this.baseUrl}/${id}`, request);
     }
 }

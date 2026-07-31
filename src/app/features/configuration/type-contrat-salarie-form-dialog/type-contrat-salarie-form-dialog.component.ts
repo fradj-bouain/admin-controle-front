@@ -1,16 +1,18 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { CreateTypeContratSalarieRequest } from '../models/configuration.model';
+import { CreateTypeContratSalarieRequest, TypeContratSalarie } from '../models/configuration.model';
 
 @Component({
     selector: 'app-type-contrat-salarie-form-dialog',
     templateUrl: './type-contrat-salarie-form-dialog.component.html'
 })
-export class TypeContratSalarieFormDialogComponent {
+export class TypeContratSalarieFormDialogComponent implements OnChanges {
 
     @Input() visible = false;
+    @Input() itemToEdit: TypeContratSalarie | null = null;
     @Output() visibleChange = new EventEmitter<boolean>();
     @Output() created = new EventEmitter<CreateTypeContratSalarieRequest>();
+    @Output() updated = new EventEmitter<{ id: string; request: CreateTypeContratSalarieRequest }>();
 
     form = this.fb.group({
         code: ['', Validators.required],
@@ -18,6 +20,14 @@ export class TypeContratSalarieFormDialogComponent {
     });
 
     constructor(private fb: FormBuilder) { }
+
+    ngOnChanges(): void {
+        if (this.itemToEdit) {
+            this.form.patchValue(this.itemToEdit);
+        } else {
+            this.form.reset();
+        }
+    }
 
     close() {
         this.visible = false;
@@ -31,7 +41,12 @@ export class TypeContratSalarieFormDialogComponent {
             return;
         }
         const value = this.form.getRawValue();
-        this.created.emit({ code: value.code!, libelle: value.libelle! });
+        const request: CreateTypeContratSalarieRequest = { code: value.code!, libelle: value.libelle! };
+        if (this.itemToEdit) {
+            this.updated.emit({ id: this.itemToEdit.id, request });
+        } else {
+            this.created.emit(request);
+        }
         this.close();
     }
 }

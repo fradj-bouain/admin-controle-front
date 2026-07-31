@@ -1,6 +1,6 @@
 <p-toast></p-toast>
 
-<p-tabView>
+<p-tabView [(activeIndex)]="activeTabIndex">
     <p-tabPanel header="Documents">
         <div class="card">
             <p-toolbar styleClass="mb-4">
@@ -43,13 +43,27 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table [value]="documents" dataKey="id">
+            <p-table #dtDocuments [value]="documents" dataKey="id">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Type</th>
                         <th>Expiration</th>
                         <th>Statut</th>
+                        <th>Motif</th>
                         <th style="width: 10rem"></th>
+                    </tr>
+                    <tr>
+                        <th></th>
+                        <th></th>
+                        <th>
+                            <p-columnFilter field="statutValidation" matchMode="equals" [showMenu]="false">
+                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                    <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Validé', value: 'VALIDE'}, {label: 'Refusé', value: 'REFUSE'}, {label: 'En attente', value: 'EN_ATTENTE'}, {label: 'Expiré', value: 'EXPIRE'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                                </ng-template>
+                            </p-columnFilter>
+                        </th>
+                        <th></th>
+                        <th></th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-document>
@@ -62,14 +76,17 @@
                                 [value]="document.statutValidation"
                             ></p-tag>
                         </td>
+                        <td>{{ document.statutValidation === 'REFUSE' ? libelleEtat(document.documentEtatId) : '—' }}</td>
                         <td>
-                            <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="document.statutValidation !== 'VALIDE'" (click)="valider(document)"></button>
-                            <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="document.statutValidation !== 'REFUSE'" (click)="refuser(document)"></button>
+                            <div class="flex align-items-center gap-1 flex-nowrap">
+                                <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="document.statutValidation !== 'VALIDE'" (click)="valider(document)"></button>
+                                <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="document.statutValidation !== 'REFUSE'" (click)="ouvrirRefus(document)"></button>
+                            </div>
                         </td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="4" class="text-center text-500">{{ entiteId ? 'Aucun document.' : 'Sélectionnez un salarié ou une entreprise.' }}</td></tr>
+                    <tr><td colspan="5" class="text-center text-500">{{ entiteId ? 'Aucun document.' : 'Sélectionnez un salarié ou une entreprise.' }}</td></tr>
                 </ng-template>
             </p-table>
         </div>
@@ -78,19 +95,38 @@
     <p-tabPanel header="Types de documents">
         <div class="card">
             <p-toolbar styleClass="mb-4">
-                <ng-template pTemplate="left"><h5 class="m-0">Types de documents configurés</h5></ng-template>
                 <ng-template pTemplate="right">
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" routerLink="/documents/types/nouveau"></button>
                 </ng-template>
             </p-toolbar>
 
-            <p-table [value]="types" dataKey="id">
+            <p-table #dtTypes [value]="types" dataKey="id">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Libellé</th>
                         <th>Cible</th>
                         <th>Format</th>
                         <th>Obligatoire</th>
+                        <th style="width: 4rem"></th>
+                    </tr>
+                    <tr>
+                        <th><p-columnFilter type="text" field="libelle" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th>
+                            <p-columnFilter field="cible" matchMode="equals" [showMenu]="false">
+                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                    <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Salarié', value: 'SALARIE'}, {label: 'Entreprise', value: 'ENTREPRISE'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                                </ng-template>
+                            </p-columnFilter>
+                        </th>
+                        <th>
+                            <p-columnFilter field="format" matchMode="equals" [showMenu]="false">
+                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                    <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'PDF', value: 'PDF'}, {label: 'Word', value: 'WORD'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                                </ng-template>
+                            </p-columnFilter>
+                        </th>
+                        <th></th>
+                        <th></th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-type>
@@ -99,7 +135,53 @@
                         <td>{{ type.cible }}</td>
                         <td>{{ type.format }}</td>
                         <td><p-tag *ngIf="type.obligatoire" severity="danger" value="Obligatoire"></p-tag></td>
+                        <td>
+                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/documents/types', type.id]"></button>
+                        </td>
                     </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="États de documents">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="right">
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationEtat()"></button>
+                </ng-template>
+            </p-toolbar>
+
+            <p-table #dtEtats [value]="etats" dataKey="id">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Nom de l'état</th>
+                        <th>Par défaut</th>
+                        <th>Date expirée</th>
+                        <th>Valide le document</th>
+                        <th style="width: 4rem"></th>
+                    </tr>
+                    <tr>
+                        <th><p-columnFilter type="text" field="titre" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-etat>
+                    <tr>
+                        <td>{{ etat.titre }}</td>
+                        <td><p-tag *ngIf="etat.parDefaut" severity="info" value="Oui"></p-tag></td>
+                        <td><p-tag *ngIf="etat.dateExpiree" severity="warning" value="Oui"></p-tag></td>
+                        <td><p-tag *ngIf="etat.valideLeDocument" severity="success" value="Oui"></p-tag></td>
+                        <td>
+                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionEtat(etat)"></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="5" class="text-center text-500">Aucun état de document.</td></tr>
                 </ng-template>
             </p-table>
         </div>
@@ -107,3 +189,5 @@
 </p-tabView>
 
 <app-document-form-dialog [(visible)]="dialogDocumentVisible" [typesDisponibles]="typesPourCible" (created)="creerDocument($event)"></app-document-form-dialog>
+<app-document-etat-form-dialog [(visible)]="dialogEtatVisible" [itemToEdit]="etatToEdit" (created)="creerEtat($event)" (updated)="modifierEtat($event)"></app-document-etat-form-dialog>
+<app-refuser-document-dialog [(visible)]="dialogRefuserVisible" [etatsDisponibles]="etatsPourRefus" (confirme)="confirmerRefus($event)"></app-refuser-document-dialog>

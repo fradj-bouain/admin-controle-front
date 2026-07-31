@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService as ToastService } from 'primeng/api';
 import { CibleGroupe, DestinataireType } from '../models/message.model';
@@ -57,10 +57,22 @@ export class PlanificationFormPageComponent implements OnInit {
         this.entrepriseService.lister().subscribe((entreprises) => { this.entreprises = entreprises; this.recalculerDestinataires(); });
         this.utilisateurService.lister().subscribe((utilisateurs) => { this.utilisateurs = utilisateurs; this.recalculerDestinataires(); });
         this.form.controls.destinataireType.valueChanges.subscribe(() => this.recalculerDestinataires());
+        this.form.controls.cibleGroupe.valueChanges.subscribe((cibleGroupe) => {
+            this.majValidateurConditionnel(this.form.controls.destinataireId, cibleGroupe === 'SPECIFIQUE');
+        });
     }
 
     get estSpecifique(): boolean {
         return this.form.value.cibleGroupe === 'SPECIFIQUE';
+    }
+
+    private majValidateurConditionnel(control: AbstractControl, requis: boolean) {
+        if (requis) {
+            control.setValidators(Validators.required);
+        } else {
+            control.clearValidators();
+        }
+        control.updateValueAndValidity();
     }
 
     private recalculerDestinataires() {
@@ -77,7 +89,7 @@ export class PlanificationFormPageComponent implements OnInit {
     }
 
     annuler() {
-        this.router.navigate(['/messagerie/planification']);
+        this.router.navigate(['/messagerie'], { queryParams: { tab: 'planification' } });
     }
 
     submit() {
@@ -97,7 +109,7 @@ export class PlanificationFormPageComponent implements OnInit {
             contenu: value.contenu!,
             dateEnvoiPrevue: value.dateEnvoiPrevue!.toISOString()
         }).subscribe({
-            next: () => this.router.navigate(['/messagerie/planification']),
+            next: () => this.router.navigate(['/messagerie'], { queryParams: { tab: 'planification' } }),
             error: () => {
                 this.saving = false;
                 this.toast.add({ severity: 'error', summary: 'Erreur', detail: 'Planification impossible' });

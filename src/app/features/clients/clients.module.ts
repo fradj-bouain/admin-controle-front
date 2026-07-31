@@ -1,4 +1,5 @@
 import { NgModule } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TooltipModule } from 'primeng/tooltip';
 import { SharedModule } from '../../shared/shared.module';
@@ -8,6 +9,6 @@ import { ClientDetailComponent } from './client-detail/client-detail.component';
 
 @NgModule({
     declarations: [ClientListComponent, ClientDetailComponent],
-    imports: [SharedModule, ClientsRoutingModule, RouterModule, TooltipModule]
+    imports: [SharedModule, ClientsRoutingModule, RouterModule, TooltipModule, FormsModule]
 })
 export class ClientsModule { }

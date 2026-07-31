@@ -18,4 +18,12 @@ export class UtilisateurService {
     creer(request: CreateUtilisateurRequest): Observable<Utilisateur> {
         return this.http.post<Utilisateur>(this.baseUrl, request);
     }
+
+    desactiver(id: string): Observable<Utilisateur> {
+        return this.http.post<Utilisateur>(`${this.baseUrl}/${id}/desactiver`, {});
+    }
+
+    activer(id: string): Observable<Utilisateur> {
+        return this.http.post<Utilisateur>(`${this.baseUrl}/${id}/activer`, {});
+    }
 }

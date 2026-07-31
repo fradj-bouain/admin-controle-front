@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { UtilisateurService } from '../services/utilisateur.service';
@@ -55,6 +55,22 @@ export class UtilisateurFormPageComponent implements OnInit {
         if (clientId) {
             this.form.patchValue({ clientId, roles: ['CLIENT'] });
         }
+
+        this.form.controls.roles.valueChanges.subscribe((roles) => {
+            this.majValidateurConditionnel(this.form.controls.entrepriseId, (roles ?? []).includes('ENTREPRISE'));
+            this.majValidateurConditionnel(this.form.controls.clientId, (roles ?? []).includes('CLIENT'));
+            this.majValidateurConditionnel(this.form.controls.controleTiersId, (roles ?? []).includes('CONTROLEUR'));
+        });
+    }
+
+    private majValidateurConditionnel(control: AbstractControl, requis: boolean) {
+        if (requis) {
+            control.setValidators(Validators.required);
+        } else {
+            control.clearValidators();
+            control.setValue('');
+        }
+        control.updateValueAndValidity();
     }
 
     annuler() {

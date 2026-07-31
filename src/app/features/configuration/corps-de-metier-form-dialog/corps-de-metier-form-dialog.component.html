@@ -1,5 +1,5 @@
 <p-dialog
-    header="Nouveau corps de métier"
+    [header]="itemToEdit ? 'Modifier le corps de métier' : 'Nouveau corps de métier'"
     [(visible)]="visible"
     (visibleChange)="visibleChange.emit($event)"
     [modal]="true"
@@ -9,7 +9,8 @@
     <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
         <div class="field">
             <label for="libelle">Libellé *</label>
-            <input id="libelle" type="text" pInputText formControlName="libelle" class="w-full" />
+            <input id="libelle" type="text" pInputText formControlName="libelle" class="w-full" [class.ng-dirty]="form.controls.libelle.touched" />
+            <small class="p-error" *ngIf="form.controls.libelle.invalid && form.controls.libelle.touched">Ce champ est requis.</small>
         </div>
     </form>
 

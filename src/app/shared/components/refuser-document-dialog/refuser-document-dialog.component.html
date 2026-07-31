@@ -1,0 +1,30 @@
+<p-dialog
+    header="Motif de refus"
+    [(visible)]="visible"
+    (visibleChange)="visibleChange.emit($event)"
+    [modal]="true"
+    [style]="{ width: '26rem' }"
+    (onHide)="close()"
+>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
+        <div class="field">
+            <label for="documentEtatId">État *</label>
+            <p-dropdown
+                id="documentEtatId"
+                [options]="etatsDisponibles"
+                formControlName="documentEtatId"
+                optionLabel="titre"
+                optionValue="id"
+                [filter]="true"
+                filterBy="titre"
+                placeholder="-- Sélectionner un motif --"
+                class="w-full"
+            ></p-dropdown>
+        </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="Annuler" class="p-button-text" (click)="close()"></button>
+        <button pButton type="button" label="Refuser" class="p-button-danger" (click)="submit()"></button>
+    </ng-template>
+</p-dialog>

@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ControleService } from '../services/controle.service';
@@ -16,12 +16,12 @@ export class RapportFormPageComponent implements OnInit {
     dateControle: string | null = null;
 
     form = this.fb.group({
-        nbSalariesControles: [0],
-        nbAccords: [0],
-        nbRefus: [0],
-        nbNouvellesEntreprises: [0],
-        nbNouveauxSalaries: [0],
-        nbSalariesDetaches: [0]
+        nbSalariesControles: [0, Validators.min(0)],
+        nbAccords: [0, Validators.min(0)],
+        nbRefus: [0, Validators.min(0)],
+        nbNouvellesEntreprises: [0, Validators.min(0)],
+        nbNouveauxSalaries: [0, Validators.min(0)],
+        nbSalariesDetaches: [0, Validators.min(0)]
     });
 
     constructor(
@@ -42,6 +42,10 @@ export class RapportFormPageComponent implements OnInit {
     }
 
     submit() {
+        if (this.form.invalid) {
+            this.form.markAllAsTouched();
+            return;
+        }
         const value = this.form.getRawValue();
         this.saving = true;
         this.controleService.genererRapport({

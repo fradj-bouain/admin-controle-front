@@ -33,13 +33,15 @@
             <form [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
                 <div class="field">
                     <label for="raisonSociale">Nom *</label>
-                    <input id="raisonSociale" type="text" pInputText formControlName="raisonSociale" />
+                    <input id="raisonSociale" type="text" pInputText formControlName="raisonSociale" [class.ng-dirty]="coordonneesForm.controls.raisonSociale.touched" />
+                    <small class="p-error" *ngIf="coordonneesForm.controls.raisonSociale.invalid && coordonneesForm.controls.raisonSociale.touched">Ce champ est requis.</small>
                 </div>
 
                 <div class="formgrid grid">
                     <div class="field col-12 md:col-4">
-                        <label for="adresse">Adresse</label>
-                        <input id="adresse" type="text" pInputText formControlName="adresse" />
+                        <label for="adresse">Adresse *</label>
+                        <input id="adresse" type="text" pInputText formControlName="adresse" [class.ng-dirty]="coordonneesForm.controls.adresse.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.adresse.invalid && coordonneesForm.controls.adresse.touched">Ce champ est requis.</small>
                     </div>
                     <div class="field col-12 md:col-4">
                         <label for="adresse2">Adresse complément n°1</label>
@@ -53,11 +55,12 @@
 
                 <div class="formgrid grid">
                     <div class="field col-12 md:col-6">
-                        <label for="ville">Ville</label>
-                        <input id="ville" type="text" pInputText formControlName="ville" />
+                        <label for="ville">Ville *</label>
+                        <input id="ville" type="text" pInputText formControlName="ville" [class.ng-dirty]="coordonneesForm.controls.ville.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.ville.invalid && coordonneesForm.controls.ville.touched">Ce champ est requis.</small>
                     </div>
                     <div class="field col-12 md:col-6">
-                        <label for="paysId">Pays</label>
+                        <label for="paysId">Pays *</label>
                         <p-dropdown
                             id="paysId"
                             [options]="pays"
@@ -67,14 +70,17 @@
                             [filter]="true"
                             filterBy="nom"
                             placeholder="Sélectionner un pays"
+                            [class.ng-dirty]="coordonneesForm.controls.paysId.touched"
                         ></p-dropdown>
+                        <small class="p-error" *ngIf="coordonneesForm.controls.paysId.invalid && coordonneesForm.controls.paysId.touched">Ce champ est requis.</small>
                     </div>
                 </div>
 
                 <div class="formgrid grid">
                     <div class="field col-12 md:col-4">
-                        <label for="telephone">Tel</label>
-                        <input id="telephone" type="text" pInputText formControlName="telephone" />
+                        <label for="telephone">Tel *</label>
+                        <input id="telephone" type="text" pInputText formControlName="telephone" [class.ng-dirty]="coordonneesForm.controls.telephone.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.telephone.invalid && coordonneesForm.controls.telephone.touched">Ce champ est requis.</small>
                     </div>
                     <div class="field col-12 md:col-4">
                         <label for="telephone2">Tel 2</label>
@@ -88,21 +94,25 @@
 
                 <div class="field">
                     <label for="email">Email</label>
-                    <input id="email" type="email" pInputText formControlName="email" />
+                    <input id="email" type="email" pInputText formControlName="email" [class.ng-dirty]="coordonneesForm.controls.email.touched" />
+                    <small class="p-error" *ngIf="coordonneesForm.controls.email.invalid && coordonneesForm.controls.email.touched">Adresse email invalide.</small>
                 </div>
 
                 <div class="formgrid grid">
                     <div class="field col-12 md:col-4">
-                        <label for="siren">Siren</label>
-                        <input id="siren" type="text" pInputText formControlName="siren" />
+                        <label for="siren">Siren *</label>
+                        <input id="siren" type="text" pInputText formControlName="siren" [class.ng-dirty]="coordonneesForm.controls.siren.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.siren.invalid && coordonneesForm.controls.siren.touched">Ce champ est requis.</small>
                     </div>
                     <div class="field col-12 md:col-4">
-                        <label for="siret">Siret</label>
-                        <input id="siret" type="text" pInputText formControlName="siret" />
+                        <label for="siret">Siret *</label>
+                        <input id="siret" type="text" pInputText formControlName="siret" [class.ng-dirty]="coordonneesForm.controls.siret.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.siret.invalid && coordonneesForm.controls.siret.touched">Ce champ est requis.</small>
                     </div>
                     <div class="field col-12 md:col-4">
-                        <label for="rcsRci">RCS / RCI</label>
-                        <input id="rcsRci" type="text" pInputText formControlName="rcsRci" />
+                        <label for="rcsRci">RCS / RCI *</label>
+                        <input id="rcsRci" type="text" pInputText formControlName="rcsRci" [class.ng-dirty]="coordonneesForm.controls.rcsRci.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.rcsRci.invalid && coordonneesForm.controls.rcsRci.touched">Ce champ est requis.</small>
                     </div>
                 </div>
 

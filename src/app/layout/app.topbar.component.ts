@@ -14,6 +14,7 @@ export class AppTopbarComponent {
     @ViewChild('menubutton') menuButton!: ElementRef;
 
     readonly languages = environment.supportedLanguages;
+    readonly languageOptions = this.languages.map((lang) => ({ label: lang.toUpperCase(), value: lang }));
 
     constructor(
         public layoutService: LayoutService,

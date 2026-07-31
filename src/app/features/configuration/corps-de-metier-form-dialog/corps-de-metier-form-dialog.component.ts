@@ -1,22 +1,32 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { CreateCorpsDeMetierRequest } from '../models/configuration.model';
+import { CorpsDeMetier, CreateCorpsDeMetierRequest } from '../models/configuration.model';
 
 @Component({
     selector: 'app-corps-de-metier-form-dialog',
     templateUrl: './corps-de-metier-form-dialog.component.html'
 })
-export class CorpsDeMetierFormDialogComponent {
+export class CorpsDeMetierFormDialogComponent implements OnChanges {
 
     @Input() visible = false;
+    @Input() itemToEdit: CorpsDeMetier | null = null;
     @Output() visibleChange = new EventEmitter<boolean>();
     @Output() created = new EventEmitter<CreateCorpsDeMetierRequest>();
+    @Output() updated = new EventEmitter<{ id: string; request: CreateCorpsDeMetierRequest }>();
 
     form = this.fb.group({
         libelle: ['', Validators.required]
     });
 
     constructor(private fb: FormBuilder) { }
+
+    ngOnChanges(): void {
+        if (this.itemToEdit) {
+            this.form.patchValue(this.itemToEdit);
+        } else {
+            this.form.reset();
+        }
+    }
 
     close() {
         this.visible = false;
@@ -29,7 +39,12 @@ export class CorpsDeMetierFormDialogComponent {
             this.form.markAllAsTouched();
             return;
         }
-        this.created.emit({ libelle: this.form.getRawValue().libelle! });
+        const request: CreateCorpsDeMetierRequest = { libelle: this.form.getRawValue().libelle! };
+        if (this.itemToEdit) {
+            this.updated.emit({ id: this.itemToEdit.id, request });
+        } else {
+            this.created.emit(request);
+        }
         this.close();
     }
 }

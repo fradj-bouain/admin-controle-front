@@ -1,0 +1,33 @@
+<p-dialog
+    [header]="itemToEdit ? 'Modifier l\'état' : 'Nouvel état de document'"
+    [(visible)]="visible"
+    (visibleChange)="visibleChange.emit($event)"
+    [modal]="true"
+    [style]="{ width: '26rem' }"
+    (onHide)="close()"
+>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
+        <div class="field">
+            <label for="titre">Nom de l'état *</label>
+            <input id="titre" type="text" pInputText formControlName="titre" class="w-full" [class.ng-dirty]="form.controls.titre.touched" />
+            <small class="p-error" *ngIf="form.controls.titre.invalid && form.controls.titre.touched">Ce champ est requis.</small>
+        </div>
+        <div class="field-checkbox">
+            <p-checkbox [binary]="true" formControlName="parDefaut" inputId="parDefaut"></p-checkbox>
+            <label for="parDefaut" class="ml-2">État par défaut ?</label>
+        </div>
+        <div class="field-checkbox">
+            <p-checkbox [binary]="true" formControlName="dateExpiree" inputId="dateExpiree"></p-checkbox>
+            <label for="dateExpiree" class="ml-2">État de date expirée ?</label>
+        </div>
+        <div class="field-checkbox">
+            <p-checkbox [binary]="true" formControlName="valideLeDocument" inputId="valideLeDocument"></p-checkbox>
+            <label for="valideLeDocument" class="ml-2">Valide le document ?</label>
+        </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="Annuler" class="p-button-text" (click)="close()"></button>
+        <button pButton type="button" label="Enregistrer" (click)="submit()"></button>
+    </ng-template>
+</p-dialog>
