@@ -32,7 +32,16 @@ export class DocumentListComponent implements OnInit {
     etatToEdit: DocumentEtat | null = null;
     dialogRefuserVisible = false;
     documentARefuser: DocumentItem | null = null;
+    dialogNotifierVisible = false;
+    documentANotifier: DocumentItem | null = null;
+    emailsCandidatsNotification: string[] = [];
+    sujetNotification = '';
     activeTabIndex = 0;
+
+    // Deep-link depuis un email de notification : ouvre directement le document
+    // visé (au lieu d'obliger à re-sélectionner cible + salarié/entreprise).
+    documentHighlightId: string | null = null;
+    tableFirst = 0;
 
     // Champs calculés une seule fois par changement de source (pas des getters) :
     // un p-dropdown filtrable lié à un getter qui renvoie un nouveau tableau à
@@ -55,8 +64,8 @@ export class DocumentListComponent implements OnInit {
     ) { }
 
     ngOnInit(): void {
-        this.activeTabIndex = this.route.snapshot.queryParamMap.get('tab') === 'types' ? 1
-            : this.route.snapshot.queryParamMap.get('tab') === 'etats' ? 2 : 0;
+        const params = this.route.snapshot.queryParamMap;
+        this.activeTabIndex = params.get('tab') === 'types' ? 1 : params.get('tab') === 'etats' ? 2 : 0;
         this.chargerTypes();
         this.chargerEtats();
         this.salarieService.lister().subscribe((salaries) => {
@@ -67,6 +76,16 @@ export class DocumentListComponent implements OnInit {
             this.entreprises = entreprises;
             this.recalculerEntitesDisponibles();
         });
+
+        const type = params.get('type');
+        const entiteId = params.get('entiteId');
+        if ((type === 'SALARIE' || type === 'ENTREPRISE') && entiteId) {
+            this.cible = type;
+            this.entiteId = entiteId;
+            this.documentHighlightId = params.get('documentId');
+            this.recalculerTypesPourCible();
+            this.onEntiteChange();
+        }
     }
 
     chargerTypes() {
@@ -107,7 +126,13 @@ export class DocumentListComponent implements OnInit {
         const obs = this.cible === 'SALARIE'
             ? this.documentService.listerParSalarie(this.entiteId)
             : this.documentService.listerParEntreprise(this.entiteId);
-        obs.subscribe((documents) => (this.documents = documents));
+        obs.subscribe((documents) => {
+            this.documents = documents;
+            if (this.documentHighlightId) {
+                const index = documents.findIndex((d) => d.id === this.documentHighlightId);
+                this.tableFirst = index >= 0 ? Math.floor(index / 10) * 10 : 0;
+            }
+        });
     }
 
     creerDocument(data: { typeDocumentId: string; dateExpiration?: string; fichierUrl?: string }) {
@@ -160,6 +185,40 @@ export class DocumentListComponent implements OnInit {
             },
             error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Refus impossible' })
         });
+    }
+
+    ouvrirNotification(document: DocumentItem) {
+        this.documentANotifier = document;
+        this.emailsCandidatsNotification = this.emailsPourDocument(document);
+        this.sujetNotification = `Document à corriger : ${this.libelleType(document.typeDocumentId)}`;
+        this.dialogNotifierVisible = true;
+    }
+
+    confirmerNotification(payload: { email: string; sujet: string; description: string }) {
+        if (!this.documentANotifier) {
+            return;
+        }
+        this.documentService.notifier(this.documentANotifier.id, payload).subscribe({
+            next: () => {
+                this.documentANotifier = null;
+                this.message.add({ severity: 'success', summary: 'Succès', detail: 'Notification envoyée' });
+            },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Envoi impossible' })
+        });
+    }
+
+    // Le salarié n'a pas d'adresse email dans le système : on notifie son
+    // entreprise employeuse (ou l'entreprise elle-même si le document la cible
+    // directement) sur ses 3 emails éventuels, choisissables dans le dialogue.
+    private emailsPourDocument(document: DocumentItem): string[] {
+        let entreprise: Entreprise | undefined;
+        if (document.entrepriseId) {
+            entreprise = this.entreprises.find((e) => e.id === document.entrepriseId);
+        } else if (document.salarieId) {
+            const salarie = this.salaries.find((s) => s.id === document.salarieId);
+            entreprise = salarie ? this.entreprises.find((e) => e.id === salarie.entrepriseEmployeurId) : undefined;
+        }
+        return [entreprise?.email, entreprise?.email2, entreprise?.email3].filter((e): e is string => !!e);
     }
 
     ouvrirCreationEtat() {

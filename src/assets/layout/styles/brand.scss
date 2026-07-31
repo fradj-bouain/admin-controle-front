@@ -528,3 +528,8 @@ a { color: var(--brand-accent-ink); }
 .doc-row.missing {
     background: var(--brand-danger-tint);
 }
+
+/* Ligne ciblée par un lien de notification (ex: email "document à corriger") */
+.p-datatable .p-datatable-tbody > tr.row-highlight {
+    background: var(--brand-accent-tint) !important;
+}

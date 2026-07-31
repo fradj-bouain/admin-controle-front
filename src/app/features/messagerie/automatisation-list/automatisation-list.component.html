@@ -11,7 +11,7 @@
         </ng-template>
     </p-toolbar>
 
-    <p-table #dt [value]="regles" dataKey="id" [loading]="loading">
+    <p-table #dt [value]="regles" dataKey="id" [loading]="loading" [paginator]="true" [rows]="10">
         <ng-template pTemplate="header">
             <tr>
                 <th>N° / Titre interne</th>

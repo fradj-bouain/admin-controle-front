@@ -43,7 +43,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtDocuments [value]="documents" dataKey="id">
+            <p-table #dtDocuments [value]="documents" dataKey="id" [paginator]="true" [rows]="10" [first]="tableFirst">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Type</th>
@@ -67,7 +67,7 @@
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-document>
-                    <tr>
+                    <tr [class.row-highlight]="document.id === documentHighlightId">
                         <td>{{ libelleType(document.typeDocumentId) }}</td>
                         <td>{{ document.dateExpiration }}</td>
                         <td>
@@ -81,6 +81,7 @@
                             <div class="flex align-items-center gap-1 flex-nowrap">
                                 <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="document.statutValidation !== 'VALIDE'" (click)="valider(document)"></button>
                                 <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="document.statutValidation !== 'REFUSE'" (click)="ouvrirRefus(document)"></button>
+                                <button pButton type="button" icon="pi pi-envelope" class="p-button-text p-button-rounded" pTooltip="Notifier par email" (click)="ouvrirNotification(document)"></button>
                             </div>
                         </td>
                     </tr>
@@ -100,7 +101,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtTypes [value]="types" dataKey="id">
+            <p-table #dtTypes [value]="types" dataKey="id" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Libellé</th>
@@ -152,7 +153,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtEtats [value]="etats" dataKey="id">
+            <p-table #dtEtats [value]="etats" dataKey="id" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Nom de l'état</th>
@@ -191,3 +192,4 @@
 <app-document-form-dialog [(visible)]="dialogDocumentVisible" [typesDisponibles]="typesPourCible" (created)="creerDocument($event)"></app-document-form-dialog>
 <app-document-etat-form-dialog [(visible)]="dialogEtatVisible" [itemToEdit]="etatToEdit" (created)="creerEtat($event)" (updated)="modifierEtat($event)"></app-document-etat-form-dialog>
 <app-refuser-document-dialog [(visible)]="dialogRefuserVisible" [etatsDisponibles]="etatsPourRefus" (confirme)="confirmerRefus($event)"></app-refuser-document-dialog>
+<app-notifier-document-dialog [(visible)]="dialogNotifierVisible" [emailsCandidats]="emailsCandidatsNotification" [sujetParDefaut]="sujetNotification" (confirme)="confirmerNotification($event)"></app-notifier-document-dialog>

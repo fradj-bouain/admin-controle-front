@@ -1,0 +1,40 @@
+<p-dialog
+    header="Notifier par email"
+    [(visible)]="visible"
+    (visibleChange)="visibleChange.emit($event)"
+    [modal]="true"
+    [style]="{ width: '32rem' }"
+    (onHide)="close()"
+>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
+        <div class="field">
+            <label for="email">Destinataire *</label>
+            <p-dropdown
+                id="email"
+                [options]="emailsCandidats"
+                formControlName="email"
+                [editable]="true"
+                placeholder="Adresse email"
+                class="w-full"
+                [class.ng-dirty]="form.controls.email.touched"
+            ></p-dropdown>
+            <small class="p-error" *ngIf="form.controls.email.invalid && form.controls.email.touched">Adresse email valide requise.</small>
+        </div>
+        <div class="field">
+            <label for="sujet">Sujet *</label>
+            <input id="sujet" type="text" pInputText formControlName="sujet" class="w-full" [class.ng-dirty]="form.controls.sujet.touched" />
+            <small class="p-error" *ngIf="form.controls.sujet.invalid && form.controls.sujet.touched">Ce champ est requis.</small>
+        </div>
+        <div class="field">
+            <label for="description">Description *</label>
+            <textarea id="description" pInputTextarea formControlName="description" rows="5" class="w-full" [class.ng-dirty]="form.controls.description.touched" placeholder="Expliquez au destinataire ce qui doit être corrigé..."></textarea>
+            <small class="p-error" *ngIf="form.controls.description.invalid && form.controls.description.touched">Ce champ est requis.</small>
+            <small class="text-500">Un lien vers ce document précis sera automatiquement ajouté à la fin du message.</small>
+        </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="Annuler" class="p-button-text" (click)="close()"></button>
+        <button pButton type="button" label="Envoyer" icon="pi pi-send" (click)="submit()"></button>
+    </ng-template>
+</p-dialog>

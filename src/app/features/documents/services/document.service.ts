@@ -30,4 +30,8 @@ export class DocumentService {
     refuser(id: string, documentEtatId: string): Observable<DocumentItem> {
         return this.http.post<DocumentItem>(`${this.baseUrl}/${id}/refuser`, { documentEtatId });
     }
+
+    notifier(id: string, request: { email: string; sujet: string; description: string }): Observable<void> {
+        return this.http.post<void>(`${this.baseUrl}/${id}/notifier`, request);
+    }
 }

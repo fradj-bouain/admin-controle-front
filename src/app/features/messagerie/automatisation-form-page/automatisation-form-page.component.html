@@ -1,54 +1,63 @@
 <p-toast></p-toast>
 
-<div class="card" style="max-width: 720px;">
-    <div class="flex align-items-center gap-3 mb-4">
+<div class="card mb-3">
+    <div class="flex align-items-center gap-3">
         <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="annuler()"></button>
         <h5 class="m-0">{{ isNew ? "Nouvelle règle d'automatisation" : 'Modifier la règle' }}</h5>
     </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <i class="pi pi-envelope"></i>
+        <h6>Automatisation d'envoi d'emails</h6>
+    </div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
+        <div class="field-checkbox">
+            <p-checkbox [(ngModel)]="actifCosmetique" [ngModelOptions]="{standalone: true}" [binary]="true" inputId="actifCosmetique"></p-checkbox>
+            <label for="actifCosmetique" class="ml-2">Actif ?</label>
+        </div>
+
         <div class="formgrid grid">
-            <div class="field col-12 md:col-6">
+            <div class="field col-12 md:col-4">
                 <label for="nom">Nom *</label>
                 <input id="nom" type="text" pInputText formControlName="nom" [class.ng-dirty]="form.controls.nom.touched" />
                 <small class="p-error" *ngIf="form.controls.nom.invalid && form.controls.nom.touched">Ce champ est requis.</small>
             </div>
-            <div class="field col-12 md:col-3">
+            <div class="field col-12 md:col-4">
                 <label for="numeroInterne">Numéro interne</label>
                 <input id="numeroInterne" type="text" pInputText formControlName="numeroInterne" />
             </div>
-            <div class="field col-12 md:col-3">
+            <div class="field col-12 md:col-4">
                 <label for="titreInterne">Titre interne</label>
                 <input id="titreInterne" type="text" pInputText formControlName="titreInterne" />
             </div>
         </div>
 
-        <div class="field">
-            <label for="typeDeclencheur">Déclencheur *</label>
-            <p-dropdown id="typeDeclencheur" [options]="typesDeclencheur" formControlName="typeDeclencheur" optionLabel="label" optionValue="value" [class.ng-dirty]="form.controls.typeDeclencheur.touched"></p-dropdown>
-            <small class="p-error" *ngIf="form.controls.typeDeclencheur.invalid && form.controls.typeDeclencheur.touched">Ce champ est requis.</small>
-        </div>
-
-        <div class="formgrid grid" *ngIf="estChampSurveillable || afficherNbJoursAvant">
-            <div class="field col-12 md:col-6" *ngIf="estChampSurveillable">
-                <label for="champSurveillableId">Champ surveillé *</label>
-                <p-dropdown id="champSurveillableId" [options]="champsSurveillables" formControlName="champSurveillableId" optionValue="id" placeholder="-- Choisir --" [class.ng-dirty]="form.controls.champSurveillableId.touched">
-                    <ng-template let-c pTemplate="item">{{ c?.entiteLibelle }} — {{ c?.champLibelle }}</ng-template>
-                    <ng-template let-c pTemplate="selectedItem">{{ c?.entiteLibelle }} — {{ c?.champLibelle }}</ng-template>
-                </p-dropdown>
-                <small class="p-error" *ngIf="form.controls.champSurveillableId.invalid && form.controls.champSurveillableId.touched">Ce champ est requis.</small>
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-8">
+                <label for="sujet">Titre de l'email / document PDF *</label>
+                <input id="sujet" type="text" pInputText formControlName="sujet" [class.ng-dirty]="form.controls.sujet.touched" />
+                <small class="p-error" *ngIf="form.controls.sujet.invalid && form.controls.sujet.touched">Ce champ est requis.</small>
             </div>
-            <div class="field col-12 md:col-6" *ngIf="afficherNbJoursAvant">
-                <label for="nbJoursAvant">{{ libelleNbJoursAvant }} *</label>
-                <input id="nbJoursAvant" type="number" min="0" pInputText formControlName="nbJoursAvant" [class.ng-dirty]="form.controls.nbJoursAvant.touched" />
-                <small class="p-error" *ngIf="form.controls.nbJoursAvant.invalid && form.controls.nbJoursAvant.touched">Doit être un nombre de jours positif ou nul.</small>
+            <div class="field col-12 md:col-4 flex align-items-center" style="margin-top: 1.75rem;">
+                <p-checkbox [(ngModel)]="concerneUniquementClient" [ngModelOptions]="{standalone: true}" [binary]="true" inputId="concerneClient"></p-checkbox>
+                <label for="concerneClient" class="ml-2">Concerne uniquement le client ?</label>
             </div>
         </div>
 
-        <div class="field">
-            <label for="cibleGroupe">Destinataires *</label>
-            <p-dropdown id="cibleGroupe" [options]="ciblesGroupe" formControlName="cibleGroupe" optionLabel="label" optionValue="value" [class.ng-dirty]="form.controls.cibleGroupe.touched"></p-dropdown>
-            <small class="p-error" *ngIf="form.controls.cibleGroupe.invalid && form.controls.cibleGroupe.touched">Ce champ est requis.</small>
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-6">
+                <label for="cibleGroupe">Destiné à tous les *</label>
+                <p-dropdown id="cibleGroupe" [options]="ciblesGroupe" formControlName="cibleGroupe" optionLabel="label" optionValue="value" [class.ng-dirty]="form.controls.cibleGroupe.touched"></p-dropdown>
+                <small class="p-error" *ngIf="form.controls.cibleGroupe.invalid && form.controls.cibleGroupe.touched">Ce champ est requis.</small>
+            </div>
+            <div class="field col-12 md:col-6">
+                <label for="typeDeclencheur">Envoi à chaque... *</label>
+                <p-dropdown id="typeDeclencheur" [options]="typesDeclencheur" formControlName="typeDeclencheur" optionLabel="label" optionValue="value" [class.ng-dirty]="form.controls.typeDeclencheur.touched"></p-dropdown>
+                <small class="p-error" *ngIf="form.controls.typeDeclencheur.invalid && form.controls.typeDeclencheur.touched">Ce champ est requis.</small>
+            </div>
         </div>
 
         <div class="formgrid grid" *ngIf="estSpecifique">
@@ -73,22 +82,46 @@
             </div>
         </div>
 
-        <div class="field">
-            <label for="sujet">Sujet *</label>
-            <input id="sujet" type="text" pInputText formControlName="sujet" [class.ng-dirty]="form.controls.sujet.touched" />
-            <small class="p-error" *ngIf="form.controls.sujet.invalid && form.controls.sujet.touched">Ce champ est requis.</small>
+        <div class="formgrid grid" *ngIf="estChampSurveillable || afficherNbJoursAvant">
+            <div class="field col-12 md:col-6" *ngIf="estChampSurveillable">
+                <label for="champSurveillableId">Champ surveillé *</label>
+                <p-dropdown id="champSurveillableId" [options]="champsSurveillables" formControlName="champSurveillableId" optionValue="id" placeholder="-- Choisir --" [class.ng-dirty]="form.controls.champSurveillableId.touched">
+                    <ng-template let-c pTemplate="item">{{ c?.entiteLibelle }} — {{ c?.champLibelle }}</ng-template>
+                    <ng-template let-c pTemplate="selectedItem">{{ c?.entiteLibelle }} — {{ c?.champLibelle }}</ng-template>
+                </p-dropdown>
+                <small class="p-error" *ngIf="form.controls.champSurveillableId.invalid && form.controls.champSurveillableId.touched">Ce champ est requis.</small>
+            </div>
+            <div class="field col-12 md:col-6" *ngIf="afficherNbJoursAvant">
+                <label for="nbJoursAvant">Si besoin de relancer : {{ libelleNbJoursAvant }} *</label>
+                <input id="nbJoursAvant" type="number" min="0" pInputText formControlName="nbJoursAvant" [class.ng-dirty]="form.controls.nbJoursAvant.touched" />
+                <small class="p-error" *ngIf="form.controls.nbJoursAvant.invalid && form.controls.nbJoursAvant.touched">Doit être un nombre de jours positif ou nul.</small>
+            </div>
         </div>
 
         <div class="field">
-            <label for="contenu">Message *</label>
-            <textarea id="contenu" pInputTextarea formControlName="contenu" rows="6" [class.ng-dirty]="form.controls.contenu.touched"></textarea>
+            <label for="fichierModele">Fichier modèle ODT / PDF</label>
+            <div class="flex align-items-center gap-2">
+                <label for="fichierModele" pButton type="button" icon="pi pi-upload" label="Choisir un fichier" class="p-button-outlined w-auto" style="cursor: pointer;"></label>
+                <input id="fichierModele" type="file" accept=".odt,.pdf" class="p-hidden-accessible" (change)="onFichierChange($event)" />
+                <span class="text-500">{{ fichierModeleNom || 'Aucun fichier sélectionné' }}</span>
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="contenu">Contenu du 1er email *</label>
+            <p-editor formControlName="contenu" [style]="{ height: '220px' }" [class.ng-dirty]="form.controls.contenu.touched"></p-editor>
             <small class="p-error" *ngIf="form.controls.contenu.invalid && form.controls.contenu.touched">Ce champ est requis.</small>
-            <small class="text-500 block">Balises disponibles : [DATE], [CHANTIER_NOM], [DOCUMENT_LIBELLE]</small>
+            <small class="text-500 block mt-1">Balises disponibles : [DATE], [CHANTIER_NOM], [DOCUMENT_LIBELLE]</small>
+        </div>
+
+        <div class="field">
+            <label for="noteBasDePage">Note de bas de page</label>
+            <textarea id="noteBasDePage" pInputTextarea rows="3" [(ngModel)]="noteBasDePage" [ngModelOptions]="{standalone: true}"></textarea>
         </div>
 
         <div class="flex justify-content-end gap-2 mt-4">
-            <button pButton type="button" label="Annuler" class="p-button-text" (click)="annuler()"></button>
-            <button pButton type="submit" [label]="isNew ? 'Créer' : 'Enregistrer'" icon="pi pi-check" [loading]="saving"></button>
+            <button pButton type="button" label="Revenir à la liste" icon="pi pi-undo" class="p-button-text" (click)="annuler()"></button>
+            <button pButton type="submit" [label]="isNew ? 'Ajouter' : 'Enregistrer'" icon="pi pi-check" [loading]="saving"></button>
         </div>
     </form>
 </div>

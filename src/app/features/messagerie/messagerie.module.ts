@@ -4,6 +4,8 @@ import { RouterModule } from '@angular/router';
 import { TabViewModule } from 'primeng/tabview';
 import { InputTextareaModule } from 'primeng/inputtextarea';
 import { TooltipModule } from 'primeng/tooltip';
+import { CheckboxModule } from 'primeng/checkbox';
+import { EditorModule } from 'primeng/editor';
 
 import { SharedModule } from '../../shared/shared.module';
 import { MessagerieRoutingModule } from './messagerie-routing.module';
@@ -23,6 +25,6 @@ import { PlanificationFormPageComponent } from './planification-form-page/planif
         PlanificationListComponent,
         PlanificationFormPageComponent
     ],
-    imports: [SharedModule, MessagerieRoutingModule, FormsModule, TabViewModule, InputTextareaModule, TooltipModule, RouterModule]
+    imports: [SharedModule, MessagerieRoutingModule, FormsModule, TabViewModule, InputTextareaModule, TooltipModule, CheckboxModule, EditorModule, RouterModule]
 })
 export class MessagerieModule { }

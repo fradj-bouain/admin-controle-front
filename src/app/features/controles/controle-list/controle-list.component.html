@@ -29,7 +29,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtControles [value]="controles" dataKey="id">
+            <p-table #dtControles [value]="controles" dataKey="id" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Début</th>
@@ -74,7 +74,7 @@
 
     <p-tabPanel header="Rapports">
         <div class="card">
-            <p-table #dtRapports [value]="rapports" dataKey="id">
+            <p-table #dtRapports [value]="rapports" dataKey="id" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Salariés contrôlés</th>
