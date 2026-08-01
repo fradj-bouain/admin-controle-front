@@ -122,13 +122,21 @@
         <ng-template pTemplate="header">
             <tr>
                 <th>Chantier</th>
+                <th>Entreprise</th>
+                <th>Date début</th>
+                <th>Date fin</th>
+                <th>Statut</th>
                 <th>Statut d'accès</th>
                 <th style="width: 8rem"></th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-affectation>
-            <tr>
+            <tr [class.text-500]="!!affectation.dateFin">
                 <td>{{ nomChantier(affectation.chantierId) }}</td>
+                <td>{{ affectation.entrepriseId ? nomEntreprise(affectation.entrepriseId) : '—' }}</td>
+                <td>{{ affectation.dateDebut | date: 'dd/MM/yyyy' }}</td>
+                <td>{{ affectation.dateFin ? (affectation.dateFin | date: 'dd/MM/yyyy') : '—' }}</td>
+                <td><p-tag [severity]="affectation.dateFin ? 'secondary' : 'success'" [value]="affectation.dateFin ? 'Clôturée' : 'Active'"></p-tag></td>
                 <td>
                     <p-tag
                         [severity]="affectation.statutAcces === 'ACCORDE' ? 'success' : (affectation.statutAcces === 'REFUSE' ? 'danger' : 'warning')"
@@ -136,7 +144,7 @@
                     ></p-tag>
                 </td>
                 <td>
-                    <div class="flex align-items-center gap-1 flex-nowrap">
+                    <div class="flex align-items-center gap-1 flex-nowrap" *ngIf="!affectation.dateFin">
                         <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="affectation.statutAcces !== 'ACCORDE'" (click)="accorderAcces(affectation)"></button>
                         <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="affectation.statutAcces !== 'REFUSE'" (click)="refuserAcces(affectation)"></button>
                     </div>
@@ -152,12 +160,15 @@
             <small class="p-error" *ngIf="affectationForm.controls.chantierId.invalid && affectationForm.controls.chantierId.touched">Ce champ est requis.</small>
         </div>
         <div class="field col-12 md:col-5">
-            <label for="affectationEntrepriseChantierId">Entreprise *</label>
-            <p-dropdown id="affectationEntrepriseChantierId" [options]="affectationsEntrepriseDuChantier" formControlName="affectationEntrepriseChantierId" optionValue="id" placeholder="-- Sélectionner une entreprise --" styleClass="w-full" [class.ng-dirty]="affectationForm.controls.affectationEntrepriseChantierId.touched">
-                <ng-template let-a pTemplate="item">{{ nomEntreprise(a?.entrepriseId) }}</ng-template>
-                <ng-template let-a pTemplate="selectedItem">{{ nomEntreprise(a?.entrepriseId) }}</ng-template>
+            <label for="affectationEntrepriseChantierId">Rôle de l'entreprise employeuse sur ce chantier *</label>
+            <p-dropdown id="affectationEntrepriseChantierId" [options]="affectationsEntrepriseDuChantier" formControlName="affectationEntrepriseChantierId" optionValue="id" placeholder="-- Sélectionner --" styleClass="w-full" [class.ng-dirty]="affectationForm.controls.affectationEntrepriseChantierId.touched">
+                <ng-template let-a pTemplate="item">{{ nomEntreprise(a?.entrepriseId) }} ({{ a?.role }})</ng-template>
+                <ng-template let-a pTemplate="selectedItem">{{ nomEntreprise(a?.entrepriseId) }} ({{ a?.role }})</ng-template>
             </p-dropdown>
             <small class="p-error" *ngIf="affectationForm.controls.affectationEntrepriseChantierId.invalid && affectationForm.controls.affectationEntrepriseChantierId.touched">Ce champ est requis.</small>
+            <small class="text-500" *ngIf="affectationForm.value.chantierId && affectationsEntrepriseDuChantier.length === 0">
+                L'entreprise employeuse de ce salarié n'est pas affectée à ce chantier.
+            </small>
         </div>
         <div class="field col-12 md:col-2">
             <button pButton type="submit" label="Ajouter" [disabled]="isNew" class="w-full"></button>
@@ -165,80 +176,105 @@
     </form>
 </div>
 
-<!-- Documents (repliés par défaut, comme sur le site réel) -->
-<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
+<!-- Documents (ouverts par défaut en création : les documents obligatoires
+     doivent être renseignés avant de pouvoir créer le salarié) -->
+<div class="card mb-3">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-folder"></i>
             <h6 class="m-0">Documents</h6>
         </div>
-        <div class="flex align-items-center gap-3" *ngIf="!isNew && afficherDocuments">
+        <div class="flex align-items-center gap-3" *ngIf="isNew || afficherDocuments">
+            <span class="p-input-icon-left">
+                <i class="pi pi-search"></i>
+                <input type="text" pInputText placeholder="Filtrer..." [(ngModel)]="filtreTexte" [ngModelOptions]="{standalone: true}" />
+            </span>
             <div class="flex align-items-center gap-2">
                 <p-checkbox [binary]="true" [(ngModel)]="afficherObligatoireSeulement" inputId="filtreObligatoire"></p-checkbox>
                 <label for="filtreObligatoire">Obligatoire ?</label>
             </div>
-            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" (click)="afficherDocuments = false"></button>
+            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="!isNew" (click)="afficherDocuments = false"></button>
         </div>
     </div>
 
-    <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez le salarié pour activer cette section.</small>
+    <small class="text-500 block mb-3" *ngIf="isNew">Les documents marqués obligatoires doivent être renseignés avant de pouvoir créer ce salarié.</small>
 
     <div *ngIf="!isNew && !afficherDocuments" class="flex align-items-center justify-content-between">
         <a class="cursor-pointer text-primary" (click)="afficherDocuments = true">{{ nbDocumentsManquants }} documents cachés</a>
         <button pButton type="button" label="Mettre à jour les documents" class="p-button-outlined" (click)="afficherDocuments = true"></button>
     </div>
 
-    <div *ngIf="!isNew && afficherDocuments">
+    <div *ngIf="isNew || afficherDocuments">
+        <div class="flex align-items-center justify-content-between mb-3" *ngIf="!isNew && nbTypesDemandesSelection > 0">
+            <span class="text-600">{{ nbTypesDemandesSelection }} document(s) sélectionné(s)</span>
+            <button pButton type="button" icon="pi pi-send" label="Demander à l'entreprise" (click)="demanderDocumentsSelectionnes()"></button>
+        </div>
+
         <div
             *ngFor="let type of typesPourSalarieFiltres"
             class="doc-row"
             [class.missing]="type.obligatoire && !documentsByType[type.id]"
         >
-            <div class="formgrid grid align-items-end px-2">
-                <div class="field col-12 md:col-3 mb-0">
-                    <div class="font-medium">{{ type.libelle }}</div>
-                    <p-tag
-                        *ngIf="documentsByType[type.id]"
+            <div class="doc-row__header">
+                <div class="doc-row__title">
+                    <p-checkbox
+                        *ngIf="!isNew && !documentsByType[type.id]"
+                        [binary]="true"
+                        [(ngModel)]="typesDemandesSelection[type.id]"
+                        [ngModelOptions]="{standalone: true}"
+                        inputId="demande-{{ type.id }}"
                         class="mt-1"
-                        [severity]="documentsByType[type.id].statutValidation === 'VALIDE' ? 'success' : (documentsByType[type.id].statutValidation === 'REFUSE' ? 'danger' : 'warning')"
-                        [value]="documentsByType[type.id].statutValidation"
-                    ></p-tag>
-                    <p-tag *ngIf="!documentsByType[type.id]" class="mt-1" severity="danger" value="Document manquant"></p-tag>
+                        pTooltip="Demander ce document à l'entreprise"
+                    ></p-checkbox>
+                    <span class="doc-row__title-text" [pTooltip]="type.libelle" tooltipPosition="top">{{ type.libelle }}</span>
                 </div>
+                <p-tag
+                    *ngIf="documentsByType[type.id]"
+                    class="doc-row__status"
+                    [severity]="documentsByType[type.id].statutValidation === 'VALIDE' ? 'success' : (documentsByType[type.id].statutValidation === 'REFUSE' ? 'danger' : 'warning')"
+                    [value]="documentsByType[type.id].statutValidation"
+                ></p-tag>
+                <p-tag *ngIf="!documentsByType[type.id]" class="doc-row__status" severity="danger" value="Document manquant"></p-tag>
+            </div>
 
+            <div class="doc-row__fields formgrid grid align-items-end">
                 <ng-container *ngIf="!documentsByType[type.id]; else ligneRenseignee">
-                    <div class="field col-6 md:col-2 mb-0" *ngIf="type.dateDebutValiditeRequise">
+                    <div class="field col-6 md:col-3 mb-0" *ngIf="type.dateDebutValiditeRequise">
                         <label class="text-500 text-sm">Date de validité</label>
                         <p-calendar [(ngModel)]="lignesDocument[type.id].dateDebutValidite" [ngModelOptions]="{standalone: true}" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-calendar>
                     </div>
-                    <div class="field col-6 md:col-2 mb-0" *ngIf="type.dateFinValiditeRequise">
+                    <div class="field col-6 md:col-3 mb-0" *ngIf="type.dateFinValiditeRequise">
                         <label class="text-500 text-sm">Fin de validité</label>
                         <p-calendar [(ngModel)]="lignesDocument[type.id].dateExpiration" [ngModelOptions]="{standalone: true}" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-calendar>
                     </div>
-                    <div class="field col-12 md:col-3 mb-0">
-                        <label class="text-500 text-sm">Fichier (URL)</label>
-                        <input type="text" pInputText [(ngModel)]="lignesDocument[type.id].fichierUrl" [ngModelOptions]="{standalone: true}" placeholder="https://..." class="w-full" />
+                    <div class="field col-12 md:col-4 mb-0">
+                        <label class="text-500 text-sm">Fichier</label>
+                        <div class="flex align-items-center gap-1">
+                            <label [for]="'fichier-salarie-' + type.id" pButton type="button" icon="pi pi-upload" class="p-button-outlined flex-shrink-0" style="cursor: pointer;" pTooltip="Choisir un fichier"></label>
+                            <input [id]="'fichier-salarie-' + type.id" type="file" class="p-hidden-accessible" (change)="onFichierChoisi($event, type.id)" />
+                            <span class="text-sm text-500 white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ lignesDocument[type.id].fichierUrl || 'Aucun fichier' }}</span>
+                        </div>
                     </div>
-                    <div class="field col-12 md:col-2 mb-0">
+                    <div class="field col-12 md:col-2 mb-0" *ngIf="!isNew">
                         <button pButton type="button" label="Renseigner" class="w-full" (click)="renseignerDocument(type)"></button>
                     </div>
                 </ng-container>
 
                 <ng-template #ligneRenseignee>
-                    <div class="field col-6 md:col-2 mb-0" *ngIf="type.dateDebutValiditeRequise">
+                    <div class="field col-6 md:col-3 mb-0" *ngIf="type.dateDebutValiditeRequise">
                         <label class="text-500 text-sm">Date de validité</label>
                         <p class="m-0">{{ documentsByType[type.id].dateDebutValidite || '—' }}</p>
                     </div>
-                    <div class="field col-6 md:col-2 mb-0" *ngIf="type.dateFinValiditeRequise">
+                    <div class="field col-6 md:col-3 mb-0" *ngIf="type.dateFinValiditeRequise">
                         <label class="text-500 text-sm">Fin de validité</label>
                         <p class="m-0">{{ documentsByType[type.id].dateExpiration || '—' }}</p>
                     </div>
-                    <div class="field col-12 md:col-3 mb-0">
+                    <div class="field col-12 md:col-4 mb-0">
                         <label class="text-500 text-sm">Fichier</label>
-                        <p class="m-0">
-                            <a *ngIf="documentsByType[type.id].fichierUrl" [href]="documentsByType[type.id].fichierUrl" target="_blank" rel="noopener">Voir le fichier</a>
-                            <span *ngIf="!documentsByType[type.id].fichierUrl">—</span>
+                        <p class="m-0" *ngIf="documentsByType[type.id].fichierUrl" pTooltip="Aucun stockage de fichier pour l'instant — nom conservé seul">
+                            <i class="pi pi-paperclip mr-1"></i>{{ documentsByType[type.id].fichierUrl }}
                         </p>
+                        <span *ngIf="!documentsByType[type.id].fichierUrl">—</span>
                     </div>
                     <div class="field col-12 md:col-2 mb-0 flex gap-2">
                         <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="documentsByType[type.id].statutValidation !== 'VALIDE'" (click)="valider(documentsByType[type.id])"></button>
@@ -250,6 +286,131 @@
 
         <p class="text-500 text-center py-3" *ngIf="typesPourSalarieFiltres.length === 0">Aucun type de document configuré pour les salariés.</p>
     </div>
+</div>
+
+<!-- Historique des documents (repliée par défaut, chargée au premier dépli) -->
+<div class="card mb-3" *ngIf="!isNew">
+    <div class="card-head justify-content-between">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-history"></i>
+            <h6 class="m-0">Historique des documents</h6>
+        </div>
+        <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherHistorique" (click)="afficherHistorique = false"></button>
+    </div>
+
+    <div *ngIf="!afficherHistorique" class="flex align-items-center justify-content-between">
+        <a class="cursor-pointer text-primary" (click)="basculerHistorique()">Voir l'historique des documents</a>
+        <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="basculerHistorique()"></button>
+    </div>
+
+    <p-table [value]="historique" dataKey="id" *ngIf="afficherHistorique" [paginator]="true" [rows]="10">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Date</th>
+                <th>Document</th>
+                <th>Action</th>
+                <th>Détail</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-entree>
+            <tr>
+                <td>{{ entree.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ libelleDocumentHistorique(entree) }}</td>
+                <td><p-tag [severity]="severiteAction(entree.action)" [value]="libelleAction(entree.action)"></p-tag></td>
+                <td>{{ detailHistorique(entree) }}</td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr><td colspan="4" class="text-center text-500">Aucune modification enregistrée.</td></tr>
+        </ng-template>
+    </p-table>
+</div>
+
+<!-- Relances : rappels envoyés (automatiques ou manuels) pour les documents de ce salarié -->
+<div class="card mb-3" *ngIf="!isNew">
+    <div class="card-head justify-content-between">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-send"></i>
+            <h6 class="m-0">Relances</h6>
+        </div>
+        <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherRelances" (click)="afficherRelances = false"></button>
+    </div>
+
+    <div *ngIf="!afficherRelances" class="flex align-items-center justify-content-between">
+        <a class="cursor-pointer text-primary" (click)="basculerRelances()">Voir les relances envoyées</a>
+        <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="basculerRelances()"></button>
+    </div>
+
+    <p-table [value]="relances" dataKey="id" *ngIf="afficherRelances" [paginator]="true" [rows]="10">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Date d'envoi</th>
+                <th>Sujet</th>
+                <th>Statut</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-relance>
+            <tr>
+                <td>{{ (relance.dateEnvoiReelle || relance.dateEnvoiPrevue) | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ relance.sujet }}</td>
+                <td>
+                    <p-tag
+                        [severity]="relance.statut === 'ENVOYE' ? 'success' : (relance.statut === 'ANNULE' ? 'danger' : 'warning')"
+                        [value]="relance.statut"
+                    ></p-tag>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr><td colspan="3" class="text-center text-500">Aucune relance envoyée.</td></tr>
+        </ng-template>
+    </p-table>
+</div>
+
+<!-- Envoyer un message : composeur inline, route vers l'entreprise employeuse
+     (le salarié n'a pas de compte/boîte de réception dans cette appli) -->
+<div class="card mb-3" *ngIf="!isNew">
+    <div class="card-head justify-content-between">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-envelope"></i>
+            <h6 class="m-0">Envoyer un message</h6>
+        </div>
+        <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherComposeur" (click)="afficherComposeur = false"></button>
+    </div>
+
+    <div *ngIf="!afficherComposeur" class="flex align-items-center justify-content-between">
+        <a class="cursor-pointer text-primary" (click)="afficherComposeur = true">Rédiger un message à l'entreprise employeuse</a>
+        <button pButton type="button" label="Nouveau message" class="p-button-outlined" (click)="afficherComposeur = true"></button>
+    </div>
+
+    <form [formGroup]="messageForm" (ngSubmit)="envoyerMessage()" class="p-fluid" *ngIf="afficherComposeur">
+        <small class="text-500 block mb-3">Envoyé à l'entreprise employeuse du salarié (aucun compte/boîte de réception propre au salarié dans cette application).</small>
+
+        <div class="field-checkbox">
+            <p-checkbox formControlName="copieAdmin" [binary]="true" inputId="messageCopieAdmin"></p-checkbox>
+            <label for="messageCopieAdmin" class="ml-2">Envoyer à ADMIN-CONTROL'BTP</label>
+        </div>
+
+        <div class="field">
+            <app-modele-fichier-upload [(fichierNom)]="fichierModeleNom"></app-modele-fichier-upload>
+        </div>
+
+        <div class="field">
+            <label for="messageSujet">Sujet *</label>
+            <input id="messageSujet" type="text" pInputText formControlName="sujet" [class.ng-dirty]="messageForm.controls.sujet.touched" />
+            <small class="p-error" *ngIf="messageForm.controls.sujet.invalid && messageForm.controls.sujet.touched">Ce champ est requis.</small>
+        </div>
+        <div class="field">
+            <label for="messageContenu">Message *</label>
+            <p-editor formControlName="contenu" [style]="{ height: '420px' }" [class.ng-dirty]="messageForm.controls.contenu.touched"></p-editor>
+            <small class="p-error" *ngIf="messageForm.controls.contenu.invalid && messageForm.controls.contenu.touched">Ce champ est requis.</small>
+            <small class="text-500 block mt-1">Balises disponibles : [DATE], [SALARIE_NOM]</small>
+        </div>
+        <div class="flex justify-content-end gap-2 mt-4">
+            <button pButton type="button" label="Annuler" class="p-button-text" (click)="afficherComposeur = false"></button>
+            <button pButton type="submit" label="Envoyer" icon="pi pi-send" [loading]="envoiMessageEnCours"></button>
+        </div>
+    </form>
 </div>
 
 <app-refuser-document-dialog [(visible)]="dialogRefuserVisible" [etatsDisponibles]="etatsPourRefus" (confirme)="confirmerRefus($event)"></app-refuser-document-dialog>

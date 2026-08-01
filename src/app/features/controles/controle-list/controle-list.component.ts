@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { Router } from '@angular/router';
 import { Controle, RapportControle } from '../models/controle.model';
 import { ControleService } from '../services/controle.service';
@@ -9,7 +9,7 @@ import { ChantierService } from 'src/app/features/chantiers/services/chantier.se
 @Component({
     selector: 'app-controle-list',
     templateUrl: './controle-list.component.html',
-    providers: [MessageService]
+    providers: [MessageService, ConfirmationService]
 })
 export class ControleListComponent implements OnInit {
 
@@ -22,7 +22,8 @@ export class ControleListComponent implements OnInit {
         private controleService: ControleService,
         private chantierService: ChantierService,
         private router: Router,
-        private message: MessageService
+        private message: MessageService,
+        private confirmation: ConfirmationService
     ) { }
 
     ngOnInit(): void {
@@ -53,13 +54,17 @@ export class ControleListComponent implements OnInit {
         this.controleService.listerRapports().subscribe((rapports) => (this.rapports = rapports));
     }
 
-    envoyerRapport(rapport: RapportControle) {
-        this.controleService.envoyerRapport(rapport.id).subscribe({
-            next: () => {
-                this.message.add({ severity: 'success', summary: 'Succès', detail: 'Rapport envoyé' });
-                this.chargerRapports();
-            },
-            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Envoi impossible' })
+    confirmerSuppression(controle: Controle) {
+        this.confirmation.confirm({
+            header: 'Confirmation',
+            message: `Voulez-vous supprimer le contrôle du ${controle.dateControle} ?`,
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.controleService.supprimer(controle.id).subscribe({
+                    next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Contrôle supprimé' }); this.onChantierChange(); },
+                    error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Suppression impossible' })
+                });
+            }
         });
     }
 }

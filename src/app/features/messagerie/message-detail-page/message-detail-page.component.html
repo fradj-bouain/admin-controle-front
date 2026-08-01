@@ -1,0 +1,57 @@
+<p-toast></p-toast>
+
+<ng-container *ngIf="message">
+
+<div class="card mb-3 no-print">
+    <div class="flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="flex align-items-center gap-3">
+            <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
+            <div>
+                <h5 class="m-0">Visualisation d'un message</h5>
+                <p-tag *ngIf="message.lu" severity="success" value="Lu" class="mt-1"></p-tag>
+                <p-tag *ngIf="!message.lu" severity="warning" value="Non lu" class="mt-1"></p-tag>
+            </div>
+        </div>
+        <button pButton type="button" icon="pi pi-print" label="Imprimer" class="p-button-outlined" (click)="imprimer()"></button>
+    </div>
+</div>
+
+<div class="card mb-3 rapport-imprimable">
+    <div class="card-head">
+        <i class="pi pi-envelope"></i>
+        <h6 class="m-0">{{ message.sujet }}</h6>
+    </div>
+
+    <div class="formgrid grid">
+        <div class="field col-12 md:col-6">
+            <label class="text-500 text-sm">Expéditeur</label>
+            <p class="m-0 font-medium">{{ nomUtilisateur(message.expediteurUtilisateurId) }}</p>
+        </div>
+        <div class="field col-12 md:col-6">
+            <label class="text-500 text-sm">Destinataire</label>
+            <p class="m-0 font-medium">
+                <p-tag severity="info" [value]="message.destinataireType" class="mr-2"></p-tag>{{ nomDestinataire() }}
+            </p>
+        </div>
+        <div class="field col-12" *ngIf="chantier">
+            <label class="text-500 text-sm">Chantier</label>
+            <p class="m-0 font-medium">{{ chantier.nom }}</p>
+        </div>
+    </div>
+
+    <div class="message-contenu" [innerHTML]="message.contenu"></div>
+
+    <div class="formgrid grid mt-4 pt-3 border-top-1 surface-border">
+        <div class="field col-12 md:col-6 mb-0">
+            <label class="text-500 text-sm">Date d'envoi</label>
+            <p class="m-0">{{ message.createdAt | date: 'dd/MM/yyyy à HH:mm' }}</p>
+        </div>
+        <div class="field col-12 md:col-6 mb-0">
+            <label class="text-500 text-sm">Date de lecture</label>
+            <p class="m-0" *ngIf="message.dateLu">Lu le {{ message.dateLu | date: 'dd/MM/yyyy à HH:mm' }}</p>
+            <p class="m-0 text-500" *ngIf="!message.dateLu">Pas encore lu</p>
+        </div>
+    </div>
+</div>
+
+</ng-container>

@@ -132,6 +132,63 @@
                     <input id="responsableSignataireAgrement" type="text" pInputText formControlName="responsableSignataireAgrement" />
                 </div>
 
+                <div class="account-inline-panel" *ngIf="isNew">
+                    <div class="account-inline-panel__header">
+                        <div class="account-inline-panel__title">
+                            <span class="account-inline-panel__icon"><i class="pi pi-user-plus"></i></span>
+                            <div>
+                                <div class="account-inline-panel__label">Créer un compte utilisateur pour ce client</div>
+                                <div class="text-500 text-sm">Il pourra se connecter immédiatement, sans étape supplémentaire.</div>
+                            </div>
+                        </div>
+                        <p-inputSwitch [(ngModel)]="creerCompteUtilisateur" [ngModelOptions]="{standalone: true}"></p-inputSwitch>
+                    </div>
+
+                    <div class="account-inline-panel__body" *ngIf="creerCompteUtilisateur" [formGroup]="compteForm">
+                        <div class="formgrid grid">
+                            <div class="field col-12 md:col-6">
+                                <label for="comptePrenom">Prénom *</label>
+                                <input id="comptePrenom" type="text" pInputText formControlName="prenom" [class.ng-dirty]="compteForm.controls.prenom.touched" />
+                                <small class="p-error" *ngIf="compteForm.controls.prenom.invalid && compteForm.controls.prenom.touched">Ce champ est requis.</small>
+                            </div>
+                            <div class="field col-12 md:col-6">
+                                <label for="compteNom">Nom *</label>
+                                <input id="compteNom" type="text" pInputText formControlName="nom" [class.ng-dirty]="compteForm.controls.nom.touched" />
+                                <small class="p-error" *ngIf="compteForm.controls.nom.invalid && compteForm.controls.nom.touched">Ce champ est requis.</small>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label for="compteEmail">Email *</label>
+                            <input id="compteEmail" type="email" pInputText formControlName="email" [class.ng-dirty]="compteForm.controls.email.touched" />
+                            <small class="p-error" *ngIf="compteForm.controls.email.invalid && compteForm.controls.email.touched">Adresse email valide requise.</small>
+                        </div>
+                        <div class="formgrid grid">
+                            <div class="field col-12 md:col-6">
+                                <label for="compteUsername">Nom d'utilisateur *</label>
+                                <input id="compteUsername" type="text" pInputText formControlName="username" [class.ng-dirty]="compteForm.controls.username.touched" />
+                                <small class="p-error" *ngIf="compteForm.controls.username.invalid && compteForm.controls.username.touched">Ce champ est requis.</small>
+                            </div>
+                            <div class="field col-12 md:col-6">
+                                <label for="comptePassword">Mot de passe *</label>
+                                <div class="flex gap-2 align-items-start">
+                                    <p-password
+                                        id="comptePassword"
+                                        formControlName="password"
+                                        [toggleMask]="true"
+                                        [feedback]="true"
+                                        styleClass="w-full"
+                                        inputStyleClass="w-full"
+                                        [class.ng-dirty]="compteForm.controls.password.touched"
+                                    ></p-password>
+                                    <button pButton type="button" icon="pi pi-sync" pTooltip="Générer un mot de passe" class="p-button-outlined flex-shrink-0" (click)="genererMotDePasse()"></button>
+                                </div>
+                                <small class="p-error" *ngIf="compteForm.controls.password.invalid && compteForm.controls.password.touched">8 caractères minimum.</small>
+                            </div>
+                        </div>
+                        <small class="account-inline-panel__note"><i class="pi pi-shield"></i> Rôle attribué automatiquement : <strong>Client</strong>, rattaché à cette fiche.</small>
+                    </div>
+                </div>
+
                 <div class="flex justify-content-end gap-2 mt-4">
                     <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
                     <button pButton type="submit" [label]="isNew ? 'Ajouter' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>

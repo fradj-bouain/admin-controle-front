@@ -30,6 +30,7 @@ export interface AffectationSalarieChantier {
     salarieId: string;
     chantierId: string;
     affectationEntrepriseChantierId: string;
+    entrepriseId?: string;
     dateDebut: string;
     dateFin?: string;
     statutAcces: StatutAcces;

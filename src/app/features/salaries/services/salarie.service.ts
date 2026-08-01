@@ -38,4 +38,8 @@ export class SalarieService {
     desactiver(id: string): Observable<Salarie> {
         return this.http.post<Salarie>(`${this.baseUrl}/${id}/desactiver`, {});
     }
+
+    supprimer(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    }
 }

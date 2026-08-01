@@ -4,7 +4,6 @@ import { AuthService } from 'src/app/core/auth/auth.service';
 
 const ROLE_LABELS: Record<string, string> = {
     SUPER_ADMIN: 'Super administrateur',
-    ADMIN: 'Administrateur',
     CLIENT: 'Client',
     ENTREPRISE: 'Entreprise',
     CONTROLEUR: 'Contrôleur'

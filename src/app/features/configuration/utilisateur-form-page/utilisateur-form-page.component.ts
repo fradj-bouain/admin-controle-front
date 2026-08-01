@@ -18,7 +18,7 @@ import { ReferenceDataService } from '../services/reference-data.service';
 export class UtilisateurFormPageComponent implements OnInit {
 
     saving = false;
-    roles = ['SUPER_ADMIN', 'ADMIN', 'CLIENT', 'ENTREPRISE', 'CONTROLEUR'];
+    roles = ['SUPER_ADMIN', 'CLIENT', 'ENTREPRISE', 'CONTROLEUR'];
     clients: Client[] = [];
     entreprises: Entreprise[] = [];
     controleTiersListe: ControleTiers[] = [];

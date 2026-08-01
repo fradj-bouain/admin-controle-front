@@ -10,6 +10,57 @@
     <div class="topbar-end">
         <ul class="topbar-menu">
             <li>
+                <span class="topbar-icon-wrapper">
+                    <button
+                        pButton
+                        type="button"
+                        icon="pi pi-envelope"
+                        class="p-button-text p-button-rounded p-button-secondary flex-shrink-0 topbar-icon-button"
+                        pTooltip="Messagerie"
+                        tooltipPosition="bottom"
+                        (click)="messagesPanel.toggle($event); chargerMessages()"
+                    ></button>
+                    <span class="topbar-icon-badge" *ngIf="nbNonLus > 0">{{ badgeValue }}</span>
+                </span>
+                <p-overlayPanel #messagesPanel styleClass="topbar-messages-panel" [showCloseIcon]="false">
+                    <div class="topbar-messages">
+                        <div class="topbar-messages__header">
+                            <span class="font-semibold">Messagerie</span>
+                            <button
+                                pButton
+                                type="button"
+                                label="Tout marquer lu"
+                                class="p-button-text p-button-sm"
+                                *ngIf="nbNonLus > 0"
+                                [loading]="marquageEnCours"
+                                (click)="marquerToutLu($event)"
+                            ></button>
+                        </div>
+                        <div class="topbar-messages__list">
+                            <a
+                                *ngFor="let message of apercuMessages"
+                                class="topbar-messages__item"
+                                [class.topbar-messages__item--unread]="!message.lu"
+                                (click)="ouvrirMessage(message, messagesPanel)"
+                            >
+                                <span class="topbar-messages__dot" *ngIf="!message.lu"></span>
+                                <span class="topbar-messages__content">
+                                    <span class="topbar-messages__subject">{{ message.sujet }}</span>
+                                    <span class="topbar-messages__preview">{{ message.contenu | slice: 0:80 }}</span>
+                                    <span class="topbar-messages__date">{{ message.createdAt | date: 'dd/MM/yyyy à HH:mm' }}</span>
+                                </span>
+                            </a>
+                            <div class="topbar-messages__empty" *ngIf="apercuMessages.length === 0">
+                                Aucun message.
+                            </div>
+                        </div>
+                        <div class="topbar-messages__footer">
+                            <a class="cursor-pointer text-primary font-medium" (click)="voirTousLesMessages(messagesPanel)">Voir tous les messages</a>
+                        </div>
+                    </div>
+                </p-overlayPanel>
+            </li>
+            <li>
                 <p-dropdown
                     [options]="languageOptions"
                     [ngModel]="currentLang"

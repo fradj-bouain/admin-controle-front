@@ -60,6 +60,19 @@ export interface CreateControleTiersRequest {
     nom: string;
 }
 
+export type CibleActionCorrective = 'SALARIES' | 'ENTREPRISES' | 'SALARIES_ET_ENTREPRISES';
+
+export interface ActionCorrective {
+    id: string;
+    nom: string;
+    cible: CibleActionCorrective;
+}
+
+export interface CreateActionCorrectiveRequest {
+    nom: string;
+    cible: CibleActionCorrective;
+}
+
 export interface Utilisateur {
     id: string;
     username: string;

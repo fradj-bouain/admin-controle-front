@@ -22,4 +22,8 @@ export class DocumentEtatService {
     modifier(id: string, request: CreateDocumentEtatRequest): Observable<DocumentEtat> {
         return this.http.put<DocumentEtat>(`${this.baseUrl}/${id}`, request);
     }
+
+    supprimer(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    }
 }

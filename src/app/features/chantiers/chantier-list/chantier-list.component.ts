@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { TranslateService } from '@ngx-translate/core';
+import { forkJoin } from 'rxjs';
 import { Chantier } from '../models/chantier.model';
 import { ChantierService } from '../services/chantier.service';
 import { Client } from 'src/app/features/clients/models/client.model';
@@ -13,7 +14,9 @@ import { ClientService } from 'src/app/features/clients/services/client.service'
 })
 export class ChantierListComponent implements OnInit {
 
-    chantiers: Chantier[] = [];
+    // nomClientCalcule ajouté au chargement, pour permettre un p-columnFilter
+    // texte simple sur le nom du client (le champ brut n'a que clientId).
+    chantiers: Array<Chantier & { nomClientCalcule: string }> = [];
     clients: Client[] = [];
     loading = false;
 
@@ -27,14 +30,17 @@ export class ChantierListComponent implements OnInit {
 
     ngOnInit(): void {
         this.charger();
-        this.clientService.lister().subscribe((clients) => (this.clients = clients));
     }
 
     charger() {
         this.loading = true;
-        this.chantierService.lister().subscribe({
-            next: (chantiers) => {
-                this.chantiers = chantiers;
+        forkJoin({
+            chantiers: this.chantierService.lister(),
+            clients: this.clientService.lister()
+        }).subscribe({
+            next: ({ chantiers, clients }) => {
+                this.clients = clients;
+                this.chantiers = chantiers.map((c) => ({ ...c, nomClientCalcule: this.nomClient(c.clientId) }));
                 this.loading = false;
             },
             error: () => {
@@ -62,6 +68,20 @@ export class ChantierListComponent implements OnInit {
         obs.subscribe({
             next: () => this.charger(),
             error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
+        });
+    }
+
+    confirmerSuppression(chantier: Chantier) {
+        this.confirmation.confirm({
+            header: 'Confirmation',
+            message: `Voulez-vous supprimer le chantier "${chantier.nom}" ?`,
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.chantierService.supprimer(chantier.id).subscribe({
+                    next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Chantier supprimé' }); this.charger(); },
+                    error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Suppression impossible' })
+                });
+            }
         });
     }
 }

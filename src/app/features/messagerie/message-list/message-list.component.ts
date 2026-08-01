@@ -3,7 +3,6 @@ import { ActivatedRoute } from '@angular/router';
 import { MessageService as ToastService } from 'primeng/api';
 import { Message } from '../models/message.model';
 import { MessageService } from '../services/message.service';
-import { AuthService } from 'src/app/core/auth/auth.service';
 
 const ONGLETS = ['reception', 'envoyes', 'planification', 'automatisation'];
 
@@ -20,7 +19,6 @@ export class MessageListComponent implements OnInit {
 
     constructor(
         private messageService: MessageService,
-        private auth: AuthService,
         private toast: ToastService,
         private route: ActivatedRoute
     ) { }
@@ -34,14 +32,10 @@ export class MessageListComponent implements OnInit {
     }
 
     chargerReception() {
-        this.messageService.boiteReception('UTILISATEUR', this.auth.userId).subscribe((messages) => (this.reception = messages));
+        this.messageService.boiteReception().subscribe((messages) => (this.reception = messages));
     }
 
     chargerEnvoyes() {
         this.messageService.envoyes().subscribe((messages) => (this.envoyes = messages));
-    }
-
-    marquerLu(message: Message) {
-        this.messageService.marquerLu(message.id).subscribe({ next: () => this.chargerReception() });
     }
 }

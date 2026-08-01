@@ -1,53 +1,147 @@
 <p-toast></p-toast>
 
-<div class="card" style="max-width: 720px;">
-    <div class="flex align-items-center gap-3 mb-4">
+<div class="card mb-3">
+    <div class="flex align-items-center gap-3">
         <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="annuler()"></button>
         <div>
-            <h5 class="m-0">Générer un rapport</h5>
-            <span class="text-500 text-sm" *ngIf="dateControle">Pour le contrôle du {{ dateControle }}</span>
+            <h5 class="m-0">Checklist du contrôle{{ chantier ? ' — ' + chantier.nom : '' }}</h5>
+            <span class="text-500 text-sm" *ngIf="dateControle">Contrôle du {{ dateControle }}</span>
         </div>
     </div>
+</div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
-        <div class="field">
-            <label for="nbSalariesControles">Nombre de salariés contrôlés</label>
-            <p-inputNumber id="nbSalariesControles" formControlName="nbSalariesControles" [min]="0"></p-inputNumber>
-            <small class="p-error" *ngIf="form.controls.nbSalariesControles.invalid && form.controls.nbSalariesControles.touched">La valeur ne peut pas être négative.</small>
-        </div>
-        <div class="formgrid grid">
-            <div class="field col-12 md:col-6">
-                <label for="nbAccords">Accords</label>
-                <p-inputNumber id="nbAccords" formControlName="nbAccords" [min]="0"></p-inputNumber>
-                <small class="p-error" *ngIf="form.controls.nbAccords.invalid && form.controls.nbAccords.touched">La valeur ne peut pas être négative.</small>
+<div class="card mb-3">
+    <div class="card-head">
+        <i class="pi pi-users"></i>
+        <h6 class="m-0">Passer en revue chaque salarié</h6>
+    </div>
+
+    <form [formGroup]="checklistForm" (ngSubmit)="ajouterEntree()" class="p-fluid">
+        <div class="formgrid grid align-items-end">
+            <div class="field col-12 md:col-4">
+                <label for="affectationId">Salarié — entreprise *</label>
+                <p-dropdown
+                    id="affectationId"
+                    [options]="affectationsDisponibles"
+                    formControlName="affectationId"
+                    optionLabel="label"
+                    optionValue="id"
+                    [filter]="true"
+                    filterBy="label"
+                    placeholder="-- Sélectionner --"
+                    styleClass="w-full"
+                    [readonly]="modeEdition"
+                    [class.ng-dirty]="checklistForm.controls.affectationId.touched"
+                ></p-dropdown>
+                <small class="p-error" *ngIf="checklistForm.controls.affectationId.invalid && checklistForm.controls.affectationId.touched">Ce champ est requis.</small>
             </div>
-            <div class="field col-12 md:col-6">
-                <label for="nbRefus">Refus</label>
-                <p-inputNumber id="nbRefus" formControlName="nbRefus" [min]="0"></p-inputNumber>
-                <small class="p-error" *ngIf="form.controls.nbRefus.invalid && form.controls.nbRefus.touched">La valeur ne peut pas être négative.</small>
+            <div class="field col-12 md:col-3">
+                <label for="accorde">Statut *</label>
+                <p-dropdown
+                    id="accorde"
+                    [options]="[{label: 'Accordé', value: true}, {label: 'Refusé', value: false}]"
+                    formControlName="accorde"
+                    optionLabel="label"
+                    optionValue="value"
+                    styleClass="w-full"
+                ></p-dropdown>
+            </div>
+            <div class="field col-12 md:col-3" *ngIf="estRefus">
+                <label for="actionCorrectiveId">Motif *</label>
+                <p-dropdown
+                    id="actionCorrectiveId"
+                    [options]="motifsDisponibles"
+                    formControlName="actionCorrectiveId"
+                    optionLabel="nom"
+                    optionValue="id"
+                    [filter]="true"
+                    filterBy="nom"
+                    placeholder="-- Choisir --"
+                    styleClass="w-full"
+                    [class.ng-dirty]="checklistForm.controls.actionCorrectiveId.touched"
+                ></p-dropdown>
+                <small class="p-error" *ngIf="checklistForm.controls.actionCorrectiveId.invalid && checklistForm.controls.actionCorrectiveId.touched">Requis en cas de refus.</small>
+            </div>
+            <div class="field col-12 md:col-2 flex gap-1">
+                <button pButton type="submit" [icon]="modeEdition ? 'pi pi-check' : 'pi pi-plus'" class="w-full" [loading]="ajoutEnCours" [pTooltip]="modeEdition ? 'Enregistrer' : 'Ajouter'"></button>
+                <button pButton type="button" icon="pi pi-times" class="p-button-outlined flex-shrink-0" *ngIf="modeEdition" pTooltip="Annuler" (click)="annulerEditionEntree()"></button>
             </div>
         </div>
+    </form>
+
+    <p-table [value]="entrees" dataKey="id" *ngIf="entrees.length > 0">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Salarié</th>
+                <th>Entreprise</th>
+                <th>Statut</th>
+                <th>Motif</th>
+                <th style="width: 6rem"></th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-entree>
+            <tr [class.row-highlight]="entreeEnEdition?.id === entree.id">
+                <td>{{ nomSalarie(entree.salarieId) }}</td>
+                <td>{{ nomEntreprise(entree.entrepriseId) }}</td>
+                <td>
+                    <p-tag [severity]="entree.accorde ? 'success' : 'danger'" [value]="entree.accorde ? 'Accordé' : 'Refusé'"></p-tag>
+                </td>
+                <td>{{ !entree.accorde ? libelleMotif(entree.actionCorrectiveId) : '—' }}</td>
+                <td>
+                    <div class="flex align-items-center gap-1 flex-nowrap">
+                        <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="modifierEntree(entree)"></button>
+                        <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Retirer" (click)="supprimerEntree(entree)"></button>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+    <p class="text-500 text-center py-3" *ngIf="entrees.length === 0">Aucun salarié passé en revue pour l'instant.</p>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <i class="pi pi-file"></i>
+        <h6 class="m-0">Générer le rapport</h6>
+    </div>
+
+    <small class="text-500 block mb-3">
+        Salariés contrôlés, accords et refus sont calculés automatiquement à partir de la checklist ci-dessus ({{ entrees.length }} entrée(s)).
+    </small>
+
+    <form [formGroup]="rapportForm" (ngSubmit)="submit()" class="p-fluid">
         <div class="formgrid grid">
-            <div class="field col-12 md:col-6">
+            <div class="field col-12 md:col-4">
                 <label for="nbNouvellesEntreprises">Nouvelles entreprises</label>
                 <p-inputNumber id="nbNouvellesEntreprises" formControlName="nbNouvellesEntreprises" [min]="0"></p-inputNumber>
-                <small class="p-error" *ngIf="form.controls.nbNouvellesEntreprises.invalid && form.controls.nbNouvellesEntreprises.touched">La valeur ne peut pas être négative.</small>
             </div>
-            <div class="field col-12 md:col-6">
+            <div class="field col-12 md:col-4">
                 <label for="nbNouveauxSalaries">Nouveaux salariés</label>
                 <p-inputNumber id="nbNouveauxSalaries" formControlName="nbNouveauxSalaries" [min]="0"></p-inputNumber>
-                <small class="p-error" *ngIf="form.controls.nbNouveauxSalaries.invalid && form.controls.nbNouveauxSalaries.touched">La valeur ne peut pas être négative.</small>
+            </div>
+            <div class="field col-12 md:col-4">
+                <label for="nbSalariesDetaches">Salariés détachés</label>
+                <p-inputNumber id="nbSalariesDetaches" formControlName="nbSalariesDetaches" [min]="0"></p-inputNumber>
             </div>
         </div>
         <div class="field">
-            <label for="nbSalariesDetaches">Salariés détachés</label>
-            <p-inputNumber id="nbSalariesDetaches" formControlName="nbSalariesDetaches" [min]="0"></p-inputNumber>
-            <small class="p-error" *ngIf="form.controls.nbSalariesDetaches.invalid && form.controls.nbSalariesDetaches.touched">La valeur ne peut pas être négative.</small>
+            <label for="responsableUtilisateurId">Responsable du chantier</label>
+            <p-dropdown
+                id="responsableUtilisateurId"
+                [options]="utilisateurs"
+                formControlName="responsableUtilisateurId"
+                optionLabel="username"
+                optionValue="id"
+                [filter]="true"
+                filterBy="username"
+                placeholder="-- Sélectionner --"
+                [showClear]="true"
+            ></p-dropdown>
         </div>
 
         <div class="flex justify-content-end gap-2 mt-4">
             <button pButton type="button" label="Annuler" class="p-button-text" (click)="annuler()"></button>
-            <button pButton type="submit" label="Générer" icon="pi pi-check" [loading]="saving"></button>
+            <button pButton type="submit" label="Générer le rapport" icon="pi pi-check" [loading]="saving"></button>
         </div>
     </form>
 </div>

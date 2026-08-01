@@ -13,7 +13,8 @@ export class AppMenuComponent implements OnInit {
     constructor(private auth: AuthService) { }
 
     ngOnInit() {
-        const estAdmin = this.auth.hasRole('SUPER_ADMIN') || this.auth.hasRole('ADMIN');
+        const estSuperAdmin = this.auth.hasRole('SUPER_ADMIN');
+        const gereSaPropreEquipe = this.auth.hasRole('CLIENT') || this.auth.hasRole('ENTREPRISE');
 
         this.model = [
             {
@@ -51,16 +52,23 @@ export class AppMenuComponent implements OnInit {
                 icon: 'pi pi-fw pi-file',
                 routerLink: ['/documents']
             },
+            // Mon équipe : auto-gestion des comptes utilisateurs rattachés à sa propre
+            // session (Client ou Entreprise) — n'existe pas pour Contrôleur.
+            ...(gereSaPropreEquipe ? [{
+                label: 'menu.monEquipe',
+                icon: 'pi pi-fw pi-users',
+                routerLink: ['/mon-equipe']
+            }] : []),
             // Messagerie (automatisations) et Configuration (données de référence)
-            // ne concernent que les comptes internes Back Office — masqués pour les
-            // comptes Client/Entreprise/Contrôleur, qui de toute façon ne passeraient
-            // pas le AuthGuard (data.roles) s'ils y accédaient directement par URL.
-            ...(estAdmin ? [{
+            // ne concernent que le SUPER_ADMIN — masqués pour les autres comptes, qui
+            // de toute façon ne passeraient pas le AuthGuard (data.roles) s'ils y
+            // accédaient directement par URL.
+            ...(estSuperAdmin ? [{
                 label: 'menu.messagerie',
                 icon: 'pi pi-fw pi-envelope',
                 routerLink: ['/messagerie']
             }] : []),
-            ...(estAdmin ? [{
+            ...(estSuperAdmin ? [{
                 label: 'menu.configuration',
                 icon: 'pi pi-fw pi-cog',
                 routerLink: ['/configuration']

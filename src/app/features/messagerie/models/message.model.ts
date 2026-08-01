@@ -3,15 +3,19 @@ export type DestinataireType = 'CLIENT' | 'ENTREPRISE' | 'UTILISATEUR';
 export interface Message {
     id: string;
     expediteurUtilisateurId: string;
+    chantierId?: string;
     destinataireType: DestinataireType;
     destinataireId: string;
     sujet: string;
     contenu: string;
     lu: boolean;
+    luParUtilisateurId?: string;
+    dateLu?: string;
     createdAt: string;
 }
 
 export interface SendMessageRequest {
+    chantierId?: string;
     destinataireType: DestinataireType;
     destinataireId: string;
     sujet: string;

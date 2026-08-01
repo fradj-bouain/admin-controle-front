@@ -22,8 +22,9 @@ const routes: Routes = [
             { path: 'salaries', data: { breadcrumb: 'menu.salaries' }, loadChildren: () => import('./features/salaries/salaries.module').then(m => m.SalariesModule) },
             { path: 'controles', data: { breadcrumb: 'menu.controles' }, loadChildren: () => import('./features/controles/controles.module').then(m => m.ControlesModule) },
             { path: 'documents', data: { breadcrumb: 'menu.documents' }, loadChildren: () => import('./features/documents/documents.module').then(m => m.DocumentsModule) },
-            { path: 'messagerie', data: { breadcrumb: 'menu.messagerie', roles: ['SUPER_ADMIN', 'ADMIN'] }, loadChildren: () => import('./features/messagerie/messagerie.module').then(m => m.MessagerieModule) },
-            { path: 'configuration', data: { breadcrumb: 'menu.configuration', roles: ['SUPER_ADMIN', 'ADMIN'] }, loadChildren: () => import('./features/configuration/configuration.module').then(m => m.ConfigurationModule) }
+            { path: 'mon-equipe', data: { breadcrumb: 'menu.monEquipe', roles: ['CLIENT', 'ENTREPRISE'] }, loadChildren: () => import('./features/mon-equipe/mon-equipe.module').then(m => m.MonEquipeModule) },
+            { path: 'messagerie', data: { breadcrumb: 'menu.messagerie', roles: ['SUPER_ADMIN'] }, loadChildren: () => import('./features/messagerie/messagerie.module').then(m => m.MessagerieModule) },
+            { path: 'configuration', data: { breadcrumb: 'menu.configuration', roles: ['SUPER_ADMIN'] }, loadChildren: () => import('./features/configuration/configuration.module').then(m => m.ConfigurationModule) }
         ]
     },
     { path: 'notfound', loadChildren: () => import('./features/notfound/notfound.module').then(m => m.NotfoundModule) },

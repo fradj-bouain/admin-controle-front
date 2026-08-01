@@ -1,0 +1,81 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="card">
+    <p-toolbar styleClass="mb-4">
+        <ng-template pTemplate="left">
+            <h5 class="m-0">{{ 'menu.monEquipe' | translate }}</h5>
+        </ng-template>
+        <ng-template pTemplate="right">
+            <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreation()"></button>
+        </ng-template>
+    </p-toolbar>
+
+    <p-table [value]="utilisateurs" dataKey="id" [paginator]="true" [rows]="10">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Utilisateur</th>
+                <th>Email</th>
+                <th>Statut</th>
+                <th style="width: 4rem"></th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-utilisateur>
+            <tr>
+                <td>{{ utilisateur.nom }} {{ utilisateur.prenom }} ({{ utilisateur.username }})</td>
+                <td>{{ utilisateur.email }}</td>
+                <td><p-tag [severity]="utilisateur.actif ? 'success' : 'danger'" [value]="utilisateur.actif ? 'ACTIF' : 'INACTIF'"></p-tag></td>
+                <td>
+                    <div class="flex align-items-center gap-1 flex-nowrap">
+                        <button
+                            pButton
+                            type="button"
+                            [icon]="utilisateur.actif ? 'pi pi-ban' : 'pi pi-check'"
+                            class="p-button-text p-button-rounded"
+                            [pTooltip]="utilisateur.actif ? 'Désactiver' : 'Activer'"
+                            (click)="confirmerBasculeStatut(utilisateur)"
+                        ></button>
+                        <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppression(utilisateur)"></button>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>
+
+<p-dialog header="Nouvel utilisateur" [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '480px' }">
+    <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-6">
+                <label for="nom">Nom *</label>
+                <input id="nom" type="text" pInputText formControlName="nom" [class.ng-dirty]="form.controls.nom.touched" />
+                <small class="p-error" *ngIf="form.controls.nom.invalid && form.controls.nom.touched">Ce champ est requis.</small>
+            </div>
+            <div class="field col-12 md:col-6">
+                <label for="prenom">Prénom *</label>
+                <input id="prenom" type="text" pInputText formControlName="prenom" [class.ng-dirty]="form.controls.prenom.touched" />
+                <small class="p-error" *ngIf="form.controls.prenom.invalid && form.controls.prenom.touched">Ce champ est requis.</small>
+            </div>
+        </div>
+        <div class="field">
+            <label for="email">Email *</label>
+            <input id="email" type="email" pInputText formControlName="email" [class.ng-dirty]="form.controls.email.touched" />
+            <small class="p-error" *ngIf="form.controls.email.hasError('required') && form.controls.email.touched">Ce champ est requis.</small>
+            <small class="p-error" *ngIf="form.controls.email.hasError('email') && form.controls.email.touched">Adresse email invalide.</small>
+        </div>
+        <div class="field">
+            <label for="username">Nom d'utilisateur *</label>
+            <input id="username" type="text" pInputText formControlName="username" [class.ng-dirty]="form.controls.username.touched" />
+            <small class="p-error" *ngIf="form.controls.username.invalid && form.controls.username.touched">Ce champ est requis.</small>
+        </div>
+        <div class="field">
+            <label for="password">Mot de passe *</label>
+            <input id="password" type="password" pInputText formControlName="password" [class.ng-dirty]="form.controls.password.touched" />
+            <small class="p-error" *ngIf="form.controls.password.invalid && form.controls.password.touched">Ce champ est requis.</small>
+        </div>
+        <div class="flex justify-content-end gap-2 mt-4">
+            <button pButton type="button" label="Annuler" class="p-button-text" (click)="dialogVisible = false"></button>
+            <button pButton type="submit" label="Enregistrer" icon="pi pi-check" [loading]="saving"></button>
+        </div>
+    </form>
+</p-dialog>

@@ -7,6 +7,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TooltipModule } from 'primeng/tooltip';
 import { RippleModule } from 'primeng/ripple';
 import { DropdownModule } from 'primeng/dropdown';
+import { OverlayPanelModule } from 'primeng/overlaypanel';
 import { AppLayoutComponent } from './app.layout.component';
 import { AppBreadcrumbComponent } from './app.breadcrumb.component';
 import { AppSidebarComponent } from './app.sidebar.component';
@@ -36,6 +37,7 @@ import { TranslateModule } from '@ngx-translate/core';
         TooltipModule,
         RippleModule,
         DropdownModule,
+        OverlayPanelModule,
         RouterModule,
         TranslateModule
     ]

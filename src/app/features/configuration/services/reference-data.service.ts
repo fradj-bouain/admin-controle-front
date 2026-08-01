@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import {
-    ControleTiers, CorpsDeMetier, CreateControleTiersRequest, CreateCorpsDeMetierRequest,
+    ActionCorrective, ControleTiers, CorpsDeMetier, CreateActionCorrectiveRequest, CreateControleTiersRequest, CreateCorpsDeMetierRequest,
     CreatePaysRequest, CreateSalarieFonctionRequest, CreateTypeContratSalarieRequest,
     CreateTypeSalarieRequest, Pays, SalarieFonction, TypeContratSalarie, TypeSalarie
 } from '../models/configuration.model';
@@ -27,6 +27,10 @@ export class ReferenceDataService {
         return this.http.put<Pays>(`${this.baseUrl}/pays/${id}`, request);
     }
 
+    supprimerPays(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/pays/${id}`);
+    }
+
     listerCorpsDeMetier(): Observable<CorpsDeMetier[]> {
         return this.http.get<CorpsDeMetier[]>(`${this.baseUrl}/corps-de-metier`);
     }
@@ -37,6 +41,10 @@ export class ReferenceDataService {
 
     modifierCorpsDeMetier(id: string, request: CreateCorpsDeMetierRequest): Observable<CorpsDeMetier> {
         return this.http.put<CorpsDeMetier>(`${this.baseUrl}/corps-de-metier/${id}`, request);
+    }
+
+    supprimerCorpsDeMetier(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/corps-de-metier/${id}`);
     }
 
     listerTypeSalarie(): Observable<TypeSalarie[]> {
@@ -51,6 +59,10 @@ export class ReferenceDataService {
         return this.http.put<TypeSalarie>(`${this.baseUrl}/types-salarie/${id}`, request);
     }
 
+    supprimerTypeSalarie(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/types-salarie/${id}`);
+    }
+
     listerTypeContratSalarie(): Observable<TypeContratSalarie[]> {
         return this.http.get<TypeContratSalarie[]>(`${this.baseUrl}/types-contrat-salarie`);
     }
@@ -61,6 +73,10 @@ export class ReferenceDataService {
 
     modifierTypeContratSalarie(id: string, request: CreateTypeContratSalarieRequest): Observable<TypeContratSalarie> {
         return this.http.put<TypeContratSalarie>(`${this.baseUrl}/types-contrat-salarie/${id}`, request);
+    }
+
+    supprimerTypeContratSalarie(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/types-contrat-salarie/${id}`);
     }
 
     listerSalarieFonction(): Observable<SalarieFonction[]> {
@@ -75,6 +91,10 @@ export class ReferenceDataService {
         return this.http.put<SalarieFonction>(`${this.baseUrl}/salarie-fonctions/${id}`, request);
     }
 
+    supprimerSalarieFonction(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/salarie-fonctions/${id}`);
+    }
+
     listerControleTiers(): Observable<ControleTiers[]> {
         return this.http.get<ControleTiers[]>(`${this.baseUrl}/controle-tiers`);
     }
@@ -85,5 +105,25 @@ export class ReferenceDataService {
 
     modifierControleTiers(id: string, request: CreateControleTiersRequest): Observable<ControleTiers> {
         return this.http.put<ControleTiers>(`${this.baseUrl}/controle-tiers/${id}`, request);
+    }
+
+    supprimerControleTiers(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/controle-tiers/${id}`);
+    }
+
+    listerActionsCorrectives(): Observable<ActionCorrective[]> {
+        return this.http.get<ActionCorrective[]>(`${this.baseUrl}/actions-correctives`);
+    }
+
+    creerActionCorrective(request: CreateActionCorrectiveRequest): Observable<ActionCorrective> {
+        return this.http.post<ActionCorrective>(`${this.baseUrl}/actions-correctives`, request);
+    }
+
+    modifierActionCorrective(id: string, request: CreateActionCorrectiveRequest): Observable<ActionCorrective> {
+        return this.http.put<ActionCorrective>(`${this.baseUrl}/actions-correctives/${id}`, request);
+    }
+
+    supprimerActionCorrective(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/actions-correctives/${id}`);
     }
 }

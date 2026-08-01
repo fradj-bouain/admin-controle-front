@@ -67,6 +67,14 @@
                             pTooltip="{{ salarie.statut === 'ACTIF' ? 'Désactiver' : 'Activer' }}"
                             (click)="confirmerBasculeStatut(salarie); $event.stopPropagation()"
                         ></button>
+                        <button
+                            pButton
+                            type="button"
+                            icon="pi pi-trash"
+                            class="p-button-text p-button-rounded p-button-danger"
+                            pTooltip="Supprimer"
+                            (click)="confirmerSuppression(salarie); $event.stopPropagation()"
+                        ></button>
                     </div>
                 </td>
             </tr>

@@ -11,9 +11,10 @@ import { ControlesRoutingModule } from './controles-routing.module';
 import { ControleListComponent } from './controle-list/controle-list.component';
 import { ControleFormPageComponent } from './controle-form-page/controle-form-page.component';
 import { RapportFormPageComponent } from './rapport-form-page/rapport-form-page.component';
+import { RapportDetailPageComponent } from './rapport-detail-page/rapport-detail-page.component';
 
 @NgModule({
-    declarations: [ControleListComponent, ControleFormPageComponent, RapportFormPageComponent],
+    declarations: [ControleListComponent, ControleFormPageComponent, RapportFormPageComponent, RapportDetailPageComponent],
     imports: [SharedModule, ControlesRoutingModule, FormsModule, TabViewModule, InputTextareaModule, InputNumberModule, CheckboxModule, RouterModule]
 })
 export class ControlesModule { }

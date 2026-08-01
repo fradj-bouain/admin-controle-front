@@ -14,6 +14,8 @@ import { ReferenceDataService } from 'src/app/features/configuration/services/re
 export class ControleFormPageComponent implements OnInit {
 
     saving = false;
+    isNew = true;
+    controleId: string | null = null;
     chantierId!: string;
     controleTiersListe: ControleTiers[] = [];
 
@@ -35,8 +37,26 @@ export class ControleFormPageComponent implements OnInit {
     ) { }
 
     ngOnInit(): void {
-        this.chantierId = this.route.snapshot.queryParamMap.get('chantierId')!;
         this.referenceDataService.listerControleTiers().subscribe((tiers) => (this.controleTiersListe = tiers));
+
+        const id = this.route.snapshot.paramMap.get('id');
+        this.controleId = id;
+        this.isNew = !id;
+
+        if (id) {
+            this.controleService.obtenir(id).subscribe((controle) => {
+                this.chantierId = controle.chantierId;
+                this.form.patchValue({
+                    dateControle: new Date(controle.dateControle),
+                    remarques: controle.remarques ?? '',
+                    controleTiersId: controle.controleTiersId ?? '',
+                    dateFin: controle.dateFin ? new Date(controle.dateFin) : null,
+                    termine: controle.termine
+                });
+            });
+        } else {
+            this.chantierId = this.route.snapshot.queryParamMap.get('chantierId')!;
+        }
     }
 
     annuler() {
@@ -50,18 +70,21 @@ export class ControleFormPageComponent implements OnInit {
         }
         const value = this.form.getRawValue();
         this.saving = true;
-        this.controleService.creer({
-            chantierId: this.chantierId,
+        const payload = {
             dateControle: value.dateControle!.toISOString().substring(0, 10),
             remarques: value.remarques ?? undefined,
             controleTiersId: value.controleTiersId || undefined,
             dateFin: value.dateFin ? value.dateFin.toISOString().substring(0, 10) : undefined,
             termine: value.termine ?? false
-        }).subscribe({
+        };
+        const obs = this.isNew
+            ? this.controleService.creer({ chantierId: this.chantierId, ...payload })
+            : this.controleService.modifier(this.controleId!, payload);
+        obs.subscribe({
             next: () => this.router.navigate(['/controles']),
             error: () => {
                 this.saving = false;
-                this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Création impossible' });
+                this.message.add({ severity: 'error', summary: 'Erreur', detail: this.isNew ? 'Création impossible' : 'Modification impossible' });
             }
         });
     }

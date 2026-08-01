@@ -26,4 +26,8 @@ export class UtilisateurService {
     activer(id: string): Observable<Utilisateur> {
         return this.http.post<Utilisateur>(`${this.baseUrl}/${id}/activer`, {});
     }
+
+    supprimer(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    }
 }

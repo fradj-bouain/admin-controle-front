@@ -30,11 +30,6 @@ export class AutomatisationFormPageComponent implements OnInit {
     noteBasDePage = '';
     fichierModeleNom: string | null = null;
 
-    onFichierChange(event: Event): void {
-        const input = event.target as HTMLInputElement;
-        this.fichierModeleNom = input.files && input.files.length > 0 ? input.files[0].name : null;
-    }
-
     // Servi par GET /champs-surveillables : ce que le backend sait réellement
     // détecter, pas une liste figée ici. Ajouter une nouvelle source surveillable
     // (nouvelle entité/champ) n'implique aucun changement de ce composant.

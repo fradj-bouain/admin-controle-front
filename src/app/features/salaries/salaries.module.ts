@@ -3,6 +3,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TooltipModule } from 'primeng/tooltip';
 import { CheckboxModule } from 'primeng/checkbox';
+import { EditorModule } from 'primeng/editor';
 import { SharedModule } from '../../shared/shared.module';
 import { SalariesRoutingModule } from './salaries-routing.module';
 import { SalarieListComponent } from './salarie-list/salarie-list.component';
@@ -11,6 +12,6 @@ import { QrCodeDialogComponent } from './qrcode-dialog/qrcode-dialog.component';
 
 @NgModule({
     declarations: [SalarieListComponent, SalarieDetailComponent, QrCodeDialogComponent],
-    imports: [SharedModule, SalariesRoutingModule, TooltipModule, RouterModule, FormsModule, CheckboxModule]
+    imports: [SharedModule, SalariesRoutingModule, TooltipModule, RouterModule, FormsModule, CheckboxModule, EditorModule]
 })
 export class SalariesModule { }

@@ -6,7 +6,7 @@ import { AuthService } from './auth.service';
  * Vérifie l'authentification et, si la route porte `data.roles`, que
  * l'utilisateur possède au moins un des rôles requis.
  *
- * Ne couvre QUE l'autorisation "globale" (ex: ADMIN, CLIENT, ENTREPRISE).
+ * Ne couvre QUE l'autorisation "globale" (ex: SUPER_ADMIN, CLIENT, ENTREPRISE).
  * L'autorisation contextuelle par chantier (rôle Principale/STT1/STT2, qui
  * dépend du chantier consulté) est vérifiée côté backend uniquement, jamais
  * ici : voir ChantierAuthorizationService côté API.

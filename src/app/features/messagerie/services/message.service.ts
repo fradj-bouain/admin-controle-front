@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { DestinataireType, Message, SendMessageRequest } from '../models/message.model';
+import { Message, SendMessageRequest } from '../models/message.model';
 
 @Injectable({ providedIn: 'root' })
 export class MessageService {
@@ -15,12 +15,16 @@ export class MessageService {
         return this.http.post<Message>(this.baseUrl, request);
     }
 
-    boiteReception(type: DestinataireType, destinataireId: string): Observable<Message[]> {
-        return this.http.get<Message[]>(`${this.baseUrl}/boite-reception`, { params: { type, destinataireId } });
+    boiteReception(): Observable<Message[]> {
+        return this.http.get<Message[]>(`${this.baseUrl}/boite-reception`);
     }
 
     envoyes(): Observable<Message[]> {
         return this.http.get<Message[]>(`${this.baseUrl}/envoyes`);
+    }
+
+    obtenir(id: string): Observable<Message> {
+        return this.http.get<Message>(`${this.baseUrl}/${id}`);
     }
 
     marquerLu(id: string): Observable<Message> {

@@ -34,4 +34,8 @@ export class ClientService {
     desactiver(id: string): Observable<Client> {
         return this.http.post<Client>(`${this.baseUrl}/${id}/desactiver`, {});
     }
+
+    supprimer(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    }
 }

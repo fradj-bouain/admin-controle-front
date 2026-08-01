@@ -4,6 +4,10 @@ import { ChantierService } from '../chantiers/services/chantier.service';
 import { EntrepriseService } from '../entreprises/services/entreprise.service';
 import { SalarieService } from '../salaries/services/salarie.service';
 import { ReferenceDataService } from '../configuration/services/reference-data.service';
+import { ControleService } from '../controles/services/controle.service';
+import { DocumentEnAttente } from '../documents/models/document.model';
+import { DocumentService } from '../documents/services/document.service';
+import { AuthService } from 'src/app/core/auth/auth.service';
 
 interface EtatEntite {
     total: number;
@@ -19,22 +23,45 @@ export class DashboardComponent implements OnInit {
 
     chargement = true;
 
+    // Un compte Contrôleur n'a pas de périmètre sur chantiers/entreprises/salariés
+    // (volontairement inchangé) — son dashboard montre ses contrôles/rapports à la
+    // place, plutôt que des chiffres qui ne le concernent pas.
+    estControleur = false;
+
     statChantiers: EtatEntite | null = null;
     statEntreprises: EtatEntite | null = null;
     statSalaries: EtatEntite | null = null;
+
+    statControles: EtatEntite | null = null;
+    statRapports: EtatEntite | null = null;
 
     chartEtatParc: any;
     chartTypesContrat: any;
     chartOptions: any;
 
+    // Visible uniquement pour le compte interne (SUPER_ADMIN) : un compte
+    // Entreprise/Client/Contrôleur n'a pas accès à GET /documents/en-attente.
+    peutVoirDocumentsEnAttente = false;
+    documentsEnAttente: DocumentEnAttente[] = [];
+
     constructor(
         private chantierService: ChantierService,
         private entrepriseService: EntrepriseService,
         private salarieService: SalarieService,
-        private referenceDataService: ReferenceDataService
+        private referenceDataService: ReferenceDataService,
+        private controleService: ControleService,
+        private documentService: DocumentService,
+        private auth: AuthService
     ) { }
 
     ngOnInit(): void {
+        this.peutVoirDocumentsEnAttente = this.auth.hasRole('SUPER_ADMIN');
+        if (this.peutVoirDocumentsEnAttente) {
+            this.documentService.listerEnAttente().subscribe((documents) => (this.documentsEnAttente = documents));
+        }
+
+        this.estControleur = this.auth.hasRole('CONTROLEUR');
+
         const style = getComputedStyle(document.documentElement);
         const texteSecondaire = style.getPropertyValue('--text-color-secondary') || '#6b7280';
         const bordure = style.getPropertyValue('--surface-border') || '#e5e7eb';
@@ -49,6 +76,28 @@ export class DashboardComponent implements OnInit {
             }
         };
 
+        if (this.estControleur) {
+            this.chargerDashboardControleur();
+        } else {
+            this.chargerDashboardStandard();
+        }
+    }
+
+    private chargerDashboardControleur(): void {
+        forkJoin({
+            controles: this.controleService.lister(),
+            rapports: this.controleService.listerRapports()
+        }).subscribe({
+            next: ({ controles, rapports }) => {
+                this.statControles = this.calculerEtat(controles, (c) => c.termine);
+                this.statRapports = this.calculerEtat(rapports, (r) => !!r.dateEnvoi);
+                this.chargement = false;
+            },
+            error: () => (this.chargement = false)
+        });
+    }
+
+    private chargerDashboardStandard(): void {
         forkJoin({
             chantiers: this.chantierService.lister(),
             entreprises: this.entrepriseService.lister(),

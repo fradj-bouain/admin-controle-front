@@ -1,0 +1,115 @@
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, Validators } from '@angular/forms';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { AuthService } from 'src/app/core/auth/auth.service';
+import { Utilisateur } from '../configuration/models/configuration.model';
+import { UtilisateurService } from '../configuration/services/utilisateur.service';
+
+/**
+ * Auto-gestion des comptes rattachés à SA PROPRE session (Client ou Entreprise) :
+ * le rôle et le rattachement (clientId/entrepriseId) ne sont jamais choisis ici,
+ * le backend les force à ceux de l'appelant quoi que contienne la requête — le
+ * champ `roles` envoyé n'a donc pas besoin d'être exact, juste non vide (validation).
+ */
+@Component({
+    selector: 'app-mon-equipe',
+    templateUrl: './mon-equipe.component.html',
+    providers: [MessageService, ConfirmationService]
+})
+export class MonEquipeComponent implements OnInit {
+
+    utilisateurs: Utilisateur[] = [];
+    dialogVisible = false;
+    saving = false;
+
+    form = this.fb.group({
+        nom: ['', Validators.required],
+        prenom: ['', Validators.required],
+        email: ['', [Validators.required, Validators.email]],
+        username: ['', Validators.required],
+        password: ['', Validators.required]
+    });
+
+    constructor(
+        private fb: FormBuilder,
+        private utilisateurService: UtilisateurService,
+        private auth: AuthService,
+        private message: MessageService,
+        private confirmation: ConfirmationService
+    ) { }
+
+    ngOnInit(): void {
+        this.charger();
+    }
+
+    charger() {
+        this.utilisateurService.lister().subscribe((utilisateurs) => (this.utilisateurs = utilisateurs));
+    }
+
+    ouvrirCreation() {
+        this.form.reset();
+        this.dialogVisible = true;
+    }
+
+    submit() {
+        if (this.form.invalid) {
+            this.form.markAllAsTouched();
+            return;
+        }
+        const value = this.form.getRawValue();
+        const monPropreRole = this.auth.hasRole('CLIENT') ? 'CLIENT' : 'ENTREPRISE';
+        this.saving = true;
+        this.utilisateurService.creer({
+            nom: value.nom!,
+            prenom: value.prenom!,
+            email: value.email!,
+            username: value.username!,
+            password: value.password!,
+            roles: [monPropreRole]
+        }).subscribe({
+            next: () => {
+                this.saving = false;
+                this.dialogVisible = false;
+                this.message.add({ severity: 'success', summary: 'Succès', detail: 'Utilisateur créé' });
+                this.charger();
+            },
+            error: () => {
+                this.saving = false;
+                this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Création impossible' });
+            }
+        });
+    }
+
+    confirmerBasculeStatut(utilisateur: Utilisateur) {
+        this.confirmation.confirm({
+            header: 'Confirmation',
+            message: 'Voulez-vous ' + (utilisateur.actif ? 'désactiver' : 'activer') + ' cet utilisateur ?',
+            accept: () => {
+                const obs = utilisateur.actif
+                    ? this.utilisateurService.desactiver(utilisateur.id)
+                    : this.utilisateurService.activer(utilisateur.id);
+                obs.subscribe({
+                    next: () => this.charger(),
+                    error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
+                });
+            }
+        });
+    }
+
+    confirmerSuppression(utilisateur: Utilisateur) {
+        this.confirmation.confirm({
+            header: 'Confirmation',
+            message: `Voulez-vous supprimer "${utilisateur.username}" ?`,
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.utilisateurService.supprimer(utilisateur.id).subscribe({
+                    next: () => {
+                        this.message.add({ severity: 'success', summary: 'Succès', detail: 'Supprimé' });
+                        this.charger();
+                    },
+                    error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Suppression impossible' })
+                });
+            }
+        });
+    }
+}

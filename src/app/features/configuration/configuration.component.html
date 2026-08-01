@@ -19,7 +19,13 @@
                     </tr>
                     <tr>
                         <th><p-columnFilter type="text" field="username" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                        <th></th>
+                        <th>
+                            <p-columnFilter field="roles" matchMode="contains" [showMenu]="false">
+                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                    <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="rolesOptions" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                                </ng-template>
+                            </p-columnFilter>
+                        </th>
                         <th>
                             <p-columnFilter field="actif" matchMode="equals" [showMenu]="false">
                                 <ng-template pTemplate="filter" let-value let-filter="filterCallback">
@@ -38,14 +44,17 @@
                         </td>
                         <td><p-tag [severity]="utilisateur.actif ? 'success' : 'danger'" [value]="utilisateur.actif ? 'ACTIF' : 'INACTIF'"></p-tag></td>
                         <td>
-                            <button
-                                pButton
-                                type="button"
-                                [icon]="utilisateur.actif ? 'pi pi-ban' : 'pi pi-check'"
-                                class="p-button-text p-button-rounded"
-                                [pTooltip]="utilisateur.actif ? 'Désactiver' : 'Activer'"
-                                (click)="confirmerBasculeStatutUtilisateur(utilisateur)"
-                            ></button>
+                            <div class="flex align-items-center gap-1 flex-nowrap">
+                                <button
+                                    pButton
+                                    type="button"
+                                    [icon]="utilisateur.actif ? 'pi pi-ban' : 'pi pi-check'"
+                                    class="p-button-text p-button-rounded"
+                                    [pTooltip]="utilisateur.actif ? 'Désactiver' : 'Activer'"
+                                    (click)="confirmerBasculeStatutUtilisateur(utilisateur)"
+                                ></button>
+                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="supprimerUtilisateur(utilisateur)"></button>
+                            </div>
                         </td>
                     </tr>
                 </ng-template>
@@ -87,7 +96,10 @@
                         <td>{{ p.nom }}</td>
                         <td>{{ p.zone }}</td>
                         <td>
-                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionPays(p)"></button>
+                            <div class="flex align-items-center gap-1 flex-nowrap">
+                                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionPays(p)"></button>
+                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="supprimerPays(p)"></button>
+                            </div>
                         </td>
                     </tr>
                 </ng-template>
@@ -117,7 +129,10 @@
                     <tr>
                         <td>{{ corps.libelle }}</td>
                         <td>
-                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionCorps(corps)"></button>
+                            <div class="flex align-items-center gap-1 flex-nowrap">
+                                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionCorps(corps)"></button>
+                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="supprimerCorpsDeMetier(corps)"></button>
+                            </div>
                         </td>
                     </tr>
                 </ng-template>
@@ -150,7 +165,10 @@
                         <td>{{ type.code }}</td>
                         <td>{{ type.libelle }}</td>
                         <td>
-                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionTypeSalarie(type)"></button>
+                            <div class="flex align-items-center gap-1 flex-nowrap">
+                                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionTypeSalarie(type)"></button>
+                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="supprimerTypeSalarie(type)"></button>
+                            </div>
                         </td>
                     </tr>
                 </ng-template>
@@ -183,7 +201,10 @@
                         <td>{{ type.code }}</td>
                         <td>{{ type.libelle }}</td>
                         <td>
-                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionTypeContratSalarie(type)"></button>
+                            <div class="flex align-items-center gap-1 flex-nowrap">
+                                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionTypeContratSalarie(type)"></button>
+                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="supprimerTypeContratSalarie(type)"></button>
+                            </div>
                         </td>
                     </tr>
                 </ng-template>
@@ -213,7 +234,10 @@
                     <tr>
                         <td>{{ fonction.libelle }}</td>
                         <td>
-                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionSalarieFonction(fonction)"></button>
+                            <div class="flex align-items-center gap-1 flex-nowrap">
+                                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionSalarieFonction(fonction)"></button>
+                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="supprimerSalarieFonction(fonction)"></button>
+                            </div>
                         </td>
                     </tr>
                 </ng-template>
@@ -243,7 +267,57 @@
                     <tr>
                         <td>{{ tiers.nom }}</td>
                         <td>
-                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionControleTiers(tiers)"></button>
+                            <div class="flex align-items-center gap-1 flex-nowrap">
+                                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionControleTiers(tiers)"></button>
+                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="supprimerControleTiers(tiers)"></button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </p-tabPanel>
+
+    <p-tabPanel header="Actions correctives">
+        <div class="card">
+            <p-toolbar styleClass="mb-4">
+                <ng-template pTemplate="right">
+                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationActionCorrective()"></button>
+                </ng-template>
+            </p-toolbar>
+            <p-table #dtActionsCorrectives [value]="actionsCorrectives" dataKey="id" [paginator]="true" [rows]="10">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Nom</th>
+                        <th>Destiné à</th>
+                        <th style="width: 4rem"></th>
+                    </tr>
+                    <tr>
+                        <th><p-columnFilter type="text" field="nom" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th>
+                            <p-columnFilter field="cible" matchMode="equals" [showMenu]="false">
+                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                    <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Salariés et entreprises', value: 'SALARIES_ET_ENTREPRISES'}, {label: 'Salariés', value: 'SALARIES'}, {label: 'Entreprises', value: 'ENTREPRISES'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                                </ng-template>
+                            </p-columnFilter>
+                        </th>
+                        <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-action>
+                    <tr>
+                        <td>{{ action.nom }}</td>
+                        <td>
+                            <p-tag
+                                [severity]="action.cible === 'SALARIES' ? 'info' : (action.cible === 'ENTREPRISES' ? 'warning' : undefined)"
+                                [value]="action.cible === 'SALARIES' ? 'Salariés' : (action.cible === 'ENTREPRISES' ? 'Entreprises' : 'Salariés et entreprises')"
+                            ></p-tag>
+                        </td>
+                        <td>
+                            <div class="flex align-items-center gap-1 flex-nowrap">
+                                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionActionCorrective(action)"></button>
+                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="supprimerActionCorrective(action)"></button>
+                            </div>
                         </td>
                     </tr>
                 </ng-template>
@@ -258,3 +332,4 @@
 <app-type-contrat-salarie-form-dialog [(visible)]="dialogTypeContratSalarieVisible" [itemToEdit]="typeContratSalarieToEdit" (created)="creerTypeContratSalarie($event)" (updated)="modifierTypeContratSalarie($event)"></app-type-contrat-salarie-form-dialog>
 <app-salarie-fonction-form-dialog [(visible)]="dialogSalarieFonctionVisible" [itemToEdit]="salarieFonctionToEdit" (created)="creerSalarieFonction($event)" (updated)="modifierSalarieFonction($event)"></app-salarie-fonction-form-dialog>
 <app-controle-tiers-form-dialog [(visible)]="dialogControleTiersVisible" [itemToEdit]="controleTiersToEdit" (created)="creerControleTiers($event)" (updated)="modifierControleTiers($event)"></app-controle-tiers-form-dialog>
+<app-action-corrective-form-dialog [(visible)]="dialogActionCorrectiveVisible" [itemToEdit]="actionCorrectiveToEdit" (created)="creerActionCorrective($event)" (updated)="modifierActionCorrective($event)"></app-action-corrective-form-dialog>

@@ -99,12 +99,7 @@
         </div>
 
         <div class="field">
-            <label for="fichierModele">Fichier modèle ODT / PDF</label>
-            <div class="flex align-items-center gap-2">
-                <label for="fichierModele" pButton type="button" icon="pi pi-upload" label="Choisir un fichier" class="p-button-outlined w-auto" style="cursor: pointer;"></label>
-                <input id="fichierModele" type="file" accept=".odt,.pdf" class="p-hidden-accessible" (change)="onFichierChange($event)" />
-                <span class="text-500">{{ fichierModeleNom || 'Aucun fichier sélectionné' }}</span>
-            </div>
+            <app-modele-fichier-upload [(fichierNom)]="fichierModeleNom" aide="Balises disponibles : [DATE], [CHANTIER_NOM], [DOCUMENT_LIBELLE]"></app-modele-fichier-upload>
         </div>
 
         <div class="field">

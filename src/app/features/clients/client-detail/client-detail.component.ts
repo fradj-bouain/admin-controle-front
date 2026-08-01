@@ -46,6 +46,17 @@ export class ClientDetailComponent implements OnInit {
         responsableSignataireAgrement: ['']
     });
 
+    // --- Compte utilisateur créé en même temps que le client (gain de temps :
+    // plus besoin d'un aller-retour par Configuration > Utilisateurs) ---
+    creerCompteUtilisateur = false;
+    compteForm = this.fb.group({
+        prenom: ['', Validators.required],
+        nom: ['', Validators.required],
+        email: ['', [Validators.required, Validators.email]],
+        username: ['', Validators.required],
+        password: ['', [Validators.required, Validators.minLength(8)]]
+    });
+
     constructor(
         private fb: FormBuilder,
         private route: ActivatedRoute,
@@ -95,6 +106,10 @@ export class ClientDetailComponent implements OnInit {
             this.coordonneesForm.markAllAsTouched();
             return;
         }
+        if (this.isNew && this.creerCompteUtilisateur && this.compteForm.invalid) {
+            this.compteForm.markAllAsTouched();
+            return;
+        }
         const value = this.coordonneesForm.getRawValue();
         const payload = {
             raisonSociale: value.raisonSociale!,
@@ -117,7 +132,7 @@ export class ClientDetailComponent implements OnInit {
         this.saving = true;
         if (this.isNew) {
             this.clientService.creer(payload).subscribe({
-                next: (client) => this.router.navigate(['/clients', client.id]),
+                next: (client) => this.finaliserCreationClient(client.id),
                 error: () => {
                     this.saving = false;
                     this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Création impossible' });
@@ -136,6 +151,51 @@ export class ClientDetailComponent implements OnInit {
                 }
             });
         }
+    }
+
+    private finaliserCreationClient(clientId: string) {
+        if (!this.creerCompteUtilisateur) {
+            this.router.navigate(['/clients', clientId]);
+            return;
+        }
+        const compte = this.compteForm.getRawValue();
+        this.utilisateurService.creer({
+            nom: compte.nom!,
+            prenom: compte.prenom!,
+            email: compte.email!,
+            username: compte.username!,
+            password: compte.password!,
+            roles: ['CLIENT'],
+            clientId
+        }).subscribe({
+            next: () => {
+                this.message.add({ severity: 'success', summary: 'Succès', detail: 'Client et compte utilisateur créés' });
+                this.router.navigate(['/clients', clientId]);
+            },
+            error: () => {
+                this.message.add({
+                    severity: 'warn', summary: 'Client créé',
+                    detail: "Le compte utilisateur n'a pas pu être créé (identifiant déjà utilisé ?). Vous pourrez le créer depuis Configuration > Utilisateurs."
+                });
+                this.router.navigate(['/clients', clientId]);
+            }
+        });
+    }
+
+    genererMotDePasse() {
+        const majuscules = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        const minuscules = 'abcdefghjkmnpqrstuvwxyz';
+        const chiffres = '23456789';
+        const speciaux = '!@#$%*?';
+        const alphabet = majuscules + minuscules + chiffres + speciaux;
+        const alea = (jeu: string) => jeu[Math.floor(Math.random() * jeu.length)];
+        let mdp = alea(majuscules) + alea(minuscules) + alea(chiffres) + alea(speciaux);
+        for (let i = mdp.length; i < 12; i++) {
+            mdp += alea(alphabet);
+        }
+        mdp = mdp.split('').sort(() => Math.random() - 0.5).join('');
+        this.compteForm.patchValue({ password: mdp });
+        this.compteForm.controls.password.markAsTouched();
     }
 
     confirmerBasculeStatut() {

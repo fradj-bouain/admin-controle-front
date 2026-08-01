@@ -72,3 +72,23 @@ export interface CreateDocumentRequest {
     dateRelance?: string;
     mentions?: string;
 }
+
+export interface HistoriqueModification {
+    id: string;
+    entite: string;
+    entiteId: string;
+    action: string;
+    details: Record<string, unknown>;
+    utilisateurId?: string;
+    createdAt: string;
+}
+
+export interface DocumentEnAttente {
+    documentId: string;
+    typeLibelle: string;
+    salarieId?: string;
+    salarieNom?: string;
+    entrepriseId?: string;
+    entrepriseNom?: string;
+    createdAt: string;
+}

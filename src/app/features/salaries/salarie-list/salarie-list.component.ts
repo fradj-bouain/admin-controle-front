@@ -66,4 +66,18 @@ export class SalarieListComponent implements OnInit {
             }
         });
     }
+
+    confirmerSuppression(salarie: Salarie) {
+        this.confirmation.confirm({
+            header: 'Confirmation',
+            message: `Voulez-vous supprimer le salarié "${salarie.prenom} ${salarie.nom}" ?`,
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.salarieService.supprimer(salarie.id).subscribe({
+                    next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Salarié supprimé' }); this.charger(); },
+                    error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Suppression impossible' })
+                });
+            }
+        });
+    }
 }

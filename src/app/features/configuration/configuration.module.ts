@@ -14,6 +14,7 @@ import { TypeSalarieFormDialogComponent } from './type-salarie-form-dialog/type-
 import { TypeContratSalarieFormDialogComponent } from './type-contrat-salarie-form-dialog/type-contrat-salarie-form-dialog.component';
 import { SalarieFonctionFormDialogComponent } from './salarie-fonction-form-dialog/salarie-fonction-form-dialog.component';
 import { ControleTiersFormDialogComponent } from './controle-tiers-form-dialog/controle-tiers-form-dialog.component';
+import { ActionCorrectiveFormDialogComponent } from './action-corrective-form-dialog/action-corrective-form-dialog.component';
 import { UtilisateurFormPageComponent } from './utilisateur-form-page/utilisateur-form-page.component';
 
 @NgModule({
@@ -25,6 +26,7 @@ import { UtilisateurFormPageComponent } from './utilisateur-form-page/utilisateu
         TypeContratSalarieFormDialogComponent,
         SalarieFonctionFormDialogComponent,
         ControleTiersFormDialogComponent,
+        ActionCorrectiveFormDialogComponent,
         UtilisateurFormPageComponent
     ],
     imports: [SharedModule, ConfigurationRoutingModule, FormsModule, TabViewModule, MultiSelectModule, RouterModule, TooltipModule]

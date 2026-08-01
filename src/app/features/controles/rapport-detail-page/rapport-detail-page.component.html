@@ -1,0 +1,149 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<ng-container *ngIf="rapport">
+
+<div class="card mb-3 no-print">
+    <div class="flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="flex align-items-center gap-3">
+            <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
+            <div>
+                <h5 class="m-0">Rapport de contrôle{{ chantier ? ' — ' + chantier.nom : '' }}</h5>
+                <p-tag *ngIf="rapport.dateEnvoi" severity="success" value="Envoyé" class="mt-1"></p-tag>
+                <p-tag *ngIf="!rapport.dateEnvoi" severity="warning" value="Non envoyé" class="mt-1"></p-tag>
+            </div>
+        </div>
+        <div class="flex align-items-center gap-2">
+            <button pButton type="button" icon="pi pi-print" label="Imprimer / PDF" class="p-button-outlined" (click)="imprimer()"></button>
+            <button pButton type="button" icon="pi pi-send" label="Renvoyer par email" class="p-button-outlined" [loading]="envoiEnCours" (click)="confirmerRenvoiEmail()"></button>
+            <button pButton type="button" icon="pi pi-pencil" label="Modifier" class="p-button-outlined" *ngIf="!edition" (click)="ouvrirEdition()"></button>
+            <button pButton type="button" icon="pi pi-trash" label="Supprimer" class="p-button-outlined p-button-danger" (click)="confirmerSuppression()"></button>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3 rapport-imprimable">
+    <div class="card-head">
+        <i class="pi pi-file"></i>
+        <h6 class="m-0">Synthèse</h6>
+    </div>
+
+    <p class="text-500 mb-4 hidden-screen">Chantier : <strong>{{ chantier?.nom }}</strong></p>
+
+    <div class="grid">
+        <div class="col-6 md:col-3">
+            <div class="text-500 text-sm">Salariés contrôlés</div>
+            <div class="text-2xl font-bold tabular-nums">{{ rapport.nbSalariesControles }}</div>
+        </div>
+        <div class="col-6 md:col-3">
+            <div class="text-500 text-sm">Accords</div>
+            <div class="text-2xl font-bold tabular-nums text-green-600">{{ rapport.nbAccords }}</div>
+        </div>
+        <div class="col-6 md:col-3">
+            <div class="text-500 text-sm">Refus</div>
+            <div class="text-2xl font-bold tabular-nums text-red-600">{{ rapport.nbRefus }}</div>
+        </div>
+        <div class="col-6 md:col-3">
+            <div class="text-500 text-sm">Entreprises</div>
+            <div class="text-2xl font-bold tabular-nums">{{ rapport.nbEntreprises }}</div>
+        </div>
+    </div>
+
+    <div class="grid mt-2" *ngIf="!edition">
+        <div class="col-6 md:col-3">
+            <div class="text-500 text-sm">Nouvelles entreprises</div>
+            <div class="font-medium tabular-nums">{{ rapport.nbNouvellesEntreprises }}</div>
+        </div>
+        <div class="col-6 md:col-3">
+            <div class="text-500 text-sm">Nouveaux salariés</div>
+            <div class="font-medium tabular-nums">{{ rapport.nbNouveauxSalaries }}</div>
+        </div>
+        <div class="col-6 md:col-3">
+            <div class="text-500 text-sm">Salariés détachés</div>
+            <div class="font-medium tabular-nums">{{ rapport.nbSalariesDetaches }}</div>
+        </div>
+        <div class="col-6 md:col-3">
+            <div class="text-500 text-sm">Responsable</div>
+            <div class="font-medium">{{ nomResponsable(rapport.responsableUtilisateurId) }}</div>
+        </div>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="enregistrerEdition()" class="p-fluid no-print" *ngIf="edition">
+        <div class="formgrid grid mt-3">
+            <div class="field col-12 md:col-4">
+                <label for="nbNouvellesEntreprises">Nouvelles entreprises</label>
+                <p-inputNumber id="nbNouvellesEntreprises" formControlName="nbNouvellesEntreprises" [min]="0"></p-inputNumber>
+            </div>
+            <div class="field col-12 md:col-4">
+                <label for="nbNouveauxSalaries">Nouveaux salariés</label>
+                <p-inputNumber id="nbNouveauxSalaries" formControlName="nbNouveauxSalaries" [min]="0"></p-inputNumber>
+            </div>
+            <div class="field col-12 md:col-4">
+                <label for="nbSalariesDetaches">Salariés détachés</label>
+                <p-inputNumber id="nbSalariesDetaches" formControlName="nbSalariesDetaches" [min]="0"></p-inputNumber>
+            </div>
+        </div>
+        <div class="field">
+            <label for="responsableUtilisateurId">Responsable du chantier</label>
+            <p-dropdown
+                id="responsableUtilisateurId"
+                [options]="utilisateurs"
+                formControlName="responsableUtilisateurId"
+                optionLabel="username"
+                optionValue="id"
+                [filter]="true"
+                filterBy="username"
+                placeholder="-- Sélectionner --"
+                [showClear]="true"
+            ></p-dropdown>
+        </div>
+        <div class="flex justify-content-end gap-2 mt-3">
+            <button pButton type="button" label="Annuler" class="p-button-text" (click)="annulerEdition()"></button>
+            <button pButton type="submit" label="Enregistrer" icon="pi pi-check"></button>
+        </div>
+    </form>
+</div>
+
+<div class="card mb-3 rapport-imprimable">
+    <div class="card-head">
+        <i class="pi pi-users"></i>
+        <h6 class="m-0">Checklist du contrôle</h6>
+    </div>
+    <p-table [value]="entrees" dataKey="id" *ngIf="entrees.length > 0">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Salarié</th>
+                <th>Entreprise</th>
+                <th>Statut</th>
+                <th>Motif</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-entree>
+            <tr>
+                <td>{{ nomSalarie(entree.salarieId) }}</td>
+                <td>{{ nomEntreprise(entree.entrepriseId) }}</td>
+                <td><p-tag [severity]="entree.accorde ? 'success' : 'danger'" [value]="entree.accorde ? 'Accordé' : 'Refusé'"></p-tag></td>
+                <td>{{ !entree.accorde ? libelleMotif(entree.actionCorrectiveId) : '—' }}</td>
+            </tr>
+        </ng-template>
+    </p-table>
+    <p class="text-500 text-center py-3" *ngIf="entrees.length === 0">Aucune checklist enregistrée pour ce contrôle.</p>
+</div>
+
+<div class="card no-print" *ngIf="autresRapports.length > 0">
+    <div class="card-head">
+        <i class="pi pi-history"></i>
+        <h6 class="m-0">Autres rapports pour ce chantier</h6>
+    </div>
+    <ul class="list-none p-0 m-0">
+        <li *ngFor="let r of autresRapports" class="flex align-items-center justify-content-between py-2 border-bottom-1 surface-border">
+            <a class="cursor-pointer text-primary" [routerLink]="['/controles/rapports', r.id]">
+                {{ r.nbSalariesControles }} salarié(s) contrôlé(s) — {{ r.nbAccords }} accord(s), {{ r.nbRefus }} refus
+            </a>
+            <p-tag *ngIf="r.dateEnvoi" severity="success" value="Envoyé"></p-tag>
+            <p-tag *ngIf="!r.dateEnvoi" severity="warning" value="Non envoyé"></p-tag>
+        </li>
+    </ul>
+</div>
+
+</ng-container>

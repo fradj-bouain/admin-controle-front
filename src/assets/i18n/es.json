@@ -9,7 +9,8 @@
         "rapports": "Informes",
         "documents": "Documentos",
         "messagerie": "Mensajería",
-        "configuration": "Configuración"
+        "configuration": "Configuración",
+        "monEquipe": "Mi equipo"
     },
     "common": {
         "add": "Añadir",

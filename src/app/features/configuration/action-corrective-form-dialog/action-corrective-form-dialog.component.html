@@ -1,0 +1,25 @@
+<p-dialog
+    [header]="itemToEdit ? 'Modifier l\'action corrective' : 'Nouvelle action corrective'"
+    [(visible)]="visible"
+    (visibleChange)="visibleChange.emit($event)"
+    [modal]="true"
+    [style]="{ width: '30rem' }"
+    (onHide)="close()"
+>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
+        <div class="field">
+            <label for="nom">Nom *</label>
+            <input id="nom" type="text" pInputText formControlName="nom" class="w-full" [class.ng-dirty]="form.controls.nom.touched" />
+            <small class="p-error" *ngIf="form.controls.nom.invalid && form.controls.nom.touched">Ce champ est requis.</small>
+        </div>
+        <div class="field">
+            <label for="cible">Destiné à tous les *</label>
+            <p-dropdown id="cible" [options]="cibles" formControlName="cible" optionLabel="label" optionValue="value" class="w-full" styleClass="w-full"></p-dropdown>
+        </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="Annuler" class="p-button-text" (click)="close()"></button>
+        <button pButton type="button" label="Enregistrer" (click)="submit()"></button>
+    </ng-template>
+</p-dialog>

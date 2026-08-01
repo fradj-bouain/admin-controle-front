@@ -9,7 +9,8 @@
         "rapports": "Reports",
         "documents": "Documents",
         "messagerie": "Messaging",
-        "configuration": "Configuration"
+        "configuration": "Configuration",
+        "monEquipe": "My Team"
     },
     "common": {
         "add": "Add",

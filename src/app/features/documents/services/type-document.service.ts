@@ -26,4 +26,8 @@ export class TypeDocumentService {
     modifier(id: string, request: CreateTypeDocumentRequest): Observable<TypeDocument> {
         return this.http.put<TypeDocument>(`${this.baseUrl}/${id}`, request);
     }
+
+    supprimer(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    }
 }

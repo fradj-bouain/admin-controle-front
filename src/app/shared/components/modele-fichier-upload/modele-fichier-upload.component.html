@@ -1,0 +1,27 @@
+<label class="block mb-2">{{ label }}</label>
+
+<div
+    class="modele-upload"
+    [class.modele-upload--dragover]="survole"
+    [class.modele-upload--filled]="fichierNom"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave()"
+    (drop)="onDrop($event)"
+    (click)="fileInput.click()"
+>
+    <input #fileInput type="file" accept=".odt,.pdf" class="p-hidden-accessible" (change)="onFichierChoisi($event)" (click)="$event.stopPropagation()" />
+
+    <ng-container *ngIf="!fichierNom">
+        <i class="pi pi-cloud-upload modele-upload__icon"></i>
+        <span class="modele-upload__titre">Glisser un fichier ici, ou cliquez pour parcourir</span>
+        <span class="modele-upload__formats">ODT · PDF</span>
+    </ng-container>
+
+    <div class="modele-upload__fichier" *ngIf="fichierNom">
+        <span class="modele-upload__badge">{{ extension }}</span>
+        <span class="modele-upload__nom" [pTooltip]="fichierNom">{{ fichierNom }}</span>
+        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-sm" (click)="retirer($event)"></button>
+    </div>
+</div>
+
+<small class="text-500 block mt-2">{{ aide }}</small>

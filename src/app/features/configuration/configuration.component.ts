@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { Observable } from 'rxjs';
 import {
-    ControleTiers, CorpsDeMetier, CreateControleTiersRequest, CreateCorpsDeMetierRequest,
+    ActionCorrective, ControleTiers, CorpsDeMetier, CreateActionCorrectiveRequest, CreateControleTiersRequest, CreateCorpsDeMetierRequest,
     CreatePaysRequest, CreateSalarieFonctionRequest, CreateTypeContratSalarieRequest,
     CreateTypeSalarieRequest, Pays, SalarieFonction, TypeContratSalarie, TypeSalarie, Utilisateur
 } from './models/configuration.model';
@@ -21,7 +22,14 @@ export class ConfigurationComponent implements OnInit {
     typesContratSalarie: TypeContratSalarie[] = [];
     salarieFonctions: SalarieFonction[] = [];
     controleTiers: ControleTiers[] = [];
+    actionsCorrectives: ActionCorrective[] = [];
     utilisateurs: Utilisateur[] = [];
+    rolesOptions = [
+        { label: 'Super administrateur', value: 'SUPER_ADMIN' },
+        { label: 'Client', value: 'CLIENT' },
+        { label: 'Entreprise', value: 'ENTREPRISE' },
+        { label: 'Contrôleur', value: 'CONTROLEUR' }
+    ];
 
     dialogPaysVisible = false;
     dialogCorpsVisible = false;
@@ -29,6 +37,7 @@ export class ConfigurationComponent implements OnInit {
     dialogTypeContratSalarieVisible = false;
     dialogSalarieFonctionVisible = false;
     dialogControleTiersVisible = false;
+    dialogActionCorrectiveVisible = false;
 
     paysToEdit: Pays | null = null;
     corpsToEdit: CorpsDeMetier | null = null;
@@ -36,6 +45,7 @@ export class ConfigurationComponent implements OnInit {
     typeContratSalarieToEdit: TypeContratSalarie | null = null;
     salarieFonctionToEdit: SalarieFonction | null = null;
     controleTiersToEdit: ControleTiers | null = null;
+    actionCorrectiveToEdit: ActionCorrective | null = null;
 
     constructor(
         private referenceDataService: ReferenceDataService,
@@ -51,6 +61,7 @@ export class ConfigurationComponent implements OnInit {
         this.chargerTypesContratSalarie();
         this.chargerSalarieFonctions();
         this.chargerControleTiers();
+        this.chargerActionsCorrectives();
         this.chargerUtilisateurs();
     }
 
@@ -78,6 +89,10 @@ export class ConfigurationComponent implements OnInit {
         this.referenceDataService.listerControleTiers().subscribe((tiers) => (this.controleTiers = tiers));
     }
 
+    chargerActionsCorrectives() {
+        this.referenceDataService.listerActionsCorrectives().subscribe((actions) => (this.actionsCorrectives = actions));
+    }
+
     chargerUtilisateurs() {
         this.utilisateurService.lister().subscribe((utilisateurs) => (this.utilisateurs = utilisateurs));
     }
@@ -98,6 +113,52 @@ export class ConfigurationComponent implements OnInit {
         });
     }
 
+    confirmerSuppression(libelle: string, action: () => Observable<void>, recharger: () => void) {
+        this.confirmation.confirm({
+            header: 'Confirmation',
+            message: `Voulez-vous supprimer "${libelle}" ?`,
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                action().subscribe({
+                    next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Supprimé' }); recharger(); },
+                    error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Suppression impossible' })
+                });
+            }
+        });
+    }
+
+    supprimerUtilisateur(u: Utilisateur) {
+        this.confirmerSuppression(u.username, () => this.utilisateurService.supprimer(u.id), () => this.chargerUtilisateurs());
+    }
+
+    supprimerPays(item: Pays) {
+        this.confirmerSuppression(item.nom, () => this.referenceDataService.supprimerPays(item.id), () => this.chargerPays());
+    }
+
+    supprimerCorpsDeMetier(item: CorpsDeMetier) {
+        this.confirmerSuppression(item.libelle, () => this.referenceDataService.supprimerCorpsDeMetier(item.id), () => this.chargerCorpsDeMetier());
+    }
+
+    supprimerTypeSalarie(item: TypeSalarie) {
+        this.confirmerSuppression(item.libelle, () => this.referenceDataService.supprimerTypeSalarie(item.id), () => this.chargerTypesSalarie());
+    }
+
+    supprimerTypeContratSalarie(item: TypeContratSalarie) {
+        this.confirmerSuppression(item.libelle, () => this.referenceDataService.supprimerTypeContratSalarie(item.id), () => this.chargerTypesContratSalarie());
+    }
+
+    supprimerSalarieFonction(item: SalarieFonction) {
+        this.confirmerSuppression(item.libelle, () => this.referenceDataService.supprimerSalarieFonction(item.id), () => this.chargerSalarieFonctions());
+    }
+
+    supprimerControleTiers(item: ControleTiers) {
+        this.confirmerSuppression(item.nom, () => this.referenceDataService.supprimerControleTiers(item.id), () => this.chargerControleTiers());
+    }
+
+    supprimerActionCorrective(item: ActionCorrective) {
+        this.confirmerSuppression(item.nom, () => this.referenceDataService.supprimerActionCorrective(item.id), () => this.chargerActionsCorrectives());
+    }
+
     ouvrirCreationPays() { this.paysToEdit = null; this.dialogPaysVisible = true; }
     ouvrirEditionPays(item: Pays) { this.paysToEdit = item; this.dialogPaysVisible = true; }
 
@@ -115,6 +176,9 @@ export class ConfigurationComponent implements OnInit {
 
     ouvrirCreationControleTiers() { this.controleTiersToEdit = null; this.dialogControleTiersVisible = true; }
     ouvrirEditionControleTiers(item: ControleTiers) { this.controleTiersToEdit = item; this.dialogControleTiersVisible = true; }
+
+    ouvrirCreationActionCorrective() { this.actionCorrectiveToEdit = null; this.dialogActionCorrectiveVisible = true; }
+    ouvrirEditionActionCorrective(item: ActionCorrective) { this.actionCorrectiveToEdit = item; this.dialogActionCorrectiveVisible = true; }
 
     creerPays(request: CreatePaysRequest) {
         this.referenceDataService.creerPays(request).subscribe({
@@ -196,6 +260,20 @@ export class ConfigurationComponent implements OnInit {
     modifierControleTiers(event: { id: string; request: CreateControleTiersRequest }) {
         this.referenceDataService.modifierControleTiers(event.id, event.request).subscribe({
             next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Contrôleur tiers modifié' }); this.chargerControleTiers(); },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Modification impossible' })
+        });
+    }
+
+    creerActionCorrective(request: CreateActionCorrectiveRequest) {
+        this.referenceDataService.creerActionCorrective(request).subscribe({
+            next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Action corrective ajoutée' }); this.chargerActionsCorrectives(); },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Création impossible' })
+        });
+    }
+
+    modifierActionCorrective(event: { id: string; request: CreateActionCorrectiveRequest }) {
+        this.referenceDataService.modifierActionCorrective(event.id, event.request).subscribe({
+            next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Action corrective modifiée' }); this.chargerActionsCorrectives(); },
             error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Modification impossible' })
         });
     }

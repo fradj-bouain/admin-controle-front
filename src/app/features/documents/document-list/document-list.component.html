@@ -1,4 +1,5 @@
 <p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
 
 <p-tabView [(activeIndex)]="activeTabIndex">
     <p-tabPanel header="Documents">
@@ -53,7 +54,7 @@
                         <th style="width: 10rem"></th>
                     </tr>
                     <tr>
-                        <th></th>
+                        <th><p-columnFilter type="text" field="typeLibelle" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                         <th></th>
                         <th>
                             <p-columnFilter field="statutValidation" matchMode="equals" [showMenu]="false">
@@ -68,7 +69,7 @@
                 </ng-template>
                 <ng-template pTemplate="body" let-document>
                     <tr [class.row-highlight]="document.id === documentHighlightId">
-                        <td>{{ libelleType(document.typeDocumentId) }}</td>
+                        <td>{{ document.typeLibelle }}</td>
                         <td>{{ document.dateExpiration }}</td>
                         <td>
                             <p-tag
@@ -82,6 +83,7 @@
                                 <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="document.statutValidation !== 'VALIDE'" (click)="valider(document)"></button>
                                 <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="document.statutValidation !== 'REFUSE'" (click)="ouvrirRefus(document)"></button>
                                 <button pButton type="button" icon="pi pi-envelope" class="p-button-text p-button-rounded" pTooltip="Notifier par email" (click)="ouvrirNotification(document)"></button>
+                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppressionDocument(document)"></button>
                             </div>
                         </td>
                     </tr>
@@ -137,7 +139,10 @@
                         <td>{{ type.format }}</td>
                         <td><p-tag *ngIf="type.obligatoire" severity="danger" value="Obligatoire"></p-tag></td>
                         <td>
-                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/documents/types', type.id]"></button>
+                            <div class="flex align-items-center gap-1 flex-nowrap">
+                                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/documents/types', type.id]"></button>
+                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppressionType(type)"></button>
+                            </div>
                         </td>
                     </tr>
                 </ng-template>
@@ -177,7 +182,10 @@
                         <td><p-tag *ngIf="etat.dateExpiree" severity="warning" value="Oui"></p-tag></td>
                         <td><p-tag *ngIf="etat.valideLeDocument" severity="success" value="Oui"></p-tag></td>
                         <td>
-                            <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionEtat(etat)"></button>
+                            <div class="flex align-items-center gap-1 flex-nowrap">
+                                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionEtat(etat)"></button>
+                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppressionEtat(etat)"></button>
+                            </div>
                         </td>
                     </tr>
                 </ng-template>

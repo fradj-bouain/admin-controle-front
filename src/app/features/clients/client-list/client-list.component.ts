@@ -47,4 +47,18 @@ export class ClientListComponent implements OnInit {
             }
         });
     }
+
+    confirmerSuppression(client: Client) {
+        this.confirmation.confirm({
+            header: 'Confirmation',
+            message: `Voulez-vous supprimer le client "${client.raisonSociale}" ?`,
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.clientService.supprimer(client.id).subscribe({
+                    next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Client supprimé' }); this.charger(); },
+                    error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Suppression impossible' })
+                });
+            }
+        });
+    }
 }

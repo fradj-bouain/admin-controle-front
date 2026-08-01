@@ -1,4 +1,5 @@
 <p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
 
 <p-tabView>
     <p-tabPanel header="Contrôles">
@@ -61,7 +62,11 @@
                             <p-tag [severity]="controle.termine ? 'success' : 'warning'" [value]="controle.termine ? 'Terminé' : 'En cours'"></p-tag>
                         </td>
                         <td>
-                            <button pButton type="button" label="Générer un rapport" class="p-button-text" (click)="ouvrirGenerationRapport(controle)"></button>
+                            <div class="flex align-items-center gap-1 flex-nowrap">
+                                <button pButton type="button" label="Générer un rapport" class="p-button-text" (click)="ouvrirGenerationRapport(controle)"></button>
+                                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/controles', controle.id]"></button>
+                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppression(controle)"></button>
+                            </div>
                         </td>
                     </tr>
                 </ng-template>
@@ -98,7 +103,7 @@
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-rapport>
-                    <tr>
+                    <tr class="cursor-pointer" [routerLink]="['/controles/rapports', rapport.id]">
                         <td>{{ rapport.nbSalariesControles }}</td>
                         <td>{{ rapport.nbAccords }}</td>
                         <td>{{ rapport.nbRefus }}</td>
@@ -110,14 +115,7 @@
                             <p-tag *ngIf="!rapport.dateEnvoi" severity="warning" value="Non envoyé"></p-tag>
                         </td>
                         <td>
-                            <button
-                                pButton
-                                type="button"
-                                label="Envoyer"
-                                class="p-button-text"
-                                *ngIf="!rapport.dateEnvoi"
-                                (click)="envoyerRapport(rapport)"
-                            ></button>
+                            <button pButton type="button" icon="pi pi-eye" class="p-button-text p-button-rounded" pTooltip="Voir le rapport" [routerLink]="['/controles/rapports', rapport.id]" (click)="$event.stopPropagation()"></button>
                         </td>
                     </tr>
                 </ng-template>

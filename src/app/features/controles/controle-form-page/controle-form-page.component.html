@@ -3,7 +3,7 @@
 <div class="card" style="max-width: 720px;">
     <div class="flex align-items-center gap-3 mb-4">
         <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="annuler()"></button>
-        <h5 class="m-0">Nouveau contrôle</h5>
+        <h5 class="m-0">{{ isNew ? 'Nouveau contrôle' : 'Modifier le contrôle' }}</h5>
     </div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
@@ -44,7 +44,7 @@
 
         <div class="flex justify-content-end gap-2 mt-4">
             <button pButton type="button" label="Annuler" class="p-button-text" (click)="annuler()"></button>
-            <button pButton type="submit" label="Enregistrer" icon="pi pi-check" [loading]="saving"></button>
+            <button pButton type="submit" [label]="isNew ? 'Ajouter' : 'Enregistrer'" icon="pi pi-check" [loading]="saving"></button>
         </div>
     </form>
 </div>

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { CibleDocument, CreateDocumentEtatRequest, DocumentEtat, DocumentItem, TypeDocument } from '../models/document.model';
 import { TypeDocumentService } from '../services/type-document.service';
 import { DocumentService } from '../services/document.service';
@@ -13,7 +13,7 @@ import { EntrepriseService } from 'src/app/features/entreprises/services/entrepr
 @Component({
     selector: 'app-document-list',
     templateUrl: './document-list.component.html',
-    providers: [MessageService]
+    providers: [MessageService, ConfirmationService]
 })
 export class DocumentListComponent implements OnInit {
 
@@ -26,7 +26,7 @@ export class DocumentListComponent implements OnInit {
     entreprises: Entreprise[] = [];
     entiteId: string | null = null;
 
-    documents: DocumentItem[] = [];
+    documents: Array<DocumentItem & { typeLibelle: string }> = [];
     dialogDocumentVisible = false;
     dialogEtatVisible = false;
     etatToEdit: DocumentEtat | null = null;
@@ -60,6 +60,7 @@ export class DocumentListComponent implements OnInit {
         private salarieService: SalarieService,
         private entrepriseService: EntrepriseService,
         private message: MessageService,
+        private confirmation: ConfirmationService,
         private route: ActivatedRoute
     ) { }
 
@@ -127,7 +128,7 @@ export class DocumentListComponent implements OnInit {
             ? this.documentService.listerParSalarie(this.entiteId)
             : this.documentService.listerParEntreprise(this.entiteId);
         obs.subscribe((documents) => {
-            this.documents = documents;
+            this.documents = documents.map((d) => ({ ...d, typeLibelle: this.libelleType(d.typeDocumentId) }));
             if (this.documentHighlightId) {
                 const index = documents.findIndex((d) => d.id === this.documentHighlightId);
                 this.tableFirst = index >= 0 ? Math.floor(index / 10) * 10 : 0;
@@ -242,6 +243,48 @@ export class DocumentListComponent implements OnInit {
         this.documentEtatService.modifier(event.id, event.request).subscribe({
             next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'État modifié' }); this.chargerEtats(); },
             error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Modification impossible' })
+        });
+    }
+
+    confirmerSuppressionDocument(document: DocumentItem) {
+        this.confirmation.confirm({
+            header: 'Confirmation',
+            message: `Voulez-vous supprimer ce document "${this.libelleType(document.typeDocumentId)}" ?`,
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.documentService.supprimer(document.id).subscribe({
+                    next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Document supprimé' }); this.onEntiteChange(); },
+                    error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Suppression impossible' })
+                });
+            }
+        });
+    }
+
+    confirmerSuppressionType(type: TypeDocument) {
+        this.confirmation.confirm({
+            header: 'Confirmation',
+            message: `Voulez-vous supprimer le type de document "${type.libelle}" ?`,
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.typeDocumentService.supprimer(type.id).subscribe({
+                    next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Type de document supprimé' }); this.chargerTypes(); },
+                    error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Suppression impossible' })
+                });
+            }
+        });
+    }
+
+    confirmerSuppressionEtat(etat: DocumentEtat) {
+        this.confirmation.confirm({
+            header: 'Confirmation',
+            message: `Voulez-vous supprimer l'état "${etat.titre}" ?`,
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.documentEtatService.supprimer(etat.id).subscribe({
+                    next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'État supprimé' }); this.chargerEtats(); },
+                    error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Suppression impossible' })
+                });
+            }
         });
     }
 }

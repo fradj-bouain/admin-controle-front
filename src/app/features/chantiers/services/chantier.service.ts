@@ -50,4 +50,8 @@ export class ChantierService {
     affecterSalarieResponsable(id: string, salarieId: string): Observable<Chantier> {
         return this.http.put<Chantier>(`${this.baseUrl}/${id}/salarie-responsable/${salarieId}`, {});
     }
+
+    supprimer(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    }
 }

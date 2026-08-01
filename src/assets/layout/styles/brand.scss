@@ -89,7 +89,13 @@ h1, h2, h3, h4, h5, h6 {
 .card-head h6 {
     margin: 0;
 }
-.card-head i:first-child {
+/* Ciblé précisément sur l'icône-badge du titre (enfant direct de .card-head,
+   ou premier enfant de son premier div-wrapper quand le header a aussi des
+   contrôles à droite) — un simple ".card-head i:first-child" (descendant)
+   attrapait à tort l'icône de recherche des filtres placés plus loin dans
+   le même header, la faisant passer en pastille 30x30 mal alignée. */
+.card-head > i:first-child,
+.card-head > div:first-child > i:first-child {
     width: 30px;
     height: 30px;
     border-radius: 8px;
@@ -519,17 +525,329 @@ a { color: var(--brand-accent-ink); }
     border-color: transparent;
 }
 
-/* ---------- Lignes "Documents" (fiches Entreprise / Salarié) ---------- */
+/* ---------- Lignes "Documents" (fiches Entreprise / Salarié) ----------
+   Titre + statut sur leur propre ligne pleine largeur (au lieu de partager
+   une colonne étroite avec les champs de saisie) : les libellés legacy sont
+   parfois très longs et se retrouvaient écrasés, désalignant toute la ligne. */
 .doc-row {
-    padding: 14px 16px;
-    border-radius: 8px;
-    margin-bottom: 6px;
+    padding: 0.9rem 1.1rem;
+    border: 1px solid var(--brand-border);
+    border-radius: 10px;
+    margin-bottom: 0.6rem;
+    background: var(--surface-card, #fff);
 }
 .doc-row.missing {
     background: var(--brand-danger-tint);
+    border-color: transparent;
+}
+.doc-row__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+.doc-row__title {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-width: 0;
+}
+.doc-row__title-text {
+    font-weight: 600;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.doc-row__status {
+    flex-shrink: 0;
+}
+.doc-row__fields {
+    padding-top: 0.65rem;
+    border-top: 1px solid var(--brand-border);
+}
+.doc-row.missing .doc-row__fields {
+    border-top-color: rgba(194, 69, 61, 0.18);
 }
 
 /* Ligne ciblée par un lien de notification (ex: email "document à corriger") */
 .p-datatable .p-datatable-tbody > tr.row-highlight {
     background: var(--brand-accent-tint) !important;
+}
+
+/* ---------- Zone de dépôt "Fichier modèle ODT / PDF" ---------- */
+.modele-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    text-align: center;
+    padding: 1.75rem 1.5rem;
+    border: 1.5px dashed var(--brand-border);
+    border-radius: 10px;
+    background: var(--brand-surface-alt);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.modele-upload:hover {
+    border-color: var(--brand-accent);
+    background: var(--brand-accent-tint);
+}
+.modele-upload--dragover {
+    border-color: var(--brand-accent);
+    background: var(--brand-accent-tint);
+    border-style: solid;
+}
+.modele-upload--filled {
+    padding: 0.85rem 1rem;
+    align-items: stretch;
+}
+.modele-upload__icon {
+    font-size: 1.75rem;
+    color: var(--brand-accent);
+}
+.modele-upload__titre {
+    font-weight: 600;
+    color: var(--text-color, #1F2430);
+}
+.modele-upload__formats {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-soft, #5C6270);
+}
+.modele-upload__fichier {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    text-align: left;
+}
+.modele-upload__badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border-radius: 6px;
+    background: var(--brand-accent);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+.modele-upload__nom {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+/* ---------- Bloc "Créer un compte utilisateur" (formulaires de création) ---------- */
+.account-inline-panel {
+    margin-top: 1.5rem;
+    border: 1px solid var(--brand-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--brand-accent-tint) 0%, rgba(251, 238, 224, 0.35) 100%);
+}
+.account-inline-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 1.35rem;
+}
+.account-inline-panel__title {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+.account-inline-panel__icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    background: var(--brand-accent);
+    color: #fff;
+    font-size: 1.05rem;
+    box-shadow: 0 2px 6px rgba(181, 105, 28, 0.35);
+}
+.account-inline-panel__label {
+    font-weight: 700;
+    color: var(--brand-accent-ink);
+}
+.account-inline-panel__body {
+    padding: 1.5rem;
+    background: var(--surface-card, #fff);
+    border-top: 1px solid var(--brand-border);
+}
+.account-inline-panel__note {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--brand-accent-ink);
+}
+.account-inline-panel__note i {
+    font-size: 0.85rem;
+}
+
+/* ---------- Impression (ex: rapport de contrôle) ---------- */
+@media print {
+    .layout-sidebar, .layout-topbar, .layout-mask, .no-print, app-breadcrumb {
+        display: none !important;
+    }
+    .layout-content-wrapper, .layout-content {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .rapport-imprimable {
+        box-shadow: none !important;
+        border: none !important;
+        break-inside: avoid;
+    }
+}
+@media screen {
+    .hidden-screen {
+        display: none;
+    }
+}
+
+.message-contenu {
+    margin-top: 1.25rem;
+    padding: 1.5rem;
+    border: 1px solid var(--brand-border);
+    border-radius: 10px;
+    background: var(--brand-surface-alt);
+    overflow-x: auto;
+}
+.message-contenu img {
+    max-width: 100%;
+}
+
+/* ---------- Boîte "Messagerie" en topbar ---------- */
+/* Le badge PrimeNG (pBadge) est injecté comme enfant du bouton ; or les
+   boutons ronds ont un overflow: hidden (pour contenir l'effet ripple), ce
+   qui rogne le badge au lieu de le laisser déborder en haut à droite. On
+   utilise donc un badge maison, en sibling du bouton dans un wrapper positionné. */
+.topbar-icon-wrapper {
+    position: relative;
+    display: inline-flex;
+}
+.topbar-icon-button {
+    width: 2.25rem;
+    height: 2.25rem;
+}
+.topbar-icon-badge {
+    position: absolute;
+    top: -0.15rem;
+    right: -0.15rem;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    padding: 0 0.3rem;
+    border-radius: 999px;
+    background: var(--brand-danger);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1.15rem;
+    text-align: center;
+    box-shadow: 0 0 0 2px #fff;
+    pointer-events: none;
+    z-index: 1;
+}
+.p-overlaypanel.topbar-messages-panel {
+    width: 23rem;
+    max-width: calc(100vw - 2rem);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(23, 26, 33, 0.16);
+}
+.p-overlaypanel.topbar-messages-panel .p-overlaypanel-content {
+    padding: 0;
+}
+.topbar-messages__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.1rem;
+    border-bottom: 1px solid var(--brand-border);
+}
+.topbar-messages__list {
+    max-height: 22rem;
+    overflow-y: auto;
+}
+.topbar-messages__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.75rem 1.1rem;
+    border-bottom: 1px solid var(--brand-border);
+    cursor: pointer;
+    transition: background 0.12s;
+}
+.topbar-messages__item:last-child {
+    border-bottom: none;
+}
+.topbar-messages__item:hover {
+    background: var(--brand-surface-alt);
+}
+.topbar-messages__item--unread {
+    background: var(--brand-accent-tint);
+}
+.topbar-messages__item--unread:hover {
+    background: var(--brand-accent-tint);
+    filter: brightness(0.97);
+}
+.topbar-messages__dot {
+    flex-shrink: 0;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-top: 0.4rem;
+    border-radius: 50%;
+    background: var(--brand-accent);
+}
+.topbar-messages__content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.topbar-messages__subject {
+    font-weight: 600;
+    font-size: 0.88rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.topbar-messages__preview {
+    font-size: 0.8rem;
+    color: var(--ink-soft, #5C6270);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.topbar-messages__date {
+    font-size: 0.72rem;
+    color: var(--ink-soft, #5C6270);
+    margin-top: 0.2rem;
+}
+.topbar-messages__empty {
+    padding: 2rem 1.1rem;
+    text-align: center;
+    color: var(--ink-soft, #5C6270);
+    font-size: 0.88rem;
+}
+.topbar-messages__footer {
+    padding: 0.75rem 1.1rem;
+    text-align: center;
+    border-top: 1px solid var(--brand-border);
+    background: var(--brand-surface-alt);
+    border-radius: 0 0 12px 12px;
 }

@@ -34,4 +34,8 @@ export class EntrepriseService {
     desactiver(id: string): Observable<Entreprise> {
         return this.http.post<Entreprise>(`${this.baseUrl}/${id}/desactiver`, {});
     }
+
+    supprimer(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    }
 }

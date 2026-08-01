@@ -1,33 +1,86 @@
 <p-toast></p-toast>
 
-<div class="card" style="max-width: 720px;">
-    <div class="flex align-items-center gap-3 mb-4">
+<div class="card mb-3">
+    <div class="flex align-items-center gap-3">
         <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="annuler()"></button>
         <h5 class="m-0">Nouveau message</h5>
     </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <i class="pi pi-envelope"></i>
+        <h6>Envoyer un message</h6>
+    </div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
+        <div class="field">
+            <label for="chantierId">Chantier</label>
+            <p-dropdown
+                id="chantierId"
+                [options]="chantiersOptions"
+                formControlName="chantierId"
+                optionLabel="label"
+                optionValue="id"
+                [filter]="true"
+                filterBy="label"
+                [showClear]="true"
+                placeholder="-- Sélectionner un chantier si besoin --"
+            ></p-dropdown>
+        </div>
+
         <div class="formgrid grid">
-            <div class="field col-12 md:col-6">
-                <label for="destinataireType">Destiné à *</label>
-                <p-dropdown id="destinataireType" [options]="types" formControlName="destinataireType" [class.ng-dirty]="form.controls.destinataireType.touched"></p-dropdown>
-                <small class="p-error" *ngIf="form.controls.destinataireType.invalid && form.controls.destinataireType.touched">Ce champ est requis.</small>
-            </div>
-            <div class="field col-12 md:col-6">
-                <label for="destinataireId">Destinataire *</label>
-                <p-dropdown
-                    id="destinataireId"
-                    [options]="destinatairesDisponibles"
-                    formControlName="destinataireId"
+            <div class="field col-12 md:col-4">
+                <label for="utilisateurIds">Utilisateurs</label>
+                <p-multiSelect
+                    id="utilisateurIds"
+                    [options]="utilisateursOptions"
+                    formControlName="utilisateurIds"
                     optionLabel="label"
                     optionValue="id"
                     [filter]="true"
                     filterBy="label"
-                    placeholder="Sélectionner"
-                    [class.ng-dirty]="form.controls.destinataireId.touched"
-                ></p-dropdown>
-                <small class="p-error" *ngIf="form.controls.destinataireId.invalid && form.controls.destinataireId.touched">Ce champ est requis.</small>
+                    placeholder="Tous ? / Aucun ?"
+                    display="chip"
+                ></p-multiSelect>
             </div>
+            <div class="field col-12 md:col-4">
+                <label for="clientIds">Clients</label>
+                <p-multiSelect
+                    id="clientIds"
+                    [options]="clientsOptions"
+                    formControlName="clientIds"
+                    optionLabel="label"
+                    optionValue="id"
+                    [filter]="true"
+                    filterBy="label"
+                    placeholder="Tous ? / Aucun ?"
+                    display="chip"
+                ></p-multiSelect>
+            </div>
+            <div class="field col-12 md:col-4">
+                <label for="entrepriseIds">Entreprises</label>
+                <p-multiSelect
+                    id="entrepriseIds"
+                    [options]="entreprisesOptions"
+                    formControlName="entrepriseIds"
+                    optionLabel="label"
+                    optionValue="id"
+                    [filter]="true"
+                    filterBy="label"
+                    placeholder="Tous ? / Aucun ?"
+                    display="chip"
+                ></p-multiSelect>
+            </div>
+        </div>
+
+        <div class="field-checkbox">
+            <p-checkbox formControlName="copieAdmin" [binary]="true" inputId="copieAdmin"></p-checkbox>
+            <label for="copieAdmin" class="ml-2">Envoyer à ADMIN-CONTROL'BTP</label>
+        </div>
+
+        <div class="field">
+            <app-modele-fichier-upload [(fichierNom)]="fichierModeleNom"></app-modele-fichier-upload>
         </div>
 
         <div class="field">
@@ -38,8 +91,9 @@
 
         <div class="field">
             <label for="contenu">Message *</label>
-            <textarea id="contenu" pInputTextarea formControlName="contenu" rows="6" [class.ng-dirty]="form.controls.contenu.touched"></textarea>
+            <p-editor formControlName="contenu" [style]="{ height: '420px' }" [class.ng-dirty]="form.controls.contenu.touched"></p-editor>
             <small class="p-error" *ngIf="form.controls.contenu.invalid && form.controls.contenu.touched">Ce champ est requis.</small>
+            <small class="text-500 block mt-1">Balises disponibles : [DATE], [CLIENT_NOM], [CHANTIER_NOM], [ENTREPRISE_NOM]</small>
         </div>
 
         <div class="flex justify-content-end gap-2 mt-4">

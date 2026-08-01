@@ -4,13 +4,15 @@ import { MessageListComponent } from './message-list/message-list.component';
 import { MessageFormPageComponent } from './message-form-page/message-form-page.component';
 import { AutomatisationFormPageComponent } from './automatisation-form-page/automatisation-form-page.component';
 import { PlanificationFormPageComponent } from './planification-form-page/planification-form-page.component';
+import { MessageDetailPageComponent } from './message-detail-page/message-detail-page.component';
 
 const routes: Routes = [
     { path: '', component: MessageListComponent },
     { path: 'nouveau', component: MessageFormPageComponent },
     { path: 'automatisation/nouveau', component: AutomatisationFormPageComponent },
     { path: 'automatisation/:id', component: AutomatisationFormPageComponent },
-    { path: 'planification/nouveau', component: PlanificationFormPageComponent }
+    { path: 'planification/nouveau', component: PlanificationFormPageComponent },
+    { path: ':id', component: MessageDetailPageComponent }
 ];
 
 @NgModule({

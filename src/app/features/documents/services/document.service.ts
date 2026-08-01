@@ -2,7 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { CreateDocumentRequest, DocumentItem } from '../models/document.model';
+import { CreateDocumentRequest, DocumentEnAttente, DocumentItem, HistoriqueModification } from '../models/document.model';
+import { MessagePlanifie } from 'src/app/features/messagerie/models/message.model';
 
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
@@ -33,5 +34,29 @@ export class DocumentService {
 
     notifier(id: string, request: { email: string; sujet: string; description: string }): Observable<void> {
         return this.http.post<void>(`${this.baseUrl}/${id}/notifier`, request);
+    }
+
+    supprimer(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    }
+
+    historiqueParSalarie(salarieId: string): Observable<HistoriqueModification[]> {
+        return this.http.get<HistoriqueModification[]>(`${this.baseUrl}/historique`, { params: { salarieId } });
+    }
+
+    historiqueParEntreprise(entrepriseId: string): Observable<HistoriqueModification[]> {
+        return this.http.get<HistoriqueModification[]>(`${this.baseUrl}/historique`, { params: { entrepriseId } });
+    }
+
+    relancesParSalarie(salarieId: string): Observable<MessagePlanifie[]> {
+        return this.http.get<MessagePlanifie[]>(`${this.baseUrl}/relances`, { params: { salarieId } });
+    }
+
+    relancesParEntreprise(entrepriseId: string): Observable<MessagePlanifie[]> {
+        return this.http.get<MessagePlanifie[]>(`${this.baseUrl}/relances`, { params: { entrepriseId } });
+    }
+
+    listerEnAttente(): Observable<DocumentEnAttente[]> {
+        return this.http.get<DocumentEnAttente[]>(`${this.baseUrl}/en-attente`);
     }
 }

@@ -49,4 +49,18 @@ export class EntrepriseListComponent implements OnInit {
             }
         });
     }
+
+    confirmerSuppression(entreprise: Entreprise) {
+        this.confirmation.confirm({
+            header: 'Confirmation',
+            message: `Voulez-vous supprimer l'entreprise "${entreprise.raisonSociale}" ?`,
+            acceptButtonStyleClass: 'p-button-danger',
+            accept: () => {
+                this.entrepriseService.supprimer(entreprise.id).subscribe({
+                    next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Entreprise supprimée' }); this.charger(); },
+                    error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Suppression impossible' })
+                });
+            }
+        });
+    }
 }
