@@ -29,7 +29,7 @@
                     <tr [ngClass]="{ 'font-bold': !message.lu }" [routerLink]="['/messagerie', message.id]" style="cursor: pointer;">
                         <td><i class="pi" [ngClass]="message.lu ? 'pi-envelope-open' : 'pi-envelope'"></i></td>
                         <td>{{ message.sujet }}</td>
-                        <td>{{ message.contenu }}</td>
+                        <td class="white-space-nowrap overflow-hidden text-overflow-ellipsis" style="max-width: 22rem;">{{ apercuTexte(message.contenu) }}</td>
                         <td>{{ message.createdAt | date: 'short' }}</td>
                     </tr>
                 </ng-template>
@@ -65,7 +65,7 @@
                     <tr [routerLink]="['/messagerie', message.id]" style="cursor: pointer;">
                         <td><p-tag severity="info" [value]="message.destinataireType"></p-tag></td>
                         <td>{{ message.sujet }}</td>
-                        <td>{{ message.contenu }}</td>
+                        <td class="white-space-nowrap overflow-hidden text-overflow-ellipsis" style="max-width: 22rem;">{{ apercuTexte(message.contenu) }}</td>
                         <td>{{ message.createdAt | date: 'short' }}</td>
                     </tr>
                 </ng-template>

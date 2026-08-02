@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { forkJoin } from 'rxjs';
 import { Salarie } from '../models/salarie.model';
 import { SalarieService } from '../services/salarie.service';
 import { Entreprise } from 'src/app/features/entreprises/models/entreprise.model';
@@ -12,7 +13,9 @@ import { EntrepriseService } from 'src/app/features/entreprises/services/entrepr
 })
 export class SalarieListComponent implements OnInit {
 
-    salaries: Salarie[] = [];
+    // nomEntrepriseCalculee ajoutée au chargement, pour permettre un
+    // p-columnFilter texte simple (le champ brut n'a que entrepriseEmployeurId).
+    salaries: Array<Salarie & { nomEntrepriseCalculee: string }> = [];
     entreprises: Entreprise[] = [];
     loading = false;
 
@@ -28,13 +31,19 @@ export class SalarieListComponent implements OnInit {
 
     ngOnInit(): void {
         this.charger();
-        this.entrepriseService.lister().subscribe((entreprises) => (this.entreprises = entreprises));
     }
 
     charger() {
         this.loading = true;
-        this.salarieService.lister().subscribe({
-            next: (salaries) => { this.salaries = salaries; this.loading = false; },
+        forkJoin({
+            salaries: this.salarieService.lister(),
+            entreprises: this.entrepriseService.lister()
+        }).subscribe({
+            next: ({ salaries, entreprises }) => {
+                this.entreprises = entreprises;
+                this.salaries = salaries.map((s) => ({ ...s, nomEntrepriseCalculee: this.nomEntreprise(s.entrepriseEmployeurId) }));
+                this.loading = false;
+            },
             error: () => {
                 this.loading = false;
                 this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Impossible de charger les salariés' });

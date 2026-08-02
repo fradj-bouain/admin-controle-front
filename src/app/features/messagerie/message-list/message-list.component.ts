@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { MessageService as ToastService } from 'primeng/api';
 import { Message } from '../models/message.model';
 import { MessageService } from '../services/message.service';
+import { stripHtml } from 'src/app/shared/utils/html.util';
 
 const ONGLETS = ['reception', 'envoyes', 'planification', 'automatisation'];
 
@@ -37,5 +38,9 @@ export class MessageListComponent implements OnInit {
 
     chargerEnvoyes() {
         this.messageService.envoyes().subscribe((messages) => (this.envoyes = messages));
+    }
+
+    apercuTexte(contenu: string): string {
+        return stripHtml(contenu);
     }
 }
