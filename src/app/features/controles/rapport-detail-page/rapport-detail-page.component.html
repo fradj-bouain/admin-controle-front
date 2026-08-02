@@ -1,6 +1,10 @@
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
+<div class="card" *ngIf="loading">
+    <app-card-skeleton [lignes]="4"></app-card-skeleton>
+</div>
+
 <ng-container *ngIf="rapport">
 
 <div class="card mb-3 no-print">
@@ -15,9 +19,9 @@
         </div>
         <div class="flex align-items-center gap-2">
             <button pButton type="button" icon="pi pi-print" label="Imprimer / PDF" class="p-button-outlined" (click)="imprimer()"></button>
-            <button pButton type="button" icon="pi pi-send" label="Renvoyer par email" class="p-button-outlined" [loading]="envoiEnCours" (click)="confirmerRenvoiEmail()"></button>
-            <button pButton type="button" icon="pi pi-pencil" label="Modifier" class="p-button-outlined" *ngIf="!edition" (click)="ouvrirEdition()"></button>
-            <button pButton type="button" icon="pi pi-trash" label="Supprimer" class="p-button-outlined p-button-danger" (click)="confirmerSuppression()"></button>
+            <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-send" label="Renvoyer par email" class="p-button-outlined" [loading]="envoiEnCours" (click)="confirmerRenvoiEmail()"></button>
+            <button *ngIf="isSuperAdmin && !edition" pButton type="button" icon="pi pi-pencil" label="Modifier" class="p-button-outlined" (click)="ouvrirEdition()"></button>
+            <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-trash" label="Supprimer" class="p-button-outlined p-button-danger" (click)="confirmerSuppression()"></button>
         </div>
     </div>
 </div>

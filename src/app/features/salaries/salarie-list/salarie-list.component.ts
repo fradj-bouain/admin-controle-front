@@ -5,6 +5,7 @@ import { Salarie } from '../models/salarie.model';
 import { SalarieService } from '../services/salarie.service';
 import { Entreprise } from 'src/app/features/entreprises/models/entreprise.model';
 import { EntrepriseService } from 'src/app/features/entreprises/services/entreprise.service';
+import { AuthService } from 'src/app/core/auth/auth.service';
 
 @Component({
     selector: 'app-salarie-list',
@@ -26,8 +27,17 @@ export class SalarieListComponent implements OnInit {
         private salarieService: SalarieService,
         private entrepriseService: EntrepriseService,
         private confirmation: ConfirmationService,
-        private message: MessageService
+        private message: MessageService,
+        public auth: AuthService
     ) { }
+
+    get isSuperAdmin(): boolean {
+        return this.auth.hasRole('SUPER_ADMIN');
+    }
+
+    get isEntreprise(): boolean {
+        return this.auth.hasRole('ENTREPRISE');
+    }
 
     ngOnInit(): void {
         this.charger();

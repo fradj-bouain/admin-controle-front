@@ -10,6 +10,7 @@
         <div class="flex align-items-center gap-2" *ngIf="chantier">
             <p-tag [severity]="chantier.statut === 'ACTIF' ? 'success' : 'danger'" [value]="chantier.statut"></p-tag>
             <button
+                *ngIf="isSuperAdmin"
                 pButton
                 type="button"
                 [label]="chantier.statut === 'ACTIF' ? 'Désactiver' : 'Activer'"
@@ -30,7 +31,9 @@
                 <h6 class="m-0">Détail du chantier</h6>
             </div>
 
-            <form [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
+            <app-card-skeleton *ngIf="loading" [lignes]="8"></app-card-skeleton>
+
+            <form *ngIf="!loading" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
                 <div class="field">
                     <label for="clientId">Client *</label>
                     <p-dropdown
@@ -117,7 +120,7 @@
 
                 <div class="flex justify-content-end gap-2 mt-4">
                     <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
-                    <button pButton type="submit" [label]="isNew ? 'Créer ce chantier' : 'Modifier ce chantier'" icon="pi pi-check" [loading]="saving"></button>
+                    <button *ngIf="isSuperAdmin" pButton type="submit" [label]="isNew ? 'Créer ce chantier' : 'Modifier ce chantier'" icon="pi pi-check" [loading]="saving"></button>
                 </div>
             </form>
         </div>
@@ -164,7 +167,7 @@
                         <ng-template let-s pTemplate="selectedItem">{{ s?.prenom }} {{ s?.nom }}</ng-template>
                     </p-dropdown>
                 </div>
-                <button pButton type="submit" label="Affecter" [disabled]="isNew" class="w-full"></button>
+                <button *ngIf="isSuperAdmin" pButton type="submit" label="Affecter" [disabled]="isNew" class="w-full"></button>
             </form>
         </div>
     </div>
@@ -256,7 +259,7 @@
                 <p-calendar id="dateProchainControle" formControlName="dateProchainControle" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-calendar>
             </div>
             <div class="field col-12 md:col-2">
-                <button pButton type="submit" label="Enregistrer" class="w-full p-button-outlined"></button>
+                <button *ngIf="isSuperAdmin" pButton type="submit" label="Enregistrer" class="w-full p-button-outlined"></button>
             </div>
         </form>
 
@@ -287,14 +290,14 @@
             </div>
             <div class="field col-12 md:col-3">
                 <label for="controleTiersId">Effectué par</label>
-                <p-dropdown id="controleTiersId" [options]="controleTiersListe" formControlName="controleTiersId" optionLabel="nom" optionValue="id" placeholder="-- Choisir --" styleClass="w-full"></p-dropdown>
+                <p-dropdown id="controleTiersId" [options]="controleTiersListe" formControlName="controleTiersId" optionLabel="nom" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Choisir --" styleClass="w-full"></p-dropdown>
             </div>
             <div class="field col-12 md:col-3">
                 <label for="remarques">Remarque</label>
                 <input id="remarques" type="text" pInputText formControlName="remarques" class="w-full" />
             </div>
             <div class="field col-12 md:col-3">
-                <button pButton type="submit" icon="pi pi-plus" label="Créer un contrôle" class="w-full"></button>
+                <button *ngIf="isSuperAdmin || isControleur" pButton type="submit" icon="pi pi-plus" label="Créer un contrôle" class="w-full"></button>
             </div>
         </form>
         </ng-container>
@@ -324,7 +327,7 @@
                 <tr>
                     <td>{{ nomUtilisateur(utilisateurId) }}</td>
                     <td>
-                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" (click)="revoquerUtilisateur(utilisateurId)"></button>
+                        <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" (click)="revoquerUtilisateur(utilisateurId)"></button>
                     </td>
                 </tr>
             </ng-template>
@@ -338,7 +341,7 @@
                     <ng-template let-u pTemplate="selectedItem">{{ u?.prenom }} {{ u?.nom }}</ng-template>
                 </p-dropdown>
             </div>
-            <button pButton type="button" label="Affecter" (click)="affecterUtilisateur()"></button>
+            <button *ngIf="isSuperAdmin" pButton type="button" label="Affecter" (click)="affecterUtilisateur()"></button>
         </div>
         </ng-container>
     </div>
@@ -368,15 +371,34 @@
                     <th class="text-center">Nb salariés</th>
                     <th style="width: 6rem"></th>
                 </tr>
+                <tr>
+                    <th><p-columnFilter type="text" field="nomEntrepriseCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                    <th>
+                        <p-columnFilter field="role" matchMode="equals" [showMenu]="false">
+                            <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Principale', value: 'PRINCIPALE'}, {label: 'STT1', value: 'STT1'}, {label: 'STT2', value: 'STT2'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                            </ng-template>
+                        </p-columnFilter>
+                    </th>
+                    <th>
+                        <p-columnFilter field="statut" matchMode="equals" [showMenu]="false">
+                            <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Actif', value: 'ACTIF'}, {label: 'Inactif', value: 'INACTIF'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                            </ng-template>
+                        </p-columnFilter>
+                    </th>
+                    <th></th>
+                    <th></th>
+                </tr>
             </ng-template>
             <ng-template pTemplate="body" let-affectation>
                 <tr>
-                    <td>{{ nomEntreprise(affectation.entrepriseId) }}</td>
+                    <td>{{ affectation.nomEntrepriseCalculee }}</td>
                     <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
                     <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut"></p-tag></td>
                     <td class="text-center">{{ entrepriseStatSalaries(affectation.id) }}</td>
                     <td>
-                        <button pButton type="button" icon="pi pi-ban" class="p-button-text p-button-rounded" *ngIf="affectation.statut === 'ACTIF'" (click)="desactiverAffectationEntreprise(affectation)"></button>
+                        <button pButton type="button" icon="pi pi-ban" class="p-button-text p-button-rounded" *ngIf="affectation.statut === 'ACTIF' && (isSuperAdmin || isEntreprise)" (click)="desactiverAffectationEntreprise(affectation)"></button>
                     </td>
                 </tr>
             </ng-template>
@@ -398,7 +420,7 @@
                 <small class="p-error" *ngIf="affecterEntrepriseForm.controls.affectationParenteId.invalid && affecterEntrepriseForm.controls.affectationParenteId.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-2">
-                <button pButton type="submit" label="Ajouter" class="w-full"></button>
+                <button *ngIf="isSuperAdmin || isEntreprise" pButton type="submit" label="Ajouter" class="w-full"></button>
             </div>
         </form>
         </ng-container>
@@ -428,18 +450,30 @@
                     <th>Contrat</th>
                     <th style="width: 10rem"></th>
                 </tr>
+                <tr>
+                    <th><p-columnFilter type="text" field="nomSalarieCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                    <th>
+                        <p-columnFilter field="statutAcces" matchMode="equals" [showMenu]="false">
+                            <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Accordé', value: 'ACCORDE'}, {label: 'Refusé', value: 'REFUSE'}, {label: 'En attente', value: 'EN_ATTENTE'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                            </ng-template>
+                        </p-columnFilter>
+                    </th>
+                    <th><p-columnFilter type="text" field="contratCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                    <th></th>
+                </tr>
             </ng-template>
             <ng-template pTemplate="body" let-affectation>
                 <tr>
-                    <td>{{ nomSalarie(affectation.salarieId) }}</td>
+                    <td>{{ affectation.nomSalarieCalculee }}</td>
                     <td>
                         <p-tag [severity]="affectation.statutAcces === 'ACCORDE' ? 'success' : (affectation.statutAcces === 'REFUSE' ? 'danger' : 'warning')" [value]="affectation.statutAcces"></p-tag>
                     </td>
-                    <td>{{ contratDuSalarie(affectation.salarieId) }}</td>
+                    <td>{{ affectation.contratCalculee }}</td>
                     <td>
                         <div class="flex align-items-center gap-1 flex-nowrap">
-                            <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="affectation.statutAcces !== 'ACCORDE'" (click)="accorderAcces(affectation)"></button>
-                            <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="affectation.statutAcces !== 'REFUSE'" (click)="refuserAcces(affectation)"></button>
+                            <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="affectation.statutAcces !== 'ACCORDE' && isSuperAdmin" (click)="accorderAcces(affectation)"></button>
+                            <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="affectation.statutAcces !== 'REFUSE' && isSuperAdmin" (click)="refuserAcces(affectation)"></button>
                         </div>
                     </td>
                 </tr>
@@ -464,7 +498,7 @@
                 <small class="p-error" *ngIf="affecterSalarieForm.controls.affectationEntrepriseChantierId.invalid && affecterSalarieForm.controls.affectationEntrepriseChantierId.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-2">
-                <button pButton type="submit" label="Ajouter" class="w-full"></button>
+                <button *ngIf="isSuperAdmin || isEntreprise" pButton type="submit" label="Ajouter" class="w-full"></button>
             </div>
         </form>
         </ng-container>

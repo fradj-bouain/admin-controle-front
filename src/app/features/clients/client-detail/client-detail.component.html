@@ -10,6 +10,7 @@
         <div class="flex align-items-center gap-2" *ngIf="client">
             <p-tag [severity]="client.actif ? 'success' : 'danger'" [value]="client.actif ? 'ACTIF' : 'INACTIF'"></p-tag>
             <button
+                *ngIf="isSuperAdmin"
                 pButton
                 type="button"
                 [label]="client.actif ? 'Désactiver' : 'Activer'"
@@ -30,7 +31,9 @@
                 <h6 class="m-0">Coordonnées</h6>
             </div>
 
-            <form [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
+            <app-card-skeleton *ngIf="loading" [lignes]="8"></app-card-skeleton>
+
+            <form *ngIf="!loading" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
                 <div class="field">
                     <label for="raisonSociale">Nom *</label>
                     <input id="raisonSociale" type="text" pInputText formControlName="raisonSociale" [class.ng-dirty]="coordonneesForm.controls.raisonSociale.touched" />
@@ -191,7 +194,7 @@
 
                 <div class="flex justify-content-end gap-2 mt-4">
                     <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
-                    <button pButton type="submit" [label]="isNew ? 'Ajouter' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
+                    <button *ngIf="isSuperAdmin" pButton type="submit" [label]="isNew ? 'Ajouter' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
                 </div>
             </form>
         </div>
@@ -256,6 +259,17 @@
     <p-table [value]="chantiers" dataKey="id" *ngIf="!isNew && afficherChantiers">
         <ng-template pTemplate="header">
             <tr><th>Nom</th><th>Ville</th><th>Statut</th></tr>
+            <tr>
+                <th><p-columnFilter type="text" field="nom" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th><p-columnFilter type="text" field="ville" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th>
+                    <p-columnFilter field="statut" matchMode="equals" [showMenu]="false">
+                        <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                            <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Actif', value: 'ACTIF'}, {label: 'Inactif', value: 'INACTIF'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                        </ng-template>
+                    </p-columnFilter>
+                </th>
+            </tr>
         </ng-template>
         <ng-template pTemplate="body" let-chantier>
             <tr class="cursor-pointer" [routerLink]="['/chantiers', chantier.id]">

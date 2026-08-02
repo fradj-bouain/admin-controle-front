@@ -6,6 +6,7 @@ import { Chantier } from '../models/chantier.model';
 import { ChantierService } from '../services/chantier.service';
 import { Client } from 'src/app/features/clients/models/client.model';
 import { ClientService } from 'src/app/features/clients/services/client.service';
+import { AuthService } from 'src/app/core/auth/auth.service';
 
 @Component({
     selector: 'app-chantier-list',
@@ -25,8 +26,13 @@ export class ChantierListComponent implements OnInit {
         private clientService: ClientService,
         private confirmation: ConfirmationService,
         private message: MessageService,
-        private translate: TranslateService
+        private translate: TranslateService,
+        public auth: AuthService
     ) { }
+
+    get isSuperAdmin(): boolean {
+        return this.auth.hasRole('SUPER_ADMIN');
+    }
 
     ngOnInit(): void {
         this.charger();

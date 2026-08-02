@@ -7,7 +7,7 @@
             <h5 class="m-0">Entreprises</h5>
         </ng-template>
         <ng-template pTemplate="right">
-            <button pButton type="button" icon="pi pi-plus" label="Ajouter" routerLink="/entreprises/nouveau"></button>
+            <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-plus" label="Ajouter" routerLink="/entreprises/nouveau"></button>
         </ng-template>
     </p-toolbar>
 
@@ -36,6 +36,11 @@
                 <th></th>
             </tr>
         </ng-template>
+        <ng-template pTemplate="loadingbody">
+            <tr *ngFor="let i of [0,1,2,3,4]">
+                <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
+            </tr>
+        </ng-template>
         <ng-template pTemplate="body" let-entreprise>
             <tr class="cursor-pointer" [routerLink]="['/entreprises', entreprise.id]">
                 <td>{{ entreprise.raisonSociale }}</td>
@@ -55,6 +60,7 @@
                             (click)="$event.stopPropagation()"
                         ></button>
                         <button
+                            *ngIf="isSuperAdmin"
                             pButton
                             type="button"
                             [icon]="entreprise.actif ? 'pi pi-ban' : 'pi pi-check'"
@@ -63,6 +69,7 @@
                             (click)="confirmerBasculeStatut(entreprise); $event.stopPropagation()"
                         ></button>
                         <button
+                            *ngIf="isSuperAdmin"
                             pButton
                             type="button"
                             icon="pi pi-trash"

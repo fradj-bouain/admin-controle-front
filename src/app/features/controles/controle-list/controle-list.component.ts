@@ -5,6 +5,7 @@ import { Controle, RapportControle } from '../models/controle.model';
 import { ControleService } from '../services/controle.service';
 import { Chantier } from 'src/app/features/chantiers/models/chantier.model';
 import { ChantierService } from 'src/app/features/chantiers/services/chantier.service';
+import { AuthService } from 'src/app/core/auth/auth.service';
 
 @Component({
     selector: 'app-controle-list',
@@ -17,14 +18,25 @@ export class ControleListComponent implements OnInit {
     chantierId: string | null = null;
     controles: Controle[] = [];
     rapports: RapportControle[] = [];
+    loadingControles = false;
+    loadingRapports = false;
 
     constructor(
         private controleService: ControleService,
         private chantierService: ChantierService,
         private router: Router,
         private message: MessageService,
-        private confirmation: ConfirmationService
+        private confirmation: ConfirmationService,
+        public auth: AuthService
     ) { }
+
+    get isSuperAdmin(): boolean {
+        return this.auth.hasRole('SUPER_ADMIN');
+    }
+
+    get isControleur(): boolean {
+        return this.auth.hasRole('CONTROLEUR');
+    }
 
     ngOnInit(): void {
         this.chantierService.lister().subscribe((chantiers) => (this.chantiers = chantiers));
@@ -33,7 +45,11 @@ export class ControleListComponent implements OnInit {
 
     onChantierChange() {
         if (this.chantierId) {
-            this.controleService.lister(this.chantierId).subscribe((controles) => (this.controles = controles));
+            this.loadingControles = true;
+            this.controleService.lister(this.chantierId).subscribe({
+                next: (controles) => { this.controles = controles; this.loadingControles = false; },
+                error: () => this.loadingControles = false
+            });
         }
     }
 
@@ -51,7 +67,11 @@ export class ControleListComponent implements OnInit {
     }
 
     chargerRapports() {
-        this.controleService.listerRapports().subscribe((rapports) => (this.rapports = rapports));
+        this.loadingRapports = true;
+        this.controleService.listerRapports().subscribe({
+            next: (rapports) => { this.rapports = rapports; this.loadingRapports = false; },
+            error: () => this.loadingRapports = false
+        });
     }
 
     confirmerSuppression(controle: Controle) {

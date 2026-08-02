@@ -15,12 +15,14 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { CalendarModule } from 'primeng/calendar';
 import { DropdownModule } from 'primeng/dropdown';
 import { TooltipModule } from 'primeng/tooltip';
+import { SkeletonModule } from 'primeng/skeleton';
 
 import { ComingSoonComponent } from './components/coming-soon/coming-soon.component';
 import { StatTileComponent } from './components/stat-tile/stat-tile.component';
 import { RefuserDocumentDialogComponent } from './components/refuser-document-dialog/refuser-document-dialog.component';
 import { NotifierDocumentDialogComponent } from './components/notifier-document-dialog/notifier-document-dialog.component';
 import { ModeleFichierUploadComponent } from './components/modele-fichier-upload/modele-fichier-upload.component';
+import { CardSkeletonComponent } from './components/card-skeleton/card-skeleton.component';
 
 /**
  * Regroupe les modules PrimeNG et composants réutilisés par toutes les
@@ -28,7 +30,7 @@ import { ModeleFichierUploadComponent } from './components/modele-fichier-upload
  * suppression) afin d'éviter de ré-importer ces mêmes modules partout.
  */
 @NgModule({
-    declarations: [ComingSoonComponent, StatTileComponent, RefuserDocumentDialogComponent, NotifierDocumentDialogComponent, ModeleFichierUploadComponent],
+    declarations: [ComingSoonComponent, StatTileComponent, RefuserDocumentDialogComponent, NotifierDocumentDialogComponent, ModeleFichierUploadComponent, CardSkeletonComponent],
     imports: [
         CommonModule,
         ReactiveFormsModule,
@@ -44,7 +46,8 @@ import { ModeleFichierUploadComponent } from './components/modele-fichier-upload
         ToolbarModule,
         CalendarModule,
         DropdownModule,
-        TooltipModule
+        TooltipModule,
+        SkeletonModule
     ],
     exports: [
         CommonModule,
@@ -62,11 +65,13 @@ import { ModeleFichierUploadComponent } from './components/modele-fichier-upload
         CalendarModule,
         DropdownModule,
         TooltipModule,
+        SkeletonModule,
         ComingSoonComponent,
         StatTileComponent,
         RefuserDocumentDialogComponent,
         NotifierDocumentDialogComponent,
-        ModeleFichierUploadComponent
+        ModeleFichierUploadComponent,
+        CardSkeletonComponent
     ]
 })
 export class SharedModule { }

@@ -24,6 +24,16 @@ export class ConfigurationComponent implements OnInit {
     controleTiers: ControleTiers[] = [];
     actionsCorrectives: ActionCorrective[] = [];
     utilisateurs: Utilisateur[] = [];
+
+    loadingPays = false;
+    loadingCorpsDeMetier = false;
+    loadingTypesSalarie = false;
+    loadingTypesContratSalarie = false;
+    loadingSalarieFonctions = false;
+    loadingControleTiers = false;
+    loadingActionsCorrectives = false;
+    loadingUtilisateurs = false;
+
     rolesOptions = [
         { label: 'Super administrateur', value: 'SUPER_ADMIN' },
         { label: 'Client', value: 'CLIENT' },
@@ -66,35 +76,67 @@ export class ConfigurationComponent implements OnInit {
     }
 
     chargerPays() {
-        this.referenceDataService.listerPays().subscribe((pays) => (this.pays = pays));
+        this.loadingPays = true;
+        this.referenceDataService.listerPays().subscribe({
+            next: (pays) => { this.pays = pays; this.loadingPays = false; },
+            error: () => this.loadingPays = false
+        });
     }
 
     chargerCorpsDeMetier() {
-        this.referenceDataService.listerCorpsDeMetier().subscribe((corps) => (this.corpsDeMetier = corps));
+        this.loadingCorpsDeMetier = true;
+        this.referenceDataService.listerCorpsDeMetier().subscribe({
+            next: (corps) => { this.corpsDeMetier = corps; this.loadingCorpsDeMetier = false; },
+            error: () => this.loadingCorpsDeMetier = false
+        });
     }
 
     chargerTypesSalarie() {
-        this.referenceDataService.listerTypeSalarie().subscribe((types) => (this.typesSalarie = types));
+        this.loadingTypesSalarie = true;
+        this.referenceDataService.listerTypeSalarie().subscribe({
+            next: (types) => { this.typesSalarie = types; this.loadingTypesSalarie = false; },
+            error: () => this.loadingTypesSalarie = false
+        });
     }
 
     chargerTypesContratSalarie() {
-        this.referenceDataService.listerTypeContratSalarie().subscribe((types) => (this.typesContratSalarie = types));
+        this.loadingTypesContratSalarie = true;
+        this.referenceDataService.listerTypeContratSalarie().subscribe({
+            next: (types) => { this.typesContratSalarie = types; this.loadingTypesContratSalarie = false; },
+            error: () => this.loadingTypesContratSalarie = false
+        });
     }
 
     chargerSalarieFonctions() {
-        this.referenceDataService.listerSalarieFonction().subscribe((fonctions) => (this.salarieFonctions = fonctions));
+        this.loadingSalarieFonctions = true;
+        this.referenceDataService.listerSalarieFonction().subscribe({
+            next: (fonctions) => { this.salarieFonctions = fonctions; this.loadingSalarieFonctions = false; },
+            error: () => this.loadingSalarieFonctions = false
+        });
     }
 
     chargerControleTiers() {
-        this.referenceDataService.listerControleTiers().subscribe((tiers) => (this.controleTiers = tiers));
+        this.loadingControleTiers = true;
+        this.referenceDataService.listerControleTiers().subscribe({
+            next: (tiers) => { this.controleTiers = tiers; this.loadingControleTiers = false; },
+            error: () => this.loadingControleTiers = false
+        });
     }
 
     chargerActionsCorrectives() {
-        this.referenceDataService.listerActionsCorrectives().subscribe((actions) => (this.actionsCorrectives = actions));
+        this.loadingActionsCorrectives = true;
+        this.referenceDataService.listerActionsCorrectives().subscribe({
+            next: (actions) => { this.actionsCorrectives = actions; this.loadingActionsCorrectives = false; },
+            error: () => this.loadingActionsCorrectives = false
+        });
     }
 
     chargerUtilisateurs() {
-        this.utilisateurService.lister().subscribe((utilisateurs) => (this.utilisateurs = utilisateurs));
+        this.loadingUtilisateurs = true;
+        this.utilisateurService.lister().subscribe({
+            next: (utilisateurs) => { this.utilisateurs = utilisateurs; this.loadingUtilisateurs = false; },
+            error: () => this.loadingUtilisateurs = false
+        });
     }
 
     confirmerBasculeStatutUtilisateur(utilisateur: Utilisateur) {

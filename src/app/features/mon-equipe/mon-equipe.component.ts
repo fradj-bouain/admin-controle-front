@@ -18,7 +18,9 @@ import { UtilisateurService } from '../configuration/services/utilisateur.servic
 })
 export class MonEquipeComponent implements OnInit {
 
-    utilisateurs: Utilisateur[] = [];
+    // identiteCalculee ajouté au chargement, pour permettre un p-columnFilter texte
+    // simple sur la colonne Utilisateur (nom + prénom + username regroupés).
+    utilisateurs: Array<Utilisateur & { identiteCalculee: string }> = [];
     dialogVisible = false;
     saving = false;
 
@@ -43,7 +45,9 @@ export class MonEquipeComponent implements OnInit {
     }
 
     charger() {
-        this.utilisateurService.lister().subscribe((utilisateurs) => (this.utilisateurs = utilisateurs));
+        this.utilisateurService.lister().subscribe((utilisateurs) => {
+            this.utilisateurs = utilisateurs.map((u) => ({ ...u, identiteCalculee: `${u.nom} ${u.prenom} (${u.username})` }));
+        });
     }
 
     ouvrirCreation() {

@@ -21,6 +21,7 @@ import { MessagePlanifie, SendMessageRequest } from 'src/app/features/messagerie
 import { MessageService as MessagerieMessageService } from 'src/app/features/messagerie/services/message.service';
 import { Utilisateur } from 'src/app/features/configuration/models/configuration.model';
 import { UtilisateurService } from 'src/app/features/configuration/services/utilisateur.service';
+import { AuthService } from 'src/app/core/auth/auth.service';
 
 interface LigneDocument {
     dateDebutValidite: Date | null;
@@ -37,8 +38,10 @@ export class SalarieDetailComponent implements OnInit {
 
     isNew = true;
     saving = false;
+    loading = false;
     salarieId: string | null = null;
     salarie: Salarie | null = null;
+    dialogBadgeVisible = false;
 
     pays: Pays[] = [];
     fonctions: SalarieFonction[] = [];
@@ -56,7 +59,9 @@ export class SalarieDetailComponent implements OnInit {
 
     // --- Affectation à un chantier ---
     chantiers: Chantier[] = [];
-    mesAffectations: AffectationSalarieChantier[] = [];
+    // nomChantierCalculee ajouté au chargement, pour permettre un p-columnFilter
+    // texte simple sur le nom du chantier (le champ brut n'a que chantierId).
+    mesAffectations: Array<AffectationSalarieChantier & { nomChantierCalculee: string }> = [];
     chantiersDisponibles: Chantier[] = [];
     affectationsEntrepriseDuChantier: AffectationEntrepriseChantier[] = [];
 
@@ -121,9 +126,18 @@ export class SalarieDetailComponent implements OnInit {
         private documentEtatService: DocumentEtatService,
         private messagerieService: MessagerieMessageService,
         private confirmation: ConfirmationService,
-        private message: MessageService
+        private message: MessageService,
+        public auth: AuthService
     ) {
         this.affectationForm.controls.chantierId.valueChanges.subscribe((chantierId) => this.onChantierChange(chantierId));
+    }
+
+    get isSuperAdmin(): boolean {
+        return this.auth.hasRole('SUPER_ADMIN');
+    }
+
+    get isEntreprise(): boolean {
+        return this.auth.hasRole('ENTREPRISE');
     }
 
     ngOnInit(): void {
@@ -155,6 +169,7 @@ export class SalarieDetailComponent implements OnInit {
             this.salarieId = id;
             this.isNew = !id;
             if (id) {
+                this.loading = true;
                 this.chargerSalarie(id);
                 this.chargerMesAffectations(id);
                 this.chargerDocuments(id);
@@ -168,9 +183,13 @@ export class SalarieDetailComponent implements OnInit {
     }
 
     private chargerSalarie(id: string) {
-        this.salarieService.obtenir(id).subscribe((s) => {
-            this.salarie = s;
-            this.coordonneesForm.patchValue(s);
+        this.salarieService.obtenir(id).subscribe({
+            next: (s) => {
+                this.salarie = s;
+                this.coordonneesForm.patchValue(s);
+                this.loading = false;
+            },
+            error: () => this.loading = false
         });
     }
 
@@ -261,7 +280,9 @@ export class SalarieDetailComponent implements OnInit {
 
     chargerMesAffectations(salarieId: string) {
         this.affectationSalarieService.listerParSalarie(salarieId).subscribe((affectations) => {
-            this.mesAffectations = [...affectations].sort((a, b) => b.dateDebut.localeCompare(a.dateDebut));
+            this.mesAffectations = [...affectations]
+                .sort((a, b) => b.dateDebut.localeCompare(a.dateDebut))
+                .map((a) => ({ ...a, nomChantierCalculee: this.nomChantier(a.chantierId) }));
             this.recalculerChantiersDisponibles();
         });
     }

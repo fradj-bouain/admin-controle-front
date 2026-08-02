@@ -18,6 +18,7 @@ import { EntrepriseService } from 'src/app/features/entreprises/services/entrepr
 import { AffectationEntrepriseChantierService } from 'src/app/features/entreprises/services/affectation-entreprise-chantier.service';
 import { Controle } from 'src/app/features/controles/models/controle.model';
 import { ControleService } from 'src/app/features/controles/services/controle.service';
+import { AuthService } from 'src/app/core/auth/auth.service';
 
 @Component({
     selector: 'app-chantier-detail',
@@ -28,6 +29,7 @@ export class ChantierDetailComponent implements OnInit {
 
     isNew = true;
     saving = false;
+    loading = false;
     chantierId: string | null = null;
     chantier: Chantier | null = null;
 
@@ -85,7 +87,9 @@ export class ChantierDetailComponent implements OnInit {
     nouvelUtilisateurId = '';
 
     // --- Entreprises affectées ---
-    affectationsEntreprise: AffectationEntrepriseChantier[] = [];
+    // nomEntrepriseCalculee ajouté au chargement, pour permettre un p-columnFilter
+    // texte simple sur le nom de l'entreprise (le champ brut n'a que entrepriseId).
+    affectationsEntreprise: Array<AffectationEntrepriseChantier & { nomEntrepriseCalculee: string }> = [];
     entreprisesDisponibles: Entreprise[] = [];
     roles: RoleEntreprise[] = ['PRINCIPALE', 'STT1', 'STT2'];
     parentsDisponibles: Array<{ id: string; label: string }> = [];
@@ -96,7 +100,9 @@ export class ChantierDetailComponent implements OnInit {
     });
 
     // --- Salariés affectés ---
-    affectationsSalarie: AffectationSalarieChantier[] = [];
+    // nomSalarieCalculee/contratCalculee ajoutés au chargement, pour permettre des
+    // p-columnFilter simples (les champs bruts n'ont que salarieId).
+    affectationsSalarie: Array<AffectationSalarieChantier & { nomSalarieCalculee: string; contratCalculee: string }> = [];
     salariesDisponibles: Salarie[] = [];
     affecterSalarieForm = this.fb.group({
         salarieId: ['', Validators.required],
@@ -118,7 +124,8 @@ export class ChantierDetailComponent implements OnInit {
         private affectationSalarieService: AffectationSalarieChantierService,
         private controleService: ControleService,
         private confirmation: ConfirmationService,
-        private message: MessageService
+        private message: MessageService,
+        public auth: AuthService
     ) {
         this.affecterEntrepriseForm.controls.role.valueChanges.subscribe((role) => {
             this.recalculerParentsDisponibles();
@@ -131,6 +138,18 @@ export class ChantierDetailComponent implements OnInit {
             }
             parenteControl.updateValueAndValidity();
         });
+    }
+
+    get isSuperAdmin(): boolean {
+        return this.auth.hasRole('SUPER_ADMIN');
+    }
+
+    get isEntreprise(): boolean {
+        return this.auth.hasRole('ENTREPRISE');
+    }
+
+    get isControleur(): boolean {
+        return this.auth.hasRole('CONTROLEUR');
     }
 
     ngOnInit(): void {
@@ -153,6 +172,7 @@ export class ChantierDetailComponent implements OnInit {
             this.chantierId = id;
             this.isNew = !id;
             if (id) {
+                this.loading = true;
                 this.chargerChantier(id);
                 this.chargerControles(id);
                 this.chargerUtilisateurs(id);
@@ -168,21 +188,25 @@ export class ChantierDetailComponent implements OnInit {
     }
 
     private chargerChantier(id: string) {
-        this.chantierService.obtenir(id).subscribe((c) => {
-            this.chantier = c;
-            this.coordonneesForm.patchValue({
-                ...c,
-                dateDebut: c.dateDebut ? new Date(c.dateDebut) : null,
-                dateFinPrevue: c.dateFinPrevue ? new Date(c.dateFinPrevue) : null
-            });
-            this.responsableForm.patchValue({
-                chefChantierUtilisateurId: c.chefChantierUtilisateurId ?? '',
-                salarieResponsableId: c.salarieResponsableId ?? ''
-            });
-            this.controlesForm.patchValue({
-                recurrenceControles: c.recurrenceControles ?? 'AUCUNE',
-                dateProchainControle: c.dateProchainControle ? new Date(c.dateProchainControle) : null
-            });
+        this.chantierService.obtenir(id).subscribe({
+            next: (c) => {
+                this.chantier = c;
+                this.coordonneesForm.patchValue({
+                    ...c,
+                    dateDebut: c.dateDebut ? new Date(c.dateDebut) : null,
+                    dateFinPrevue: c.dateFinPrevue ? new Date(c.dateFinPrevue) : null
+                });
+                this.responsableForm.patchValue({
+                    chefChantierUtilisateurId: c.chefChantierUtilisateurId ?? '',
+                    salarieResponsableId: c.salarieResponsableId ?? ''
+                });
+                this.controlesForm.patchValue({
+                    recurrenceControles: c.recurrenceControles ?? 'AUCUNE',
+                    dateProchainControle: c.dateProchainControle ? new Date(c.dateProchainControle) : null
+                });
+                this.loading = false;
+            },
+            error: () => this.loading = false
         });
     }
 
@@ -375,7 +399,7 @@ export class ChantierDetailComponent implements OnInit {
 
     chargerAffectationsEntreprise(chantierId: string) {
         this.affectationEntrepriseService.lister(chantierId).subscribe((affectations) => {
-            this.affectationsEntreprise = affectations;
+            this.affectationsEntreprise = affectations.map((a) => ({ ...a, nomEntrepriseCalculee: this.nomEntreprise(a.entrepriseId) }));
             this.recalculerEntreprisesDisponibles();
             this.recalculerParentsDisponibles();
         });
@@ -439,7 +463,11 @@ export class ChantierDetailComponent implements OnInit {
 
     chargerAffectationsSalarie(chantierId: string) {
         this.affectationSalarieService.lister(chantierId).subscribe((affectations) => {
-            this.affectationsSalarie = affectations;
+            this.affectationsSalarie = affectations.map((a) => ({
+                ...a,
+                nomSalarieCalculee: this.nomSalarie(a.salarieId),
+                contratCalculee: this.contratDuSalarie(a.salarieId)
+            }));
             this.recalculerSalariesDisponibles();
         });
     }

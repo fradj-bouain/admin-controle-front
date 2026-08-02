@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Client } from '../models/client.model';
 import { ClientService } from '../services/client.service';
+import { AuthService } from 'src/app/core/auth/auth.service';
 
 @Component({
     selector: 'app-client-list',
@@ -16,8 +17,13 @@ export class ClientListComponent implements OnInit {
     constructor(
         private clientService: ClientService,
         private confirmation: ConfirmationService,
-        private message: MessageService
+        private message: MessageService,
+        public auth: AuthService
     ) { }
+
+    get isSuperAdmin(): boolean {
+        return this.auth.hasRole('SUPER_ADMIN');
+    }
 
     ngOnInit(): void {
         this.charger();

@@ -22,6 +22,7 @@ export class MessageDetailPageComponent implements OnInit {
 
     message: Message | null = null;
     chantier: Chantier | null = null;
+    loading = true;
     utilisateurs: Utilisateur[] = [];
     clients: Client[] = [];
     entreprises: Entreprise[] = [];
@@ -47,6 +48,7 @@ export class MessageDetailPageComponent implements OnInit {
         this.messageService.obtenir(id).subscribe({
             next: (message) => {
                 this.message = message;
+                this.loading = false;
                 if (message.chantierId) {
                     this.chantierService.obtenir(message.chantierId).subscribe((chantier) => (this.chantier = chantier));
                 }
@@ -57,6 +59,7 @@ export class MessageDetailPageComponent implements OnInit {
                 }
             },
             error: () => {
+                this.loading = false;
                 this.toast.add({ severity: 'error', summary: 'Erreur', detail: 'Message introuvable ou accès refusé' });
                 this.router.navigate(['/messagerie']);
             }

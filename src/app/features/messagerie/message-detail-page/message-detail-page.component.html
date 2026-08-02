@@ -1,5 +1,9 @@
 <p-toast></p-toast>
 
+<div class="card" *ngIf="loading">
+    <app-card-skeleton [lignes]="4"></app-card-skeleton>
+</div>
+
 <ng-container *ngIf="message">
 
 <div class="card mb-3 no-print">

@@ -17,6 +17,8 @@ export class MessageListComponent implements OnInit {
     reception: Message[] = [];
     envoyes: Message[] = [];
     activeTabIndex = 0;
+    loadingReception = false;
+    loadingEnvoyes = false;
 
     constructor(
         private messageService: MessageService,
@@ -33,11 +35,19 @@ export class MessageListComponent implements OnInit {
     }
 
     chargerReception() {
-        this.messageService.boiteReception().subscribe((messages) => (this.reception = messages));
+        this.loadingReception = true;
+        this.messageService.boiteReception().subscribe({
+            next: (messages) => { this.reception = messages; this.loadingReception = false; },
+            error: () => this.loadingReception = false
+        });
     }
 
     chargerEnvoyes() {
-        this.messageService.envoyes().subscribe((messages) => (this.envoyes = messages));
+        this.loadingEnvoyes = true;
+        this.messageService.envoyes().subscribe({
+            next: (messages) => { this.envoyes = messages; this.loadingEnvoyes = false; },
+            error: () => this.loadingEnvoyes = false
+        });
     }
 
     apercuTexte(contenu: string): string {

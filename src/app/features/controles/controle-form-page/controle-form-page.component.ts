@@ -5,6 +5,7 @@ import { MessageService } from 'primeng/api';
 import { ControleService } from '../services/controle.service';
 import { ControleTiers } from 'src/app/features/configuration/models/configuration.model';
 import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
+import { AuthService } from 'src/app/core/auth/auth.service';
 
 @Component({
     selector: 'app-controle-form-page',
@@ -15,6 +16,7 @@ export class ControleFormPageComponent implements OnInit {
 
     saving = false;
     isNew = true;
+    loading = false;
     controleId: string | null = null;
     chantierId!: string;
     controleTiersListe: ControleTiers[] = [];
@@ -33,8 +35,17 @@ export class ControleFormPageComponent implements OnInit {
         private referenceDataService: ReferenceDataService,
         private route: ActivatedRoute,
         private router: Router,
-        private message: MessageService
+        private message: MessageService,
+        public auth: AuthService
     ) { }
+
+    get isSuperAdmin(): boolean {
+        return this.auth.hasRole('SUPER_ADMIN');
+    }
+
+    get isControleur(): boolean {
+        return this.auth.hasRole('CONTROLEUR');
+    }
 
     ngOnInit(): void {
         this.referenceDataService.listerControleTiers().subscribe((tiers) => (this.controleTiersListe = tiers));
@@ -44,15 +55,20 @@ export class ControleFormPageComponent implements OnInit {
         this.isNew = !id;
 
         if (id) {
-            this.controleService.obtenir(id).subscribe((controle) => {
-                this.chantierId = controle.chantierId;
-                this.form.patchValue({
-                    dateControle: new Date(controle.dateControle),
-                    remarques: controle.remarques ?? '',
-                    controleTiersId: controle.controleTiersId ?? '',
-                    dateFin: controle.dateFin ? new Date(controle.dateFin) : null,
-                    termine: controle.termine
-                });
+            this.loading = true;
+            this.controleService.obtenir(id).subscribe({
+                next: (controle) => {
+                    this.chantierId = controle.chantierId;
+                    this.form.patchValue({
+                        dateControle: new Date(controle.dateControle),
+                        remarques: controle.remarques ?? '',
+                        controleTiersId: controle.controleTiersId ?? '',
+                        dateFin: controle.dateFin ? new Date(controle.dateFin) : null,
+                        termine: controle.termine
+                    });
+                    this.loading = false;
+                },
+                error: () => this.loading = false
             });
         } else {
             this.chantierId = this.route.snapshot.queryParamMap.get('chantierId')!;

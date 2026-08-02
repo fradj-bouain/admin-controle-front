@@ -46,7 +46,7 @@
                                 <span class="topbar-messages__dot" *ngIf="!message.lu"></span>
                                 <span class="topbar-messages__content">
                                     <span class="topbar-messages__subject">{{ message.sujet }}</span>
-                                    <span class="topbar-messages__preview">{{ message.contenu | slice: 0:80 }}</span>
+                                    <span class="topbar-messages__preview">{{ apercuTexte(message.contenu) | slice: 0:80 }}</span>
                                     <span class="topbar-messages__date">{{ message.createdAt | date: 'dd/MM/yyyy à HH:mm' }}</span>
                                 </span>
                             </a>

@@ -13,7 +13,9 @@
         <h6>Automatisation d'envoi d'emails</h6>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
+    <app-card-skeleton *ngIf="loading" [lignes]="6"></app-card-skeleton>
+
+    <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
         <div class="field-checkbox">
             <p-checkbox [(ngModel)]="actifCosmetique" [ngModelOptions]="{standalone: true}" [binary]="true" inputId="actifCosmetique"></p-checkbox>
             <label for="actifCosmetique" class="ml-2">Actif ?</label>
@@ -85,7 +87,7 @@
         <div class="formgrid grid" *ngIf="estChampSurveillable || afficherNbJoursAvant">
             <div class="field col-12 md:col-6" *ngIf="estChampSurveillable">
                 <label for="champSurveillableId">Champ surveillé *</label>
-                <p-dropdown id="champSurveillableId" [options]="champsSurveillables" formControlName="champSurveillableId" optionValue="id" placeholder="-- Choisir --" [class.ng-dirty]="form.controls.champSurveillableId.touched">
+                <p-dropdown id="champSurveillableId" [options]="champsSurveillables" formControlName="champSurveillableId" optionValue="id" [filter]="true" filterBy="entiteLibelle,champLibelle" placeholder="-- Choisir --" [class.ng-dirty]="form.controls.champSurveillableId.touched">
                     <ng-template let-c pTemplate="item">{{ c?.entiteLibelle }} — {{ c?.champLibelle }}</ng-template>
                     <ng-template let-c pTemplate="selectedItem">{{ c?.entiteLibelle }} — {{ c?.champLibelle }}</ng-template>
                 </p-dropdown>

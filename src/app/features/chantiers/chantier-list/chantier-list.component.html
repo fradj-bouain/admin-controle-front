@@ -7,7 +7,7 @@
             <h5 class="m-0">{{ 'chantier.title' | translate }}</h5>
         </ng-template>
         <ng-template pTemplate="right">
-            <button pButton type="button" icon="pi pi-plus" [label]="'common.add' | translate" routerLink="/chantiers/nouveau"></button>
+            <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-plus" [label]="'common.add' | translate" routerLink="/chantiers/nouveau"></button>
         </ng-template>
     </p-toolbar>
 
@@ -36,6 +36,11 @@
                 <th></th>
             </tr>
         </ng-template>
+        <ng-template pTemplate="loadingbody">
+            <tr *ngFor="let i of [0,1,2,3,4]">
+                <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
+            </tr>
+        </ng-template>
         <ng-template pTemplate="body" let-chantier>
             <tr class="cursor-pointer" [routerLink]="['/chantiers', chantier.id]">
                 <td>{{ chantier.nom }}</td>
@@ -57,6 +62,7 @@
                             (click)="$event.stopPropagation()"
                         ></button>
                         <button
+                            *ngIf="isSuperAdmin"
                             pButton
                             type="button"
                             [icon]="chantier.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"
@@ -65,6 +71,7 @@
                             (click)="confirmerBasculeStatut(chantier); $event.stopPropagation()"
                         ></button>
                         <button
+                            *ngIf="isSuperAdmin"
                             pButton
                             type="button"
                             icon="pi pi-trash"

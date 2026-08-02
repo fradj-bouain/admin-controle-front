@@ -7,7 +7,7 @@
             <h5 class="m-0">Salariés</h5>
         </ng-template>
         <ng-template pTemplate="right">
-            <button pButton type="button" icon="pi pi-plus" label="Ajouter" routerLink="/salaries/nouveau"></button>
+            <button *ngIf="isSuperAdmin || isEntreprise" pButton type="button" icon="pi pi-plus" label="Ajouter" routerLink="/salaries/nouveau"></button>
         </ng-template>
     </p-toolbar>
 
@@ -32,6 +32,11 @@
                     </p-columnFilter>
                 </th>
                 <th></th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="loadingbody">
+            <tr *ngFor="let i of [0,1,2,3,4]">
+                <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-salarie>
@@ -60,6 +65,7 @@
                             (click)="ouvrirQrCode(salarie); $event.stopPropagation()"
                         ></button>
                         <button
+                            *ngIf="isSuperAdmin || isEntreprise"
                             pButton
                             type="button"
                             [icon]="salarie.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"
@@ -68,6 +74,7 @@
                             (click)="confirmerBasculeStatut(salarie); $event.stopPropagation()"
                         ></button>
                         <button
+                            *ngIf="isSuperAdmin || isEntreprise"
                             pButton
                             type="button"
                             icon="pi pi-trash"

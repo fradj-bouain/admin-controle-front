@@ -10,7 +10,7 @@
 
     <p-tabView [(activeIndex)]="activeTabIndex">
         <p-tabPanel header="Boîte de réception">
-            <p-table #dtReception [value]="reception" dataKey="id" [paginator]="true" [rows]="10">
+            <p-table #dtReception [value]="reception" dataKey="id" [loading]="loadingReception" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th></th>
@@ -22,7 +22,12 @@
                         <th></th>
                         <th><p-columnFilter type="text" field="sujet" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                         <th><p-columnFilter type="text" field="contenu" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                        <th></th>
+                        <th><p-columnFilter type="text" field="createdAt" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-message>
@@ -40,7 +45,7 @@
         </p-tabPanel>
 
         <p-tabPanel header="Envoyés">
-            <p-table #dtEnvoyes [value]="envoyes" dataKey="id" [paginator]="true" [rows]="10">
+            <p-table #dtEnvoyes [value]="envoyes" dataKey="id" [loading]="loadingEnvoyes" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Destinataire</th>
@@ -58,7 +63,12 @@
                         </th>
                         <th><p-columnFilter type="text" field="sujet" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                         <th><p-columnFilter type="text" field="contenu" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                        <th></th>
+                        <th><p-columnFilter type="text" field="createdAt" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-message>

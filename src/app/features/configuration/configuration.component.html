@@ -9,7 +9,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" routerLink="/configuration/utilisateurs/nouveau"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtUtilisateurs [value]="utilisateurs" dataKey="id" [paginator]="true" [rows]="10">
+            <p-table #dtUtilisateurs [value]="utilisateurs" dataKey="id" [loading]="loadingUtilisateurs" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Utilisateur</th>
@@ -34,6 +34,11 @@
                             </p-columnFilter>
                         </th>
                         <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-utilisateur>
@@ -69,7 +74,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationPays()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtPays [value]="pays" dataKey="id" [paginator]="true" [rows]="10">
+            <p-table #dtPays [value]="pays" dataKey="id" [loading]="loadingPays" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Code ISO</th>
@@ -88,6 +93,11 @@
                             </p-columnFilter>
                         </th>
                         <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-p>
@@ -114,7 +124,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationCorps()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtCorps [value]="corpsDeMetier" dataKey="id" [paginator]="true" [rows]="10">
+            <p-table #dtCorps [value]="corpsDeMetier" dataKey="id" [loading]="loadingCorpsDeMetier" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Libellé</th>
@@ -123,6 +133,11 @@
                     <tr>
                         <th><p-columnFilter type="text" field="libelle" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                         <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-corps>
@@ -147,7 +162,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationTypeSalarie()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtTypeSalarie [value]="typesSalarie" dataKey="id" [paginator]="true" [rows]="10">
+            <p-table #dtTypeSalarie [value]="typesSalarie" dataKey="id" [loading]="loadingTypesSalarie" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Code</th>
@@ -158,6 +173,11 @@
                         <th><p-columnFilter type="text" field="code" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                         <th><p-columnFilter type="text" field="libelle" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                         <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-type>
@@ -183,7 +203,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationTypeContratSalarie()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtTypeContrat [value]="typesContratSalarie" dataKey="id" [paginator]="true" [rows]="10">
+            <p-table #dtTypeContrat [value]="typesContratSalarie" dataKey="id" [loading]="loadingTypesContratSalarie" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Code</th>
@@ -194,6 +214,11 @@
                         <th><p-columnFilter type="text" field="code" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                         <th><p-columnFilter type="text" field="libelle" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                         <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-type>
@@ -219,7 +244,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationSalarieFonction()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtFonctions [value]="salarieFonctions" dataKey="id" [paginator]="true" [rows]="10">
+            <p-table #dtFonctions [value]="salarieFonctions" dataKey="id" [loading]="loadingSalarieFonctions" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Libellé</th>
@@ -228,6 +253,11 @@
                     <tr>
                         <th><p-columnFilter type="text" field="libelle" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                         <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-fonction>
@@ -252,7 +282,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationControleTiers()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtControleTiers [value]="controleTiers" dataKey="id" [paginator]="true" [rows]="10">
+            <p-table #dtControleTiers [value]="controleTiers" dataKey="id" [loading]="loadingControleTiers" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Nom</th>
@@ -261,6 +291,11 @@
                     <tr>
                         <th><p-columnFilter type="text" field="nom" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                         <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-tiers>
@@ -285,7 +320,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationActionCorrective()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtActionsCorrectives [value]="actionsCorrectives" dataKey="id" [paginator]="true" [rows]="10">
+            <p-table #dtActionsCorrectives [value]="actionsCorrectives" dataKey="id" [loading]="loadingActionsCorrectives" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Nom</th>
@@ -302,6 +337,11 @@
                             </p-columnFilter>
                         </th>
                         <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-action>

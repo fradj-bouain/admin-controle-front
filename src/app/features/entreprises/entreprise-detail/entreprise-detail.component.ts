@@ -19,6 +19,7 @@ import { SalarieService } from 'src/app/features/salaries/services/salarie.servi
 import { UtilisateurService } from 'src/app/features/configuration/services/utilisateur.service';
 import { MessagePlanifie, SendMessageRequest } from 'src/app/features/messagerie/models/message.model';
 import { MessageService as MessagerieMessageService } from 'src/app/features/messagerie/services/message.service';
+import { AuthService } from 'src/app/core/auth/auth.service';
 
 interface LigneDocument {
     dateDebutValidite: Date | null;
@@ -35,6 +36,7 @@ export class EntrepriseDetailComponent implements OnInit {
 
     isNew = true;
     saving = false;
+    loading = false;
     entrepriseId: string | null = null;
     entreprise: Entreprise | null = null;
 
@@ -65,7 +67,9 @@ export class EntrepriseDetailComponent implements OnInit {
     // --- Affectation à un chantier ---
     chantiers: Chantier[] = [];
     entreprises: Entreprise[] = [];
-    mesAffectations: AffectationEntrepriseChantier[] = [];
+    // nomChantierCalculee ajouté au chargement, pour permettre un p-columnFilter
+    // texte simple sur le nom du chantier (le champ brut n'a que chantierId).
+    mesAffectations: Array<AffectationEntrepriseChantier & { nomChantierCalculee: string }> = [];
     roles: RoleEntreprise[] = ['PRINCIPALE', 'STT1', 'STT2'];
     affectationsChantierSelectionne: AffectationEntrepriseChantier[] = [];
     parentsDisponibles: Array<{ id: string; label: string }> = [];
@@ -96,7 +100,9 @@ export class EntrepriseDetailComponent implements OnInit {
     documentARefuser: DocumentItem | null = null;
 
     // --- Salariés (raccourci vers les salariés de cette entreprise) ---
-    salaries: Salarie[] = [];
+    // identiteCalculee ajouté au chargement, pour permettre un p-columnFilter
+    // texte simple sur "Prénom Nom" (colonne Identité affichée regroupée).
+    salaries: Array<Salarie & { identiteCalculee: string }> = [];
     afficherSalaries = false;
 
     // --- Utilisateurs (comptes rattachés à cette entreprise) ---
@@ -160,7 +166,8 @@ export class EntrepriseDetailComponent implements OnInit {
         private utilisateurService: UtilisateurService,
         private messagerieService: MessagerieMessageService,
         private confirmation: ConfirmationService,
-        private message: MessageService
+        private message: MessageService,
+        public auth: AuthService
     ) {
         this.affectationForm.controls.chantierId.valueChanges.subscribe((chantierId) => this.onChantierChange(chantierId));
         this.affectationForm.controls.role.valueChanges.subscribe((role) => {
@@ -174,6 +181,14 @@ export class EntrepriseDetailComponent implements OnInit {
             }
             parenteControl.updateValueAndValidity();
         });
+    }
+
+    get isSuperAdmin(): boolean {
+        return this.auth.hasRole('SUPER_ADMIN');
+    }
+
+    get isEntreprise(): boolean {
+        return this.auth.hasRole('ENTREPRISE');
     }
 
     ngOnInit(): void {
@@ -199,6 +214,7 @@ export class EntrepriseDetailComponent implements OnInit {
             this.entrepriseId = id;
             this.isNew = !id;
             if (id) {
+                this.loading = true;
                 this.chargerEntreprise(id);
                 this.chargerMesAffectations();
                 this.chargerDocuments();
@@ -209,14 +225,20 @@ export class EntrepriseDetailComponent implements OnInit {
     }
 
     chargerSalaries(entrepriseId: string) {
-        this.salarieService.lister(entrepriseId).subscribe((salaries) => (this.salaries = salaries));
+        this.salarieService.lister(entrepriseId).subscribe((salaries) => {
+            this.salaries = salaries.map((s) => ({ ...s, identiteCalculee: `${s.prenom} ${s.nom}` }));
+        });
     }
 
     private chargerEntreprise(id: string) {
-        this.entrepriseService.obtenir(id).subscribe((e) => {
-            this.entreprise = e;
-            this.coordonneesForm.patchValue(e);
-            this.recalculerTypesPourEntreprise();
+        this.entrepriseService.obtenir(id).subscribe({
+            next: (e) => {
+                this.entreprise = e;
+                this.coordonneesForm.patchValue(e);
+                this.recalculerTypesPourEntreprise();
+                this.loading = false;
+            },
+            error: () => this.loading = false
         });
     }
 
@@ -366,7 +388,9 @@ export class EntrepriseDetailComponent implements OnInit {
 
     chargerMesAffectations() {
         this.affectationService.listerParEntreprise(this.entrepriseId!).subscribe((affectations) => {
-            this.mesAffectations = [...affectations].sort((a, b) => b.dateDebut.localeCompare(a.dateDebut));
+            this.mesAffectations = [...affectations]
+                .sort((a, b) => b.dateDebut.localeCompare(a.dateDebut))
+                .map((a) => ({ ...a, nomChantierCalculee: this.nomChantier(a.chantierId) }));
             this.recalculerChantiersDisponibles();
         });
     }

@@ -13,6 +13,7 @@ import { EntrepriseService } from 'src/app/features/entreprises/services/entrepr
 import { ActionCorrective, Utilisateur } from 'src/app/features/configuration/models/configuration.model';
 import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
 import { UtilisateurService } from 'src/app/features/configuration/services/utilisateur.service';
+import { AuthService } from 'src/app/core/auth/auth.service';
 
 @Component({
     selector: 'app-rapport-detail-page',
@@ -24,6 +25,7 @@ export class RapportDetailPageComponent implements OnInit {
     rapportId!: string;
     rapport: RapportControle | null = null;
     chantier: Chantier | null = null;
+    loading = true;
     autresRapports: RapportControle[] = [];
     entrees: ControleSalarie[] = [];
 
@@ -53,8 +55,13 @@ export class RapportDetailPageComponent implements OnInit {
         private route: ActivatedRoute,
         private router: Router,
         private message: MessageService,
-        private confirmation: ConfirmationService
+        private confirmation: ConfirmationService,
+        public auth: AuthService
     ) { }
+
+    get isSuperAdmin(): boolean {
+        return this.auth.hasRole('SUPER_ADMIN');
+    }
 
     ngOnInit(): void {
         this.rapportId = this.route.snapshot.paramMap.get('id')!;
@@ -66,19 +73,23 @@ export class RapportDetailPageComponent implements OnInit {
     }
 
     private charger() {
-        this.controleService.obtenirRapport(this.rapportId).subscribe((rapport) => {
-            this.rapport = rapport;
-            this.form.patchValue({
-                nbNouvellesEntreprises: rapport.nbNouvellesEntreprises,
-                nbNouveauxSalaries: rapport.nbNouveauxSalaries,
-                nbSalariesDetaches: rapport.nbSalariesDetaches,
-                responsableUtilisateurId: rapport.responsableUtilisateurId ?? ''
-            });
-            this.chantierService.obtenir(rapport.chantierId).subscribe((chantier) => (this.chantier = chantier));
-            this.controleService.listerSalaries(rapport.controleId).subscribe((entrees) => (this.entrees = entrees));
-            this.controleService.listerRapports(rapport.chantierId).subscribe((rapports) => {
-                this.autresRapports = rapports.filter((r) => r.id !== rapport.id);
-            });
+        this.controleService.obtenirRapport(this.rapportId).subscribe({
+            next: (rapport) => {
+                this.rapport = rapport;
+                this.form.patchValue({
+                    nbNouvellesEntreprises: rapport.nbNouvellesEntreprises,
+                    nbNouveauxSalaries: rapport.nbNouveauxSalaries,
+                    nbSalariesDetaches: rapport.nbSalariesDetaches,
+                    responsableUtilisateurId: rapport.responsableUtilisateurId ?? ''
+                });
+                this.chantierService.obtenir(rapport.chantierId).subscribe((chantier) => (this.chantier = chantier));
+                this.controleService.listerSalaries(rapport.controleId).subscribe((entrees) => (this.entrees = entrees));
+                this.controleService.listerRapports(rapport.chantierId).subscribe((rapports) => {
+                    this.autresRapports = rapports.filter((r) => r.id !== rapport.id);
+                });
+                this.loading = false;
+            },
+            error: () => this.loading = false
         });
     }
 

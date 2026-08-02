@@ -44,7 +44,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtDocuments [value]="documents" dataKey="id" [paginator]="true" [rows]="10" [first]="tableFirst">
+            <p-table #dtDocuments [value]="documents" dataKey="id" [loading]="loadingDocuments" [paginator]="true" [rows]="10" [first]="tableFirst">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Type</th>
@@ -55,7 +55,7 @@
                     </tr>
                     <tr>
                         <th><p-columnFilter type="text" field="typeLibelle" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                        <th></th>
+                        <th><p-columnFilter type="text" field="dateExpiration" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                         <th>
                             <p-columnFilter field="statutValidation" matchMode="equals" [showMenu]="false">
                                 <ng-template pTemplate="filter" let-value let-filter="filterCallback">
@@ -65,6 +65,11 @@
                         </th>
                         <th></th>
                         <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-document>
@@ -80,10 +85,10 @@
                         <td>{{ document.statutValidation === 'REFUSE' ? libelleEtat(document.documentEtatId) : '—' }}</td>
                         <td>
                             <div class="flex align-items-center gap-1 flex-nowrap">
-                                <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="document.statutValidation !== 'VALIDE'" (click)="valider(document)"></button>
-                                <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="document.statutValidation !== 'REFUSE'" (click)="ouvrirRefus(document)"></button>
-                                <button pButton type="button" icon="pi pi-envelope" class="p-button-text p-button-rounded" pTooltip="Notifier par email" (click)="ouvrirNotification(document)"></button>
-                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppressionDocument(document)"></button>
+                                <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="isSuperAdmin && document.statutValidation !== 'VALIDE'" (click)="valider(document)"></button>
+                                <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="isSuperAdmin && document.statutValidation !== 'REFUSE'" (click)="ouvrirRefus(document)"></button>
+                                <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-envelope" class="p-button-text p-button-rounded" pTooltip="Notifier par email" (click)="ouvrirNotification(document)"></button>
+                                <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppressionDocument(document)"></button>
                             </div>
                         </td>
                     </tr>
@@ -99,11 +104,11 @@
         <div class="card">
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="right">
-                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" routerLink="/documents/types/nouveau"></button>
+                    <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-plus" label="Ajouter" routerLink="/documents/types/nouveau"></button>
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtTypes [value]="types" dataKey="id" [paginator]="true" [rows]="10">
+            <p-table #dtTypes [value]="types" dataKey="id" [loading]="loadingTypes" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Libellé</th>
@@ -128,8 +133,19 @@
                                 </ng-template>
                             </p-columnFilter>
                         </th>
+                        <th>
+                            <p-columnFilter field="obligatoire" matchMode="equals" [showMenu]="false">
+                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                    <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Oui', value: true}, {label: 'Non', value: false}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                                </ng-template>
+                            </p-columnFilter>
+                        </th>
                         <th></th>
-                        <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-type>
@@ -140,8 +156,8 @@
                         <td><p-tag *ngIf="type.obligatoire" severity="danger" value="Obligatoire"></p-tag></td>
                         <td>
                             <div class="flex align-items-center gap-1 flex-nowrap">
-                                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/documents/types', type.id]"></button>
-                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppressionType(type)"></button>
+                                <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/documents/types', type.id]"></button>
+                                <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppressionType(type)"></button>
                             </div>
                         </td>
                     </tr>
@@ -154,11 +170,11 @@
         <div class="card">
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="right">
-                    <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationEtat()"></button>
+                    <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationEtat()"></button>
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtEtats [value]="etats" dataKey="id" [paginator]="true" [rows]="10">
+            <p-table #dtEtats [value]="etats" dataKey="id" [loading]="loadingEtats" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Nom de l'état</th>
@@ -169,10 +185,33 @@
                     </tr>
                     <tr>
                         <th><p-columnFilter type="text" field="titre" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th>
+                            <p-columnFilter field="parDefaut" matchMode="equals" [showMenu]="false">
+                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                    <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Oui', value: true}, {label: 'Non', value: false}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                                </ng-template>
+                            </p-columnFilter>
+                        </th>
+                        <th>
+                            <p-columnFilter field="dateExpiree" matchMode="equals" [showMenu]="false">
+                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                    <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Oui', value: true}, {label: 'Non', value: false}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                                </ng-template>
+                            </p-columnFilter>
+                        </th>
+                        <th>
+                            <p-columnFilter field="valideLeDocument" matchMode="equals" [showMenu]="false">
+                                <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                    <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Oui', value: true}, {label: 'Non', value: false}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                                </ng-template>
+                            </p-columnFilter>
+                        </th>
                         <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-etat>
@@ -183,8 +222,8 @@
                         <td><p-tag *ngIf="etat.valideLeDocument" severity="success" value="Oui"></p-tag></td>
                         <td>
                             <div class="flex align-items-center gap-1 flex-nowrap">
-                                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionEtat(etat)"></button>
-                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppressionEtat(etat)"></button>
+                                <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEditionEtat(etat)"></button>
+                                <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppressionEtat(etat)"></button>
                             </div>
                         </td>
                     </tr>

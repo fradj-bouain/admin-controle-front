@@ -10,6 +10,7 @@
         <div class="flex align-items-center gap-2" *ngIf="entreprise">
             <p-tag [severity]="entreprise.actif ? 'success' : 'danger'" [value]="entreprise.actif ? 'ACTIF' : 'INACTIF'"></p-tag>
             <button
+                *ngIf="isSuperAdmin"
                 pButton
                 type="button"
                 [label]="entreprise.actif ? 'Désactiver' : 'Activer'"
@@ -28,7 +29,9 @@
         <h6 class="m-0">Coordonnées</h6>
     </div>
 
-    <form [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
+    <app-card-skeleton *ngIf="loading" [lignes]="8"></app-card-skeleton>
+
+    <form *ngIf="!loading" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
         <div class="field">
             <label for="raisonSociale">Nom *</label>
             <input id="raisonSociale" type="text" pInputText formControlName="raisonSociale" [class.ng-dirty]="coordonneesForm.controls.raisonSociale.touched" />
@@ -210,7 +213,7 @@
 
         <div class="flex justify-content-end gap-2 mt-4">
             <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
-            <button pButton type="submit" [label]="isNew ? 'Ajouter' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
+            <button *ngIf="isSuperAdmin || (!isNew && isEntreprise)" pButton type="submit" [label]="isNew ? 'Ajouter' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
         </div>
     </form>
 </div>
@@ -287,10 +290,24 @@
                 <th>Statut</th>
                 <th style="width: 6rem"></th>
             </tr>
+            <tr>
+                <th><p-columnFilter type="text" field="nomChantierCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th>
+                    <p-columnFilter field="statut" matchMode="equals" [showMenu]="false">
+                        <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                            <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Actif', value: 'ACTIF'}, {label: 'Inactif', value: 'INACTIF'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                        </ng-template>
+                    </p-columnFilter>
+                </th>
+                <th></th>
+            </tr>
         </ng-template>
         <ng-template pTemplate="body" let-affectation>
             <tr [class.text-500]="!!affectation.dateFin">
-                <td>{{ nomChantier(affectation.chantierId) }}</td>
+                <td>{{ affectation.nomChantierCalculee }}</td>
                 <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
                 <td>{{ affectation.dateDebut | date: 'dd/MM/yyyy' }}</td>
                 <td>{{ affectation.dateFin ? (affectation.dateFin | date: 'dd/MM/yyyy') : '—' }}</td>
@@ -346,10 +363,15 @@
                 <th>Statut</th>
                 <th style="width: 4rem"></th>
             </tr>
+            <tr>
+                <th><p-columnFilter type="text" field="identiteCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th></th>
+                <th></th>
+            </tr>
         </ng-template>
         <ng-template pTemplate="body" let-salarie>
             <tr>
-                <td>{{ salarie.prenom }} {{ salarie.nom }}</td>
+                <td>{{ salarie.identiteCalculee }}</td>
                 <td><p-tag [severity]="salarie.statut === 'ACTIF' ? 'success' : 'danger'" [value]="salarie.statut"></p-tag></td>
                 <td>
                     <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/salaries', salarie.id]"></button>
@@ -564,8 +586,8 @@
                         <span *ngIf="!documentsByType[type.id].fichierUrl">—</span>
                     </div>
                     <div class="field col-12 md:col-2 mb-0 flex gap-2">
-                        <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="documentsByType[type.id].statutValidation !== 'VALIDE'" (click)="valider(documentsByType[type.id])"></button>
-                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="documentsByType[type.id].statutValidation !== 'REFUSE'" (click)="ouvrirRefus(documentsByType[type.id])"></button>
+                        <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="documentsByType[type.id].statutValidation !== 'VALIDE' && isSuperAdmin" (click)="valider(documentsByType[type.id])"></button>
+                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="documentsByType[type.id].statutValidation !== 'REFUSE' && isSuperAdmin" (click)="ouvrirRefus(documentsByType[type.id])"></button>
                     </div>
                 </ng-template>
             </div>

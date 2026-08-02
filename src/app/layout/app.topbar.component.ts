@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { Message } from 'src/app/features/messagerie/models/message.model';
 import { MessageService } from 'src/app/features/messagerie/services/message.service';
+import { stripHtml } from 'src/app/shared/utils/html.util';
 
 @Component({
     selector: 'app-topbar',
@@ -47,6 +48,10 @@ export class AppTopbarComponent implements OnInit {
 
     get nbNonLus(): number {
         return this.messages.filter((m) => !m.lu).length;
+    }
+
+    apercuTexte(contenu: string): string {
+        return stripHtml(contenu);
     }
 
     get badgeValue(): string {

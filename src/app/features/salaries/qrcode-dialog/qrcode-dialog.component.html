@@ -1,35 +1,48 @@
 <p-dialog
-    header="Carte d'identité numérique"
+    header="Badge du salarié"
     [(visible)]="visible"
     (visibleChange)="visibleChange.emit($event)"
     [modal]="true"
-    [style]="{ width: '26rem' }"
+    [style]="{ width: '27rem' }"
     (onHide)="close()"
 >
     <div *ngIf="salarie" class="flex flex-column align-items-center gap-3">
-        <div class="text-center">
-            <div class="text-900 font-bold text-xl">{{ salarie.prenom }} {{ salarie.nom }}</div>
-        </div>
-
         <div *ngIf="loading" class="p-4">
             <i class="pi pi-spin pi-spinner text-3xl"></i>
         </div>
 
         <div *ngIf="!loading && notFound" class="text-center">
-            <p class="text-500">Aucun QR code n'a encore été généré pour ce salarié.</p>
-            <button pButton type="button" icon="pi pi-qrcode" label="Générer le QR code" (click)="generer()"></button>
+            <p class="text-500">Aucun badge n'a encore été généré pour ce salarié.</p>
+            <button pButton type="button" icon="pi pi-id-card" label="Générer le badge" (click)="generer()"></button>
         </div>
 
         <ng-container *ngIf="!loading && qrCode">
-            <img *ngIf="imageUrl" [src]="imageUrl" alt="QR code" width="220" height="220" />
-
-            <p-tag [severity]="qrCode.actif ? 'success' : 'danger'" [value]="qrCode.actif ? 'ACTIF' : 'DÉSACTIVÉ'"></p-tag>
-
-            <div class="text-500 text-xs" style="word-break: break-all;">{{ qrCode.codeValeur }}</div>
-
-            <div class="flex gap-2">
-                <button pButton type="button" icon="pi pi-refresh" label="Régénérer" class="p-button-outlined" (click)="regenerer()"></button>
+            <div class="badge-card" #badgeCard>
+                <div class="badge-card__pattern"></div>
+                <div class="badge-card__header">
+                    <div class="badge-card__brand">ADMIN-CONTROL'BTP</div>
+                    <div class="badge-card__subtitle">Badge professionnel chantier</div>
+                </div>
+                <div class="badge-card__avatar">{{ initiales }}</div>
+                <div class="badge-card__body">
+                    <div class="badge-card__nom">{{ salarie.prenom }} {{ salarie.nom }}</div>
+                    <div class="badge-card__fonction" *ngIf="fonctionLibelle">{{ fonctionLibelle }}</div>
+                    <div class="badge-card__entreprise" *ngIf="entreprise">{{ entreprise.raisonSociale }}</div>
+                    <div class="badge-card__divider"></div>
+                    <img *ngIf="imageUrl" [src]="imageUrl" alt="QR code" class="badge-card__qr" />
+                    <div class="badge-card__code">{{ qrCode.codeValeur.slice(0, 18) }}</div>
+                </div>
+                <div class="badge-card__footer">
+                    <span class="badge-card__statut" [class.badge-card__statut--inactif]="!qrCode.actif"></span>
+                    {{ qrCode.actif ? 'Badge actif' : 'Badge désactivé' }}
+                </div>
             </div>
+
+            <div class="flex gap-2 flex-wrap justify-content-center">
+                <button pButton type="button" icon="pi pi-download" label="Télécharger le PDF" [loading]="generatingPdf" (click)="telechargerPdf()"></button>
+                <button pButton type="button" icon="pi pi-print" label="Imprimer" class="p-button-outlined" [loading]="generatingPdf" (click)="imprimer()"></button>
+            </div>
+            <button pButton type="button" icon="pi pi-refresh" label="Régénérer le QR code" class="p-button-text p-button-sm" (click)="regenerer()"></button>
             <small class="text-500 text-center">
                 Régénérer invalide immédiatement l'ancien code : un badge perdu ou copié cesse de fonctionner.
             </small>

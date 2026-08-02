@@ -6,7 +6,9 @@
         <h5 class="m-0">{{ isNew ? 'Nouveau contrôle' : 'Modifier le contrôle' }}</h5>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
+    <app-card-skeleton *ngIf="loading" [lignes]="4"></app-card-skeleton>
+
+    <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
                 <label for="dateControle">Date de début *</label>
@@ -27,6 +29,8 @@
                 formControlName="controleTiersId"
                 optionLabel="nom"
                 optionValue="id"
+                [filter]="true"
+                filterBy="nom"
                 placeholder="Aucun (contrôle interne)"
                 [showClear]="true"
             ></p-dropdown>
@@ -44,7 +48,7 @@
 
         <div class="flex justify-content-end gap-2 mt-4">
             <button pButton type="button" label="Annuler" class="p-button-text" (click)="annuler()"></button>
-            <button pButton type="submit" [label]="isNew ? 'Ajouter' : 'Enregistrer'" icon="pi pi-check" [loading]="saving"></button>
+            <button *ngIf="isSuperAdmin || isControleur" pButton type="submit" [label]="isNew ? 'Ajouter' : 'Enregistrer'" icon="pi pi-check" [loading]="saving"></button>
         </div>
     </form>
 </div>

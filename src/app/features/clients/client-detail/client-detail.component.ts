@@ -9,6 +9,7 @@ import { ReferenceDataService } from 'src/app/features/configuration/services/re
 import { UtilisateurService } from 'src/app/features/configuration/services/utilisateur.service';
 import { Chantier } from 'src/app/features/chantiers/models/chantier.model';
 import { ChantierService } from 'src/app/features/chantiers/services/chantier.service';
+import { AuthService } from 'src/app/core/auth/auth.service';
 
 @Component({
     selector: 'app-client-detail',
@@ -19,6 +20,7 @@ export class ClientDetailComponent implements OnInit {
 
     isNew = true;
     saving = false;
+    loading = false;
     clientId: string | null = null;
     client: Client | null = null;
 
@@ -66,8 +68,13 @@ export class ClientDetailComponent implements OnInit {
         private utilisateurService: UtilisateurService,
         private chantierService: ChantierService,
         private confirmation: ConfirmationService,
-        private message: MessageService
+        private message: MessageService,
+        public auth: AuthService
     ) { }
+
+    get isSuperAdmin(): boolean {
+        return this.auth.hasRole('SUPER_ADMIN');
+    }
 
     ngOnInit(): void {
         this.referenceDataService.listerPays().subscribe((pays) => (this.pays = pays));
@@ -77,6 +84,7 @@ export class ClientDetailComponent implements OnInit {
             this.clientId = id;
             this.isNew = !id;
             if (id) {
+                this.loading = true;
                 this.chargerClient(id);
                 this.chargerUtilisateurs(id);
                 this.chargerChantiers(id);
@@ -85,9 +93,13 @@ export class ClientDetailComponent implements OnInit {
     }
 
     private chargerClient(id: string) {
-        this.clientService.obtenir(id).subscribe((c) => {
-            this.client = c;
-            this.coordonneesForm.patchValue(c);
+        this.clientService.obtenir(id).subscribe({
+            next: (c) => {
+                this.client = c;
+                this.coordonneesForm.patchValue(c);
+                this.loading = false;
+            },
+            error: () => this.loading = false
         });
     }
 

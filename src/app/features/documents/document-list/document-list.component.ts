@@ -9,6 +9,7 @@ import { Salarie } from 'src/app/features/salaries/models/salarie.model';
 import { SalarieService } from 'src/app/features/salaries/services/salarie.service';
 import { Entreprise } from 'src/app/features/entreprises/models/entreprise.model';
 import { EntrepriseService } from 'src/app/features/entreprises/services/entreprise.service';
+import { AuthService } from 'src/app/core/auth/auth.service';
 
 @Component({
     selector: 'app-document-list',
@@ -19,6 +20,9 @@ export class DocumentListComponent implements OnInit {
 
     types: TypeDocument[] = [];
     etats: DocumentEtat[] = [];
+    loadingDocuments = false;
+    loadingTypes = false;
+    loadingEtats = false;
 
     cibles: CibleDocument[] = ['SALARIE', 'ENTREPRISE'];
     cible: CibleDocument = 'SALARIE';
@@ -61,8 +65,13 @@ export class DocumentListComponent implements OnInit {
         private entrepriseService: EntrepriseService,
         private message: MessageService,
         private confirmation: ConfirmationService,
-        private route: ActivatedRoute
+        private route: ActivatedRoute,
+        public auth: AuthService
     ) { }
+
+    get isSuperAdmin(): boolean {
+        return this.auth.hasRole('SUPER_ADMIN');
+    }
 
     ngOnInit(): void {
         const params = this.route.snapshot.queryParamMap;
@@ -90,16 +99,26 @@ export class DocumentListComponent implements OnInit {
     }
 
     chargerTypes() {
-        this.typeDocumentService.lister().subscribe((types) => {
-            this.types = types;
-            this.recalculerTypesPourCible();
+        this.loadingTypes = true;
+        this.typeDocumentService.lister().subscribe({
+            next: (types) => {
+                this.types = types;
+                this.recalculerTypesPourCible();
+                this.loadingTypes = false;
+            },
+            error: () => this.loadingTypes = false
         });
     }
 
     chargerEtats() {
-        this.documentEtatService.lister().subscribe((etats) => {
-            this.etats = etats;
-            this.etatsPourRefus = etats.filter((e) => !e.valideLeDocument);
+        this.loadingEtats = true;
+        this.documentEtatService.lister().subscribe({
+            next: (etats) => {
+                this.etats = etats;
+                this.etatsPourRefus = etats.filter((e) => !e.valideLeDocument);
+                this.loadingEtats = false;
+            },
+            error: () => this.loadingEtats = false
         });
     }
 
@@ -127,12 +146,17 @@ export class DocumentListComponent implements OnInit {
         const obs = this.cible === 'SALARIE'
             ? this.documentService.listerParSalarie(this.entiteId)
             : this.documentService.listerParEntreprise(this.entiteId);
-        obs.subscribe((documents) => {
-            this.documents = documents.map((d) => ({ ...d, typeLibelle: this.libelleType(d.typeDocumentId) }));
-            if (this.documentHighlightId) {
-                const index = documents.findIndex((d) => d.id === this.documentHighlightId);
-                this.tableFirst = index >= 0 ? Math.floor(index / 10) * 10 : 0;
-            }
+        this.loadingDocuments = true;
+        obs.subscribe({
+            next: (documents) => {
+                this.documents = documents.map((d) => ({ ...d, typeLibelle: this.libelleType(d.typeDocumentId) }));
+                if (this.documentHighlightId) {
+                    const index = documents.findIndex((d) => d.id === this.documentHighlightId);
+                    this.tableFirst = index >= 0 ? Math.floor(index / 10) * 10 : 0;
+                }
+                this.loadingDocuments = false;
+            },
+            error: () => this.loadingDocuments = false
         });
     }
 

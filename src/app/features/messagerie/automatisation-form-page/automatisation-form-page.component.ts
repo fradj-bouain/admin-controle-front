@@ -22,6 +22,7 @@ export class AutomatisationFormPageComponent implements OnInit {
     isNew = true;
     regleId: string | null = null;
     saving = false;
+    loading = false;
 
     // Champs purement visuels (parité d'affichage avec le site legacy) : pas de
     // colonne backend correspondante, rien n'est envoyé au serveur pour eux.
@@ -112,20 +113,25 @@ export class AutomatisationFormPageComponent implements OnInit {
             this.regleId = id;
             this.isNew = !id;
             if (id) {
-                this.regleService.obtenir(id).subscribe((regle) => {
-                    this.form.patchValue({
-                        nom: regle.nom,
-                        typeDeclencheur: regle.typeDeclencheur,
-                        champSurveillableId: regle.champSurveillableId ?? '',
-                        nbJoursAvant: regle.nbJoursAvant,
-                        cibleGroupe: regle.cibleGroupe,
-                        destinataireType: regle.destinataireType ?? 'UTILISATEUR',
-                        destinataireId: regle.destinataireId ?? '',
-                        sujet: regle.sujet,
-                        contenu: regle.contenu,
-                        numeroInterne: regle.numeroInterne ?? '',
-                        titreInterne: regle.titreInterne ?? ''
-                    });
+                this.loading = true;
+                this.regleService.obtenir(id).subscribe({
+                    next: (regle) => {
+                        this.form.patchValue({
+                            nom: regle.nom,
+                            typeDeclencheur: regle.typeDeclencheur,
+                            champSurveillableId: regle.champSurveillableId ?? '',
+                            nbJoursAvant: regle.nbJoursAvant,
+                            cibleGroupe: regle.cibleGroupe,
+                            destinataireType: regle.destinataireType ?? 'UTILISATEUR',
+                            destinataireId: regle.destinataireId ?? '',
+                            sujet: regle.sujet,
+                            contenu: regle.contenu,
+                            numeroInterne: regle.numeroInterne ?? '',
+                            titreInterne: regle.titreInterne ?? ''
+                        });
+                        this.loading = false;
+                    },
+                    error: () => this.loading = false
                 });
             }
         });

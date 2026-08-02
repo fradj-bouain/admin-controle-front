@@ -12,6 +12,15 @@
             <button
                 pButton
                 type="button"
+                icon="pi pi-id-card"
+                label="Badge"
+                class="p-button-outlined"
+                (click)="dialogBadgeVisible = true"
+            ></button>
+            <button
+                *ngIf="isSuperAdmin || isEntreprise"
+                pButton
+                type="button"
                 [label]="salarie.statut === 'ACTIF' ? 'Désactiver' : 'Activer'"
                 [icon]="salarie.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"
                 class="p-button-text"
@@ -21,6 +30,8 @@
     </div>
 </div>
 
+<app-qrcode-dialog [(visible)]="dialogBadgeVisible" [salarie]="salarie"></app-qrcode-dialog>
+
 <!-- Coordonnées -->
 <div class="card mb-3">
     <div class="card-head">
@@ -28,7 +39,9 @@
         <h6 class="m-0">Coordonnées</h6>
     </div>
 
-    <form [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
+    <app-card-skeleton *ngIf="loading" [lignes]="6"></app-card-skeleton>
+
+    <form *ngIf="!loading" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
                 <label for="nom">Nom *</label>
@@ -64,6 +77,8 @@
                 formControlName="fonctionId"
                 optionLabel="libelle"
                 optionValue="id"
+                [filter]="true"
+                filterBy="libelle"
                 placeholder="-- Sélectionner une fonction --"
                 [showClear]="true"
                 [class.ng-dirty]="coordonneesForm.controls.fonctionId.touched"
@@ -95,6 +110,8 @@
                     formControlName="typeContratId"
                     optionLabel="libelle"
                     optionValue="id"
+                    [filter]="true"
+                    filterBy="libelle"
                     placeholder="-- Sélectionner un type de contrat --"
                     [showClear]="true"
                     [class.ng-dirty]="coordonneesForm.controls.typeContratId.touched"
@@ -105,7 +122,7 @@
 
         <div class="flex justify-content-end gap-2 mt-4">
             <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
-            <button pButton type="submit" [label]="isNew ? 'Ajouter ce salarié' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
+            <button *ngIf="isSuperAdmin || isEntreprise" pButton type="submit" [label]="isNew ? 'Ajouter ce salarié' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
         </div>
     </form>
 </div>
@@ -129,10 +146,25 @@
                 <th>Statut d'accès</th>
                 <th style="width: 8rem"></th>
             </tr>
+            <tr>
+                <th><p-columnFilter type="text" field="nomChantierCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th>
+                    <p-columnFilter field="statutAcces" matchMode="equals" [showMenu]="false">
+                        <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                            <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Accordé', value: 'ACCORDE'}, {label: 'Refusé', value: 'REFUSE'}, {label: 'En attente', value: 'EN_ATTENTE'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                        </ng-template>
+                    </p-columnFilter>
+                </th>
+                <th></th>
+            </tr>
         </ng-template>
         <ng-template pTemplate="body" let-affectation>
             <tr [class.text-500]="!!affectation.dateFin">
-                <td>{{ nomChantier(affectation.chantierId) }}</td>
+                <td>{{ affectation.nomChantierCalculee }}</td>
                 <td>{{ affectation.entrepriseId ? nomEntreprise(affectation.entrepriseId) : '—' }}</td>
                 <td>{{ affectation.dateDebut | date: 'dd/MM/yyyy' }}</td>
                 <td>{{ affectation.dateFin ? (affectation.dateFin | date: 'dd/MM/yyyy') : '—' }}</td>
@@ -145,8 +177,8 @@
                 </td>
                 <td>
                     <div class="flex align-items-center gap-1 flex-nowrap" *ngIf="!affectation.dateFin">
-                        <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="affectation.statutAcces !== 'ACCORDE'" (click)="accorderAcces(affectation)"></button>
-                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="affectation.statutAcces !== 'REFUSE'" (click)="refuserAcces(affectation)"></button>
+                        <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="affectation.statutAcces !== 'ACCORDE' && isSuperAdmin" (click)="accorderAcces(affectation)"></button>
+                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="affectation.statutAcces !== 'REFUSE' && isSuperAdmin" (click)="refuserAcces(affectation)"></button>
                     </div>
                 </td>
             </tr>
@@ -171,7 +203,7 @@
             </small>
         </div>
         <div class="field col-12 md:col-2">
-            <button pButton type="submit" label="Ajouter" [disabled]="isNew" class="w-full"></button>
+            <button *ngIf="isSuperAdmin || isEntreprise" pButton type="submit" label="Ajouter" [disabled]="isNew" class="w-full"></button>
         </div>
     </form>
 </div>
@@ -277,8 +309,8 @@
                         <span *ngIf="!documentsByType[type.id].fichierUrl">—</span>
                     </div>
                     <div class="field col-12 md:col-2 mb-0 flex gap-2">
-                        <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="documentsByType[type.id].statutValidation !== 'VALIDE'" (click)="valider(documentsByType[type.id])"></button>
-                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="documentsByType[type.id].statutValidation !== 'REFUSE'" (click)="ouvrirRefus(documentsByType[type.id])"></button>
+                        <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="documentsByType[type.id].statutValidation !== 'VALIDE' && isSuperAdmin" (click)="valider(documentsByType[type.id])"></button>
+                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="documentsByType[type.id].statutValidation !== 'REFUSE' && isSuperAdmin" (click)="ouvrirRefus(documentsByType[type.id])"></button>
                     </div>
                 </ng-template>
             </div>

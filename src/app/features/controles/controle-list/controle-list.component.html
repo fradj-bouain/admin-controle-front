@@ -20,6 +20,7 @@
                 </ng-template>
                 <ng-template pTemplate="right">
                     <button
+                        *ngIf="isSuperAdmin || isControleur"
                         pButton
                         type="button"
                         icon="pi pi-plus"
@@ -30,7 +31,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtControles [value]="controles" dataKey="id" [paginator]="true" [rows]="10">
+            <p-table #dtControles [value]="controles" dataKey="id" [loading]="loadingControles" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Début</th>
@@ -53,6 +54,11 @@
                         <th></th>
                     </tr>
                 </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
+                    </tr>
+                </ng-template>
                 <ng-template pTemplate="body" let-controle>
                     <tr>
                         <td>{{ controle.dateControle }}</td>
@@ -63,9 +69,9 @@
                         </td>
                         <td>
                             <div class="flex align-items-center gap-1 flex-nowrap">
-                                <button pButton type="button" label="Générer un rapport" class="p-button-text" (click)="ouvrirGenerationRapport(controle)"></button>
+                                <button *ngIf="isSuperAdmin" pButton type="button" label="Générer un rapport" class="p-button-text" (click)="ouvrirGenerationRapport(controle)"></button>
                                 <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/controles', controle.id]"></button>
-                                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppression(controle)"></button>
+                                <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppression(controle)"></button>
                             </div>
                         </td>
                     </tr>
@@ -79,7 +85,7 @@
 
     <p-tabPanel header="Rapports">
         <div class="card">
-            <p-table #dtRapports [value]="rapports" dataKey="id" [paginator]="true" [rows]="10">
+            <p-table #dtRapports [value]="rapports" dataKey="id" [loading]="loadingRapports" [paginator]="true" [rows]="10">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Salariés contrôlés</th>
@@ -95,11 +101,16 @@
                         <th><p-columnFilter type="numeric" field="nbSalariesControles" matchMode="equals" [showMenu]="false" [showButtons]="false" placeholder="Filtrer..."></p-columnFilter></th>
                         <th><p-columnFilter type="numeric" field="nbAccords" matchMode="equals" [showMenu]="false" [showButtons]="false" placeholder="Filtrer..."></p-columnFilter></th>
                         <th><p-columnFilter type="numeric" field="nbRefus" matchMode="equals" [showMenu]="false" [showButtons]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th><p-columnFilter type="numeric" field="nbNouvellesEntreprises" matchMode="equals" [showMenu]="false" [showButtons]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th><p-columnFilter type="numeric" field="nbNouveauxSalaries" matchMode="equals" [showMenu]="false" [showButtons]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                        <th><p-columnFilter type="numeric" field="nbSalariesDetaches" matchMode="equals" [showMenu]="false" [showButtons]="false" placeholder="Filtrer..."></p-columnFilter></th>
                         <th></th>
                         <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="loadingbody">
+                    <tr *ngFor="let i of [0,1,2,3,4]">
+                        <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-rapport>
