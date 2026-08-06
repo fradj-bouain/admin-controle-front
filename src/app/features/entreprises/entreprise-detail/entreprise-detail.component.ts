@@ -22,8 +22,6 @@ import { MessageService as MessagerieMessageService } from 'src/app/features/mes
 import { AuthService } from 'src/app/core/auth/auth.service';
 
 interface LigneDocument {
-    dateDebutValidite: Date | null;
-    dateExpiration: Date | null;
     fichierUrl: string;
 }
 
@@ -98,6 +96,8 @@ export class EntrepriseDetailComponent implements OnInit {
     etatsPourRefus: DocumentEtat[] = [];
     dialogRefuserVisible = false;
     documentARefuser: DocumentItem | null = null;
+    dialogValiderVisible = false;
+    documentAValider: DocumentItem | null = null;
 
     // --- Salariés (raccourci vers les salariés de cette entreprise) ---
     // identiteCalculee ajouté au chargement, pour permettre un p-columnFilter
@@ -479,6 +479,7 @@ export class EntrepriseDetailComponent implements OnInit {
     private recalculerTypesPourEntreprise() {
         const corpsDeMetierId = this.entreprise?.corpsDeMetierId;
         const paysId = this.entreprise?.paysId;
+        const zone = this.zoneDuPays(paysId);
         const texte = this.filtreTexte.trim().toLowerCase();
         this.typesPourEntreprise = this.types.filter((t) => {
             if (t.cible !== 'ENTREPRISE') {
@@ -493,6 +494,9 @@ export class EntrepriseDetailComponent implements OnInit {
             if (t.paysId && t.paysId !== paysId) {
                 return false;
             }
+            if (t.zoneRequise && t.zoneRequise !== zone) {
+                return false;
+            }
             if (texte && !t.libelle.toLowerCase().includes(texte)) {
                 return false;
             }
@@ -503,9 +507,14 @@ export class EntrepriseDetailComponent implements OnInit {
         this.typesPourEntreprise.sort((a, b) => this.prioriteStatutDocument(a) - this.prioriteStatutDocument(b));
         for (const t of this.typesPourEntreprise) {
             if (!this.lignesDocument[t.id]) {
-                this.lignesDocument[t.id] = { dateDebutValidite: null, dateExpiration: null, fichierUrl: '' };
+                this.lignesDocument[t.id] = { fichierUrl: '' };
             }
         }
+        this.recalculerTypesManquantsPourDemande();
+    }
+
+    private zoneDuPays(paysId: string | undefined): string | undefined {
+        return paysId ? this.pays.find((p) => p.id === paysId)?.zone : undefined;
     }
 
     private prioriteStatutDocument(type: TypeDocument): number {
@@ -541,6 +550,16 @@ export class EntrepriseDetailComponent implements OnInit {
         return this.typesPourEntreprise.filter((t) => !this.documentsByType[t.id]).length;
     }
 
+    // Pour l'administrateur, on ne montre que les documents déjà déposés par l'entreprise —
+    // inutile de lui faire chercher parmi les documents manquants, ce n'est pas lui qui les
+    // fournit (item 4 du cahier des charges). Les autres rôles voient aussi ce qui manque.
+    get typesPourEntrepriseFiltres(): TypeDocument[] {
+        if (!this.isSuperAdmin) {
+            return this.typesPourEntreprise;
+        }
+        return this.typesPourEntreprise.filter((t) => this.documentsByType[t.id]);
+    }
+
     get nbTypesDemandesSelection(): number {
         return Object.values(this.typesDemandesSelection).filter(Boolean).length;
     }
@@ -557,6 +576,33 @@ export class EntrepriseDetailComponent implements OnInit {
             contenu: this.modeleDemandeDocuments(listeHtml)
         });
         this.typesDemandesSelection = {};
+        this.afficherComposeur = true;
+    }
+
+    // Raccourci simple pour l'administrateur, qui ne voit plus les documents manquants
+    // dans la liste (voir typesPourEntrepriseFiltres) : un seul document à choisir dans
+    // une liste déroulante, un seul bouton, pas besoin de dérouler toute la fiche.
+    // Champ normal recalculé explicitement (pas une getter) : lié au [options] d'un
+    // p-dropdown, une getter y renverrait un nouveau tableau à chaque cycle de détection
+    // de changement, forçant PrimeNG à retraiter ses options en boucle — source du blocage
+    // du navigateur déjà rencontré sur la fiche Salarié avec ce même raccourci.
+    documentManquantSelectionne: string | null = null;
+    typesManquantsPourDemande: TypeDocument[] = [];
+
+    private recalculerTypesManquantsPourDemande() {
+        this.typesManquantsPourDemande = this.typesPourEntreprise.filter((t) => !this.documentsByType[t.id]);
+    }
+
+    demanderDocumentManquant() {
+        const type = this.typesPourEntreprise.find((t) => t.id === this.documentManquantSelectionne);
+        if (!type) {
+            return;
+        }
+        this.messageForm.patchValue({
+            sujet: `Document à fournir — ${this.entreprise ? this.entreprise.raisonSociale : ''}`,
+            contenu: this.modeleDemandeDocuments(`<li>${type.libelle}</li>`)
+        });
+        this.documentManquantSelectionne = null;
         this.afficherComposeur = true;
     }
 
@@ -590,12 +636,12 @@ export class EntrepriseDetailComponent implements OnInit {
             .filter((t) => this.lignesDocument[t.id]?.fichierUrl)
             .map((t) => {
                 const ligne = this.lignesDocument[t.id];
+                // Les dates de validité ne sont saisies que par l'administrateur, au moment
+                // de la validation (voir confirmerValidation) — jamais au dépôt.
                 return this.documentService.creer({
                     typeDocumentId: t.id,
                     entrepriseId,
-                    fichierUrl: ligne.fichierUrl || undefined,
-                    dateDebutValidite: ligne.dateDebutValidite ? this.toIsoDate(ligne.dateDebutValidite) : undefined,
-                    dateExpiration: ligne.dateExpiration ? this.toIsoDate(ligne.dateExpiration) : undefined
+                    fichierUrl: ligne.fichierUrl || undefined
                 });
             });
         return appels.length > 0 ? forkJoin(appels) : of(null);
@@ -606,9 +652,7 @@ export class EntrepriseDetailComponent implements OnInit {
         this.documentService.creer({
             typeDocumentId: type.id,
             entrepriseId: this.entrepriseId!,
-            fichierUrl: ligne.fichierUrl || undefined,
-            dateDebutValidite: ligne.dateDebutValidite ? this.toIsoDate(ligne.dateDebutValidite) : undefined,
-            dateExpiration: ligne.dateExpiration ? this.toIsoDate(ligne.dateExpiration) : undefined
+            fichierUrl: ligne.fichierUrl || undefined
         }).subscribe({
             next: () => {
                 this.message.add({ severity: 'success', summary: 'Succès', detail: 'Document enregistré' });
@@ -618,8 +662,31 @@ export class EntrepriseDetailComponent implements OnInit {
         });
     }
 
-    valider(document: DocumentItem) {
-        this.documentService.valider(document.id).subscribe({ next: () => this.chargerDocuments() });
+    // --- Validation (dates de validité saisies par l'administrateur, voir item 5) ---
+
+    ouvrirValidation(document: DocumentItem) {
+        this.documentAValider = document;
+        this.dialogValiderVisible = true;
+    }
+
+    get typeDuDocumentAValider(): TypeDocument | undefined {
+        return this.documentAValider ? this.types.find((t) => t.id === this.documentAValider!.typeDocumentId) : undefined;
+    }
+
+    confirmerValidation(dates: { dateDebutValidite: Date | null; dateExpiration: Date | null }) {
+        if (!this.documentAValider) {
+            return;
+        }
+        this.documentService.valider(this.documentAValider.id, {
+            dateDebutValidite: dates.dateDebutValidite ? this.toIsoDate(dates.dateDebutValidite) : undefined,
+            dateExpiration: dates.dateExpiration ? this.toIsoDate(dates.dateExpiration) : undefined
+        }).subscribe({
+            next: () => {
+                this.documentAValider = null;
+                this.chargerDocuments();
+            },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Validation impossible' })
+        });
     }
 
     libelleEtat(documentEtatId?: string): string {

@@ -1,0 +1,27 @@
+<p-dialog
+    header="Valider le document"
+    [(visible)]="visible"
+    (visibleChange)="visibleChange.emit($event)"
+    [modal]="true"
+    [style]="{ width: '26rem' }"
+    (onHide)="close()"
+>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-column gap-3">
+        <small class="text-500">Ces dates attestent que le document a été vérifié par l'administration.</small>
+        <div class="field">
+            <label for="dateDebutValidite">Date de début de validité{{ dateDebutRequise ? ' *' : '' }}</label>
+            <p-calendar id="dateDebutValidite" formControlName="dateDebutValidite" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" [class.ng-dirty]="form.controls.dateDebutValidite.touched"></p-calendar>
+            <small class="p-error" *ngIf="form.controls.dateDebutValidite.invalid && form.controls.dateDebutValidite.touched">Ce champ est requis.</small>
+        </div>
+        <div class="field">
+            <label for="dateExpiration">Date de fin de validité{{ dateFinRequise ? ' *' : '' }}</label>
+            <p-calendar id="dateExpiration" formControlName="dateExpiration" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" [class.ng-dirty]="form.controls.dateExpiration.touched"></p-calendar>
+            <small class="p-error" *ngIf="form.controls.dateExpiration.invalid && form.controls.dateExpiration.touched">Ce champ est requis.</small>
+        </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="Annuler" class="p-button-text" (click)="close()"></button>
+        <button pButton type="button" label="Valider" class="p-button-success" (click)="submit()"></button>
+    </ng-template>
+</p-dialog>

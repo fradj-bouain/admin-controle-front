@@ -513,6 +513,21 @@
         <button pButton type="button" label="Mettre à jour les documents" class="p-button-outlined" (click)="afficherDocuments = true"></button>
     </div>
 
+    <div class="flex align-items-center gap-2 mb-3" *ngIf="isSuperAdmin && !isNew && typesManquantsPourDemande.length > 0">
+        <p-dropdown
+            [options]="typesManquantsPourDemande"
+            optionLabel="libelle"
+            optionValue="id"
+            [(ngModel)]="documentManquantSelectionne"
+            [ngModelOptions]="{standalone: true}"
+            [filter]="true"
+            filterBy="libelle"
+            placeholder="Demander un document manquant..."
+            styleClass="w-full md:w-20rem"
+        ></p-dropdown>
+        <button pButton type="button" icon="pi pi-send" label="Demander" [disabled]="!documentManquantSelectionne" (click)="demanderDocumentManquant()"></button>
+    </div>
+
     <div *ngIf="isNew || afficherDocuments">
         <div class="flex align-items-center justify-content-between mb-3" *ngIf="!isNew && nbTypesDemandesSelection > 0">
             <span class="text-600">{{ nbTypesDemandesSelection }} document(s) sélectionné(s)</span>
@@ -520,7 +535,7 @@
         </div>
 
         <div
-            *ngFor="let type of typesPourEntreprise"
+            *ngFor="let type of typesPourEntrepriseFiltres"
             class="doc-row"
             [class.missing]="type.obligatoire && !documentsByType[type.id]"
         >
@@ -548,15 +563,7 @@
 
             <div class="doc-row__fields formgrid grid align-items-end">
                 <ng-container *ngIf="!documentsByType[type.id]; else ligneRenseignee">
-                    <div class="field col-6 md:col-3 mb-0" *ngIf="type.dateDebutValiditeRequise">
-                        <label class="text-500 text-sm">Date de validité</label>
-                        <p-calendar [(ngModel)]="lignesDocument[type.id].dateDebutValidite" [ngModelOptions]="{standalone: true}" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-calendar>
-                    </div>
-                    <div class="field col-6 md:col-3 mb-0" *ngIf="type.dateFinValiditeRequise">
-                        <label class="text-500 text-sm">Fin de validité</label>
-                        <p-calendar [(ngModel)]="lignesDocument[type.id].dateExpiration" [ngModelOptions]="{standalone: true}" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full"></p-calendar>
-                    </div>
-                    <div class="field col-12 md:col-4 mb-0">
+                    <div class="field col-12 md:col-9 mb-0">
                         <label class="text-500 text-sm">Fichier</label>
                         <div class="flex align-items-center gap-1">
                             <label [for]="'fichier-entreprise-' + type.id" pButton type="button" icon="pi pi-upload" class="p-button-outlined flex-shrink-0" style="cursor: pointer;" pTooltip="Choisir un fichier"></label>
@@ -564,7 +571,7 @@
                             <span class="text-sm text-500 white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ lignesDocument[type.id].fichierUrl || 'Aucun fichier' }}</span>
                         </div>
                     </div>
-                    <div class="field col-12 md:col-2 mb-0" *ngIf="!isNew">
+                    <div class="field col-12 md:col-3 mb-0" *ngIf="!isNew">
                         <button pButton type="button" label="Renseigner" class="w-full" (click)="renseignerDocument(type)"></button>
                     </div>
                 </ng-container>
@@ -586,14 +593,14 @@
                         <span *ngIf="!documentsByType[type.id].fichierUrl">—</span>
                     </div>
                     <div class="field col-12 md:col-2 mb-0 flex gap-2">
-                        <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="documentsByType[type.id].statutValidation !== 'VALIDE' && isSuperAdmin" (click)="valider(documentsByType[type.id])"></button>
+                        <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="documentsByType[type.id].statutValidation !== 'VALIDE' && isSuperAdmin" (click)="ouvrirValidation(documentsByType[type.id])"></button>
                         <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="documentsByType[type.id].statutValidation !== 'REFUSE' && isSuperAdmin" (click)="ouvrirRefus(documentsByType[type.id])"></button>
                     </div>
                 </ng-template>
             </div>
         </div>
 
-        <p class="text-500 text-center py-3" *ngIf="typesPourEntreprise.length === 0">Aucun type de document configuré pour les entreprises.</p>
+        <p class="text-500 text-center py-3" *ngIf="typesPourEntrepriseFiltres.length === 0">Aucun type de document configuré pour les entreprises.</p>
     </div>
 </div>
 
@@ -720,3 +727,4 @@
 </div>
 
 <app-refuser-document-dialog [(visible)]="dialogRefuserVisible" [etatsDisponibles]="etatsPourRefus" (confirme)="confirmerRefus($event)"></app-refuser-document-dialog>
+<app-valider-document-dialog [(visible)]="dialogValiderVisible" [dateDebutRequise]="typeDuDocumentAValider?.dateDebutValiditeRequise ?? true" [dateFinRequise]="typeDuDocumentAValider?.dateFinValiditeRequise ?? true" (confirme)="confirmerValidation($event)"></app-valider-document-dialog>

@@ -23,6 +23,7 @@ import { RefuserDocumentDialogComponent } from './components/refuser-document-di
 import { NotifierDocumentDialogComponent } from './components/notifier-document-dialog/notifier-document-dialog.component';
 import { ModeleFichierUploadComponent } from './components/modele-fichier-upload/modele-fichier-upload.component';
 import { CardSkeletonComponent } from './components/card-skeleton/card-skeleton.component';
+import { ValiderDocumentDialogComponent } from './components/valider-document-dialog/valider-document-dialog.component';
 
 /**
  * Regroupe les modules PrimeNG et composants réutilisés par toutes les
@@ -30,7 +31,7 @@ import { CardSkeletonComponent } from './components/card-skeleton/card-skeleton.
  * suppression) afin d'éviter de ré-importer ces mêmes modules partout.
  */
 @NgModule({
-    declarations: [ComingSoonComponent, StatTileComponent, RefuserDocumentDialogComponent, NotifierDocumentDialogComponent, ModeleFichierUploadComponent, CardSkeletonComponent],
+    declarations: [ComingSoonComponent, StatTileComponent, RefuserDocumentDialogComponent, NotifierDocumentDialogComponent, ModeleFichierUploadComponent, CardSkeletonComponent, ValiderDocumentDialogComponent],
     imports: [
         CommonModule,
         ReactiveFormsModule,
@@ -71,7 +72,8 @@ import { CardSkeletonComponent } from './components/card-skeleton/card-skeleton.
         RefuserDocumentDialogComponent,
         NotifierDocumentDialogComponent,
         ModeleFichierUploadComponent,
-        CardSkeletonComponent
+        CardSkeletonComponent,
+        ValiderDocumentDialogComponent
     ]
 })
 export class SharedModule { }

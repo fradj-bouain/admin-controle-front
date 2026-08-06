@@ -36,6 +36,8 @@ export class DocumentListComponent implements OnInit {
     etatToEdit: DocumentEtat | null = null;
     dialogRefuserVisible = false;
     documentARefuser: DocumentItem | null = null;
+    dialogValiderVisible = false;
+    documentAValider: DocumentItem | null = null;
     dialogNotifierVisible = false;
     documentANotifier: DocumentItem | null = null;
     emailsCandidatsNotification: string[] = [];
@@ -190,8 +192,35 @@ export class DocumentListComponent implements OnInit {
         return this.etats.find((e) => e.id === documentEtatId)?.titre ?? documentEtatId;
     }
 
-    valider(document: DocumentItem) {
-        this.documentService.valider(document.id).subscribe({ next: () => this.onEntiteChange() });
+    // --- Validation (dates de validité saisies par l'administrateur, voir item 5) ---
+
+    ouvrirValidation(document: DocumentItem) {
+        this.documentAValider = document;
+        this.dialogValiderVisible = true;
+    }
+
+    get typeDuDocumentAValider(): TypeDocument | undefined {
+        return this.documentAValider ? this.types.find((t) => t.id === this.documentAValider!.typeDocumentId) : undefined;
+    }
+
+    confirmerValidation(dates: { dateDebutValidite: Date | null; dateExpiration: Date | null }) {
+        if (!this.documentAValider) {
+            return;
+        }
+        this.documentService.valider(this.documentAValider.id, {
+            dateDebutValidite: dates.dateDebutValidite ? this.toIsoDate(dates.dateDebutValidite) : undefined,
+            dateExpiration: dates.dateExpiration ? this.toIsoDate(dates.dateExpiration) : undefined
+        }).subscribe({
+            next: () => {
+                this.documentAValider = null;
+                this.onEntiteChange();
+            },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Validation impossible' })
+        });
+    }
+
+    private toIsoDate(date: Date): string {
+        return date.toISOString().substring(0, 10);
     }
 
     ouvrirRefus(document: DocumentItem) {

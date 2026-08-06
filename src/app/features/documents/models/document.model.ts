@@ -10,6 +10,10 @@ export interface TypeDocument {
     format: FormatDocument;
     corpsDeMetierId?: string;
     paysId?: string;
+    /** Zone de pays ciblée (FRANCE/UE/HORS_UE, mêmes valeurs que Pays.zone) — évaluée
+        contre la zone du pays de nationalité, en complément de paysId (un pays précis).
+        Ex : Titre de séjour obligatoire pour tout salarié Hors UE. */
+    zoneRequise?: string;
     dateDebutValiditeRequise: boolean;
     dateFinValiditeRequise: boolean;
     nbJoursRelanceAvant: number;
@@ -24,6 +28,7 @@ export interface CreateTypeDocumentRequest {
     format: FormatDocument;
     corpsDeMetierId?: string;
     paysId?: string;
+    zoneRequise?: string;
     dateDebutValiditeRequise?: boolean;
     dateFinValiditeRequise?: boolean;
     nbJoursRelanceAvant?: number;

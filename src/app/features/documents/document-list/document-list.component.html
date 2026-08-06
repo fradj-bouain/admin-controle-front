@@ -85,7 +85,7 @@
                         <td>{{ document.statutValidation === 'REFUSE' ? libelleEtat(document.documentEtatId) : '—' }}</td>
                         <td>
                             <div class="flex align-items-center gap-1 flex-nowrap">
-                                <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="isSuperAdmin && document.statutValidation !== 'VALIDE'" (click)="valider(document)"></button>
+                                <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="isSuperAdmin && document.statutValidation !== 'VALIDE'" (click)="ouvrirValidation(document)"></button>
                                 <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="isSuperAdmin && document.statutValidation !== 'REFUSE'" (click)="ouvrirRefus(document)"></button>
                                 <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-envelope" class="p-button-text p-button-rounded" pTooltip="Notifier par email" (click)="ouvrirNotification(document)"></button>
                                 <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppressionDocument(document)"></button>
@@ -239,4 +239,5 @@
 <app-document-form-dialog [(visible)]="dialogDocumentVisible" [typesDisponibles]="typesPourCible" (created)="creerDocument($event)"></app-document-form-dialog>
 <app-document-etat-form-dialog [(visible)]="dialogEtatVisible" [itemToEdit]="etatToEdit" (created)="creerEtat($event)" (updated)="modifierEtat($event)"></app-document-etat-form-dialog>
 <app-refuser-document-dialog [(visible)]="dialogRefuserVisible" [etatsDisponibles]="etatsPourRefus" (confirme)="confirmerRefus($event)"></app-refuser-document-dialog>
+<app-valider-document-dialog [(visible)]="dialogValiderVisible" [dateDebutRequise]="typeDuDocumentAValider?.dateDebutValiditeRequise ?? true" [dateFinRequise]="typeDuDocumentAValider?.dateFinValiditeRequise ?? true" (confirme)="confirmerValidation($event)"></app-valider-document-dialog>
 <app-notifier-document-dialog [(visible)]="dialogNotifierVisible" [emailsCandidats]="emailsCandidatsNotification" [sujetParDefaut]="sujetNotification" (confirme)="confirmerNotification($event)"></app-notifier-document-dialog>

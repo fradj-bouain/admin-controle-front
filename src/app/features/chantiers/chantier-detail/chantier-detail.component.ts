@@ -86,6 +86,12 @@ export class ChantierDetailComponent implements OnInit {
     chantierUtilisateurIds: string[] = [];
     nouvelUtilisateurId = '';
 
+    // --- Utilisateurs du client assignés à ce chantier (item 2) : un compte Client ne
+    // voit QUE les chantiers où il a été explicitement assigné ici. Sans aucune
+    // assignation, il ne voit aucun chantier (accès strictement opt-in).
+    afficherUtilisateursClient = false;
+    nouvelUtilisateurClientId = '';
+
     // --- Entreprises affectées ---
     // nomEntrepriseCalculee ajouté au chargement, pour permettre un p-columnFilter
     // texte simple sur le nom de l'entreprise (le champ brut n'a que entrepriseId).
@@ -150,6 +156,22 @@ export class ChantierDetailComponent implements OnInit {
 
     get isControleur(): boolean {
         return this.auth.hasRole('CONTROLEUR');
+    }
+
+    /** Comptes Client rattachés au client de CE chantier — seuls candidats pertinents
+        pour une assignation ici (inutile de proposer les comptes d'un autre client). */
+    get utilisateursClientDuChantier(): Utilisateur[] {
+        if (!this.chantier) {
+            return [];
+        }
+        return this.utilisateurs.filter((u) => u.clientId === this.chantier!.clientId);
+    }
+
+    /** Parmi les assignations de ce chantier, celles qui concernent un compte Client
+        (le reste, potentiellement des comptes internes, reste dans "Utilisateurs du
+        Back Office" — même table chantier_utilisateur, affichage simplement séparé). */
+    get utilisateursClientAssignes(): Utilisateur[] {
+        return this.utilisateursClientDuChantier.filter((u) => this.chantierUtilisateurIds.includes(u.id));
     }
 
     ngOnInit(): void {
@@ -391,6 +413,25 @@ export class ChantierDetailComponent implements OnInit {
     revoquerUtilisateur(utilisateurId: string) {
         this.chantierUtilisateurService.revoquer(this.chantierId!, utilisateurId).subscribe({
             next: () => this.chargerUtilisateurs(this.chantierId!),
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
+        });
+    }
+
+    // --- Utilisateurs du client assignés à ce chantier (item 2) : même mécanisme que
+    // "Utilisateurs du Back Office" ci-dessus (table chantier_utilisateur), juste un
+    // dropdown filtré aux comptes Client de CE client, pour une bonne expérience de
+    // gestion. Un compte Client sans aucune assignation ne voit aucun chantier ; chaque
+    // assignation ici lui ouvre l'accès à ce chantier précis (accès strictement opt-in).
+
+    affecterUtilisateurClient() {
+        if (!this.nouvelUtilisateurClientId) {
+            return;
+        }
+        this.chantierUtilisateurService.accorder(this.chantierId!, this.nouvelUtilisateurClientId).subscribe({
+            next: () => {
+                this.nouvelUtilisateurClientId = '';
+                this.chargerUtilisateurs(this.chantierId!);
+            },
             error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
         });
     }

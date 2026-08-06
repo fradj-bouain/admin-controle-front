@@ -24,8 +24,8 @@ export class DocumentService {
         return this.http.post<DocumentItem>(this.baseUrl, request);
     }
 
-    valider(id: string): Observable<DocumentItem> {
-        return this.http.post<DocumentItem>(`${this.baseUrl}/${id}/valider`, {});
+    valider(id: string, dates?: { dateDebutValidite?: string; dateExpiration?: string }): Observable<DocumentItem> {
+        return this.http.post<DocumentItem>(`${this.baseUrl}/${id}/valider`, dates ?? {});
     }
 
     refuser(id: string, documentEtatId: string): Observable<DocumentItem> {

@@ -24,8 +24,6 @@ import { UtilisateurService } from 'src/app/features/configuration/services/util
 import { AuthService } from 'src/app/core/auth/auth.service';
 
 interface LigneDocument {
-    dateDebutValidite: Date | null;
-    dateExpiration: Date | null;
     fichierUrl: string;
 }
 
@@ -86,6 +84,8 @@ export class SalarieDetailComponent implements OnInit {
     etatsPourRefus: DocumentEtat[] = [];
     dialogRefuserVisible = false;
     documentARefuser: DocumentItem | null = null;
+    dialogValiderVisible = false;
+    documentAValider: DocumentItem | null = null;
 
     // --- Historique des documents (repliée par défaut, chargée à la demande) ---
     historique: HistoriqueModification[] = [];
@@ -130,6 +130,9 @@ export class SalarieDetailComponent implements OnInit {
         public auth: AuthService
     ) {
         this.affectationForm.controls.chantierId.valueChanges.subscribe((chantierId) => this.onChantierChange(chantierId));
+        // Recalcule les documents obligatoires (ex. Titre de séjour) dès que la
+        // nationalité change, y compris à la création avant tout enregistrement.
+        this.coordonneesForm.controls.nationalitePaysId.valueChanges.subscribe(() => this.recalculerTypesPourSalarie());
     }
 
     get isSuperAdmin(): boolean {
@@ -152,12 +155,7 @@ export class SalarieDetailComponent implements OnInit {
         });
         this.typeDocumentService.lister().subscribe((types) => {
             this.types = types;
-            this.typesPourSalarie = types.filter((t) => t.cible === 'SALARIE');
-            for (const t of this.typesPourSalarie) {
-                if (!this.lignesDocument[t.id]) {
-                    this.lignesDocument[t.id] = { dateDebutValidite: null, dateExpiration: null, fichierUrl: '' };
-                }
-            }
+            this.recalculerTypesPourSalarie();
         });
         this.documentEtatService.lister().subscribe((etats) => {
             this.etats = etats;
@@ -187,10 +185,43 @@ export class SalarieDetailComponent implements OnInit {
             next: (s) => {
                 this.salarie = s;
                 this.coordonneesForm.patchValue(s);
+                this.recalculerTypesPourSalarie();
                 this.loading = false;
             },
             error: () => this.loading = false
         });
+    }
+
+    /** Filtre les types de documents "SALARIE" par pays précis ou zone (FRANCE/UE/HORS_UE)
+        ciblés, évalués contre la nationalité du salarié — ex : Titre de séjour obligatoire
+        uniquement pour les salariés de nationalité Hors UE. */
+    private recalculerTypesPourSalarie() {
+        // Lu depuis le formulaire (pas this.salarie) : reste à jour dès que la nationalité
+        // change dans l'UI, y compris à la création avant tout enregistrement.
+        const paysId = this.coordonneesForm.value.nationalitePaysId || undefined;
+        const zone = this.zoneDuPays(paysId);
+        this.typesPourSalarie = this.types.filter((t) => {
+            if (t.cible !== 'SALARIE') {
+                return false;
+            }
+            if (t.paysId && t.paysId !== paysId) {
+                return false;
+            }
+            if (t.zoneRequise && t.zoneRequise !== zone) {
+                return false;
+            }
+            return true;
+        });
+        for (const t of this.typesPourSalarie) {
+            if (!this.lignesDocument[t.id]) {
+                this.lignesDocument[t.id] = { fichierUrl: '' };
+            }
+        }
+        this.recalculerTypesManquantsPourDemande();
+    }
+
+    private zoneDuPays(paysId: string | undefined): string | undefined {
+        return paysId ? this.pays.find((p) => p.id === paysId)?.zone : undefined;
     }
 
     nomEntreprise(id: string): string {
@@ -213,14 +244,10 @@ export class SalarieDetailComponent implements OnInit {
             typeContratId: value.typeContratId || undefined,
             fonctionId: value.fonctionId || undefined
         };
-        if (this.isNew && !this.documentsObligatoiresComplets()) {
-            this.message.add({
-                severity: 'error',
-                summary: 'Documents obligatoires manquants',
-                detail: 'Renseignez tous les documents obligatoires avant de créer ce salarié.'
-            });
-            return;
-        }
+        // Plus de blocage à la création sur les documents obligatoires : la fiche peut être
+        // créée vide (par le SUPER_ADMIN ou l'entreprise), les documents sont ajoutés après,
+        // sur la fiche existante — documentsObligatoiresComplets() reste utilisé uniquement
+        // pour l'indicateur visuel (bordure rouge) sur les lignes de documents manquants.
         this.saving = true;
         if (this.isNew) {
             this.salarieService.creer(payload).subscribe({
@@ -367,9 +394,10 @@ export class SalarieDetailComponent implements OnInit {
             }
             for (const t of this.typesPourSalarie) {
                 if (!this.lignesDocument[t.id]) {
-                    this.lignesDocument[t.id] = { dateDebutValidite: null, dateExpiration: null, fichierUrl: '' };
+                    this.lignesDocument[t.id] = { fichierUrl: '' };
                 }
             }
+            this.recalculerTypesManquantsPourDemande();
         });
     }
 
@@ -377,6 +405,12 @@ export class SalarieDetailComponent implements OnInit {
         const texte = this.filtreTexte.trim().toLowerCase();
         return this.typesPourSalarie
             .filter((t) => {
+                // Pour l'administrateur, on ne montre que les documents déjà déposés par
+                // l'entreprise — inutile de lui faire chercher parmi les documents manquants,
+                // ce n'est pas lui qui les fournit (voir item 4 du cahier des charges).
+                if (this.isSuperAdmin && !this.documentsByType[t.id]) {
+                    return false;
+                }
                 if (this.afficherObligatoireSeulement && !t.obligatoire) {
                     return false;
                 }
@@ -434,6 +468,33 @@ export class SalarieDetailComponent implements OnInit {
         this.afficherComposeur = true;
     }
 
+    // Raccourci simple pour l'administrateur, qui ne voit plus les documents manquants
+    // dans la liste (voir typesPourSalarieFiltres) : un seul document à choisir dans une
+    // liste déroulante, un seul bouton, pas besoin de dérouler toute la fiche.
+    // Champ normal recalculé explicitement (pas une getter) : lié au [options] d'un
+    // p-dropdown, une getter y renverrait un nouveau tableau à chaque cycle de détection
+    // de changement, forçant PrimeNG à retraiter ses options en boucle — source du blocage
+    // du navigateur observé (page qui semble figée pendant le chargement des données).
+    documentManquantSelectionne: string | null = null;
+    typesManquantsPourDemande: TypeDocument[] = [];
+
+    private recalculerTypesManquantsPourDemande() {
+        this.typesManquantsPourDemande = this.typesPourSalarie.filter((t) => !this.documentsByType[t.id]);
+    }
+
+    demanderDocumentManquant() {
+        const type = this.typesPourSalarie.find((t) => t.id === this.documentManquantSelectionne);
+        if (!type) {
+            return;
+        }
+        this.messageForm.patchValue({
+            sujet: `Document à fournir — ${this.salarie ? this.salarie.prenom + ' ' + this.salarie.nom : ''}`,
+            contenu: this.modeleDemandeDocuments(`<li>${type.libelle}</li>`)
+        });
+        this.documentManquantSelectionne = null;
+        this.afficherComposeur = true;
+    }
+
     private modeleDemandeDocuments(listeDocumentsHtml: string): string {
         return `
 <p><img src="assets/layout/images/admincontrol-logo.png" alt="ADMIN-CONTROL'BTP" style="max-width:200px;" /></p>
@@ -464,12 +525,12 @@ export class SalarieDetailComponent implements OnInit {
             .filter((t) => this.lignesDocument[t.id]?.fichierUrl)
             .map((t) => {
                 const ligne = this.lignesDocument[t.id];
+                // Les dates de validité ne sont saisies que par l'administrateur, au moment
+                // de la validation (voir confirmerValidation) — jamais au dépôt.
                 return this.documentService.creer({
                     typeDocumentId: t.id,
                     salarieId,
-                    fichierUrl: ligne.fichierUrl || undefined,
-                    dateDebutValidite: ligne.dateDebutValidite ? this.toIsoDate(ligne.dateDebutValidite) : undefined,
-                    dateExpiration: ligne.dateExpiration ? this.toIsoDate(ligne.dateExpiration) : undefined
+                    fichierUrl: ligne.fichierUrl || undefined
                 });
             });
         return appels.length > 0 ? forkJoin(appels) : of(null);
@@ -480,9 +541,7 @@ export class SalarieDetailComponent implements OnInit {
         this.documentService.creer({
             typeDocumentId: type.id,
             salarieId: this.salarieId!,
-            fichierUrl: ligne.fichierUrl || undefined,
-            dateDebutValidite: ligne.dateDebutValidite ? this.toIsoDate(ligne.dateDebutValidite) : undefined,
-            dateExpiration: ligne.dateExpiration ? this.toIsoDate(ligne.dateExpiration) : undefined
+            fichierUrl: ligne.fichierUrl || undefined
         }).subscribe({
             next: () => {
                 this.message.add({ severity: 'success', summary: 'Succès', detail: 'Document enregistré' });
@@ -492,8 +551,31 @@ export class SalarieDetailComponent implements OnInit {
         });
     }
 
-    valider(document: DocumentItem) {
-        this.documentService.valider(document.id).subscribe({ next: () => this.chargerDocuments(this.salarieId!) });
+    // --- Validation (dates de validité saisies par l'administrateur, voir item 5) ---
+
+    ouvrirValidation(document: DocumentItem) {
+        this.documentAValider = document;
+        this.dialogValiderVisible = true;
+    }
+
+    get typeDuDocumentAValider(): TypeDocument | undefined {
+        return this.documentAValider ? this.types.find((t) => t.id === this.documentAValider!.typeDocumentId) : undefined;
+    }
+
+    confirmerValidation(dates: { dateDebutValidite: Date | null; dateExpiration: Date | null }) {
+        if (!this.documentAValider) {
+            return;
+        }
+        this.documentService.valider(this.documentAValider.id, {
+            dateDebutValidite: dates.dateDebutValidite ? this.toIsoDate(dates.dateDebutValidite) : undefined,
+            dateExpiration: dates.dateExpiration ? this.toIsoDate(dates.dateExpiration) : undefined
+        }).subscribe({
+            next: () => {
+                this.documentAValider = null;
+                this.chargerDocuments(this.salarieId!);
+            },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Validation impossible' })
+        });
     }
 
     libelleEtat(documentEtatId?: string): string {
