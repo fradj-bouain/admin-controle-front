@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { Entreprise } from '../models/entreprise.model';
 import { EntrepriseService } from '../services/entreprise.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
@@ -13,6 +13,11 @@ export class EntrepriseListComponent implements OnInit {
 
     entreprises: Entreprise[] = [];
     loading = false;
+    // Filtres avancés (par colonne) repliés par défaut : la recherche unique
+    // couvre le besoin courant, ceux-ci restent disponibles pour un besoin
+    // plus précis (voir audit UX — trop de boîtes de recherche dispersées).
+    afficherFiltresAvances = false;
+    menuItems: MenuItem[] = [];
 
     constructor(
         private entrepriseService: EntrepriseService,
@@ -68,5 +73,31 @@ export class EntrepriseListComponent implements OnInit {
                 });
             }
         });
+    }
+
+    // Regroupe modifier/activer-désactiver/supprimer dans un seul menu "⋯" au lieu
+    // de plusieurs icônes nues côte à côte (voir audit UX) — reconstruit à chaque
+    // ouverture pour refléter l'état (actif/inactif) de la ligne cliquée.
+    construireMenu(entreprise: Entreprise): MenuItem[] {
+        const items: MenuItem[] = [
+            { label: 'Modifier', icon: 'pi pi-pencil', routerLink: ['/entreprises', entreprise.id] }
+        ];
+        if (this.isSuperAdmin) {
+            items.push(
+                {
+                    label: entreprise.actif ? 'Désactiver' : 'Activer',
+                    icon: entreprise.actif ? 'pi pi-ban' : 'pi pi-check',
+                    command: () => this.confirmerBasculeStatut(entreprise)
+                },
+                { separator: true },
+                {
+                    label: 'Supprimer',
+                    icon: 'pi pi-trash',
+                    styleClass: 'text-red-600',
+                    command: () => this.confirmerSuppression(entreprise)
+                }
+            );
+        }
+        return items;
     }
 }

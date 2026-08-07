@@ -22,6 +22,10 @@ export interface Entreprise {
     commentaire?: string;
     dateDesactivation?: string;
     actif: boolean;
+    // Nom du chantier sur lequel cette entreprise est actuellement affectée (absent/null
+    // = aucun, affiché "Disponible") — à ne pas confondre avec `actif` ci-dessus, un
+    // simple interrupteur administratif sans lien avec une affectation réelle.
+    chantierActuel?: string | null;
 }
 
 export interface CreateEntrepriseRequest {

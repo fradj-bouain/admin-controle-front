@@ -34,6 +34,7 @@
                 </ng-template>
                 <ng-template pTemplate="right">
                     <button
+                        *ngIf="!isSuperAdmin"
                         pButton
                         type="button"
                         icon="pi pi-plus"
@@ -79,7 +80,7 @@
                         <td>
                             <p-tag
                                 [severity]="document.statutValidation === 'VALIDE' ? 'success' : (document.statutValidation === 'REFUSE' ? 'danger' : 'warning')"
-                                [value]="document.statutValidation"
+                                [value]="document.statutValidation | etatLabel"
                             ></p-tag>
                         </td>
                         <td>{{ document.statutValidation === 'REFUSE' ? libelleEtat(document.documentEtatId) : '—' }}</td>

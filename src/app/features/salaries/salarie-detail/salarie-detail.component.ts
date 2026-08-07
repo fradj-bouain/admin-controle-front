@@ -75,11 +75,22 @@ export class SalarieDetailComponent implements OnInit {
     afficherDocuments = false;
     afficherObligatoireSeulement = false;
     filtreTexte = '';
+    // Regroupement de la checklist (voir audit UX) : plutôt qu'un flux plat où
+    // obligatoires et optionnels se mélangent, on sépare "à fournir" (obligatoire
+    // manquant, l'action à faire), "déjà fournis" (pour suivre le statut) et
+    // "optionnels" (repliés par défaut, jamais montré comme "caché"). Recalculés
+    // ensemble dans recalculerTypesPourSalarie(), jamais via une getter — un
+    // nouveau tableau à chaque cycle de détection de changement a déjà provoqué un
+    // blocage du navigateur ailleurs dans cette même fiche (voir demanderDocument).
+    typesAFournir: TypeDocument[] = [];
+    typesDejaFournis: TypeDocument[] = [];
+    typesOptionnelsRestants: TypeDocument[] = [];
+    afficherOptionnels = false;
+    nbObligatoiresTotal = 0;
+    nbObligatoiresFournis = 0;
+    pourcentageObligatoires = 0;
     documentsByType: Record<string, DocumentItem> = {};
     lignesDocument: Record<string, LigneDocument> = {};
-    // Cases cochées sur les documents manquants, pour "Demander à l'entreprise"
-    // (voir demanderDocumentsSelectionnes) — repart de zéro à chaque envoi.
-    typesDemandesSelection: Record<string, boolean> = {};
     etats: DocumentEtat[] = [];
     etatsPourRefus: DocumentEtat[] = [];
     dialogRefuserVisible = false;
@@ -200,6 +211,7 @@ export class SalarieDetailComponent implements OnInit {
         // change dans l'UI, y compris à la création avant tout enregistrement.
         const paysId = this.coordonneesForm.value.nationalitePaysId || undefined;
         const zone = this.zoneDuPays(paysId);
+        const texte = this.filtreTexte.trim().toLowerCase();
         this.typesPourSalarie = this.types.filter((t) => {
             if (t.cible !== 'SALARIE') {
                 return false;
@@ -210,14 +222,37 @@ export class SalarieDetailComponent implements OnInit {
             if (t.zoneRequise && t.zoneRequise !== zone) {
                 return false;
             }
+            if (this.afficherObligatoireSeulement && !t.obligatoire) {
+                return false;
+            }
+            if (texte && !t.libelle.toLowerCase().includes(texte)) {
+                return false;
+            }
             return true;
         });
+        // Validés et en attente (déjà fournis) remontent au-dessus des refusés
+        // et des documents manquants, pour repérer d'un coup d'œil ce qui reste à traiter.
+        this.typesPourSalarie.sort((a, b) => this.prioriteStatutDocument(a) - this.prioriteStatutDocument(b));
         for (const t of this.typesPourSalarie) {
             if (!this.lignesDocument[t.id]) {
                 this.lignesDocument[t.id] = { fichierUrl: '' };
             }
         }
-        this.recalculerTypesManquantsPourDemande();
+        this.typesAFournir = this.typesPourSalarie.filter((t) => t.obligatoire && !this.documentsByType[t.id]);
+        this.typesDejaFournis = this.typesPourSalarie.filter((t) => this.documentsByType[t.id]);
+        this.typesOptionnelsRestants = this.typesPourSalarie.filter((t) => !t.obligatoire && !this.documentsByType[t.id]);
+        this.nbObligatoiresTotal = this.typesPourSalarie.filter((t) => t.obligatoire).length;
+        this.nbObligatoiresFournis = this.nbObligatoiresTotal - this.typesAFournir.length;
+        this.pourcentageObligatoires = this.nbObligatoiresTotal === 0 ? 100
+            : Math.round((this.nbObligatoiresFournis / this.nbObligatoiresTotal) * 100);
+    }
+
+    onFiltreTexteChange() {
+        this.recalculerTypesPourSalarie();
+    }
+
+    onFiltreObligatoireChange() {
+        this.recalculerTypesPourSalarie();
     }
 
     private zoneDuPays(paysId: string | undefined): string | undefined {
@@ -392,37 +427,17 @@ export class SalarieDetailComponent implements OnInit {
             for (const d of documents) {
                 this.documentsByType[d.typeDocumentId] = d;
             }
-            for (const t of this.typesPourSalarie) {
-                if (!this.lignesDocument[t.id]) {
-                    this.lignesDocument[t.id] = { fichierUrl: '' };
-                }
-            }
-            this.recalculerTypesManquantsPourDemande();
+            this.recalculerTypesPourSalarie();
         });
     }
 
-    get typesPourSalarieFiltres(): TypeDocument[] {
-        const texte = this.filtreTexte.trim().toLowerCase();
-        return this.typesPourSalarie
-            .filter((t) => {
-                // Pour l'administrateur, on ne montre que les documents déjà déposés par
-                // l'entreprise — inutile de lui faire chercher parmi les documents manquants,
-                // ce n'est pas lui qui les fournit (voir item 4 du cahier des charges).
-                if (this.isSuperAdmin && !this.documentsByType[t.id]) {
-                    return false;
-                }
-                if (this.afficherObligatoireSeulement && !t.obligatoire) {
-                    return false;
-                }
-                if (texte && !t.libelle.toLowerCase().includes(texte)) {
-                    return false;
-                }
-                return true;
-            })
-            // Validés et en attente (déjà fournis) remontent au-dessus des
-            // refusés et des documents manquants.
-            .sort((a, b) => this.prioriteStatutDocument(a) - this.prioriteStatutDocument(b));
-    }
+    // Remplace l'ancien "N documents cachés" (repli) et l'ancien filtre qui masquait
+    // entièrement les documents manquants à l'administrateur (item 4 du cahier des
+    // charges) : désormais l'admin voit "à fournir" (nécessaire pour créer/compléter
+    // la fiche) mais pas les optionnels manquants, repliés dans leur propre groupe —
+    // ça garde l'esprit de la règle (ne pas noyer l'admin sous les optionnels) sans
+    // l'empêcher de voir ce qui est réellement requis. Voir typesAFournir/typesDejaFournis
+    // /typesOptionnelsRestants, recalculés dans recalculerTypesPourSalarie().
 
     private prioriteStatutDocument(type: TypeDocument): number {
         const document = this.documentsByType[type.id];
@@ -445,54 +460,20 @@ export class SalarieDetailComponent implements OnInit {
         this.lignesDocument[typeId].fichierUrl = fichier ? fichier.name : '';
     }
 
-    get nbDocumentsManquants(): number {
-        return this.typesPourSalarie.filter((t) => !this.documentsByType[t.id]).length;
-    }
-
-    get nbTypesDemandesSelection(): number {
-        return Object.values(this.typesDemandesSelection).filter(Boolean).length;
-    }
-
-    demanderDocumentsSelectionnes() {
-        const idsSelectionnes = Object.keys(this.typesDemandesSelection).filter((id) => this.typesDemandesSelection[id]);
-        const libelles = this.typesPourSalarie.filter((t) => idsSelectionnes.includes(t.id)).map((t) => t.libelle);
-        if (libelles.length === 0) {
-            return;
-        }
-        const listeHtml = libelles.map((l) => `<li>${l}</li>`).join('');
-        this.messageForm.patchValue({
-            sujet: `Documents à fournir — ${this.salarie ? this.salarie.prenom + ' ' + this.salarie.nom : ''}`,
-            contenu: this.modeleDemandeDocuments(listeHtml)
-        });
-        this.typesDemandesSelection = {};
-        this.afficherComposeur = true;
-    }
-
-    // Raccourci simple pour l'administrateur, qui ne voit plus les documents manquants
-    // dans la liste (voir typesPourSalarieFiltres) : un seul document à choisir dans une
-    // liste déroulante, un seul bouton, pas besoin de dérouler toute la fiche.
-    // Champ normal recalculé explicitement (pas une getter) : lié au [options] d'un
-    // p-dropdown, une getter y renverrait un nouveau tableau à chaque cycle de détection
-    // de changement, forçant PrimeNG à retraiter ses options en boucle — source du blocage
-    // du navigateur observé (page qui semble figée pendant le chargement des données).
-    documentManquantSelectionne: string | null = null;
-    typesManquantsPourDemande: TypeDocument[] = [];
-
-    private recalculerTypesManquantsPourDemande() {
-        this.typesManquantsPourDemande = this.typesPourSalarie.filter((t) => !this.documentsByType[t.id]);
-    }
-
-    demanderDocumentManquant() {
-        const type = this.typesPourSalarie.find((t) => t.id === this.documentManquantSelectionne);
-        if (!type) {
-            return;
-        }
+    // Un seul point d'entrée pour demander un document manquant : un bouton
+    // directement sur sa ligne dans la checklist (voir ligneDocument), plus de
+    // sélecteur séparé plus haut sur la carte qui faisait double emploi avec la
+    // liste juste en dessous — l'utilisateur voyait deux fois le même document et
+    // devait le rechercher une seconde fois (signalé comme redondance inutile).
+    demanderDocument(type: TypeDocument) {
         this.messageForm.patchValue({
             sujet: `Document à fournir — ${this.salarie ? this.salarie.prenom + ' ' + this.salarie.nom : ''}`,
             contenu: this.modeleDemandeDocuments(`<li>${type.libelle}</li>`)
         });
-        this.documentManquantSelectionne = null;
         this.afficherComposeur = true;
+        // Le formulaire de message est plus bas sur la page (après Historique et
+        // Relances) : sans ce défilement, cliquer "Demander" semble ne rien faire.
+        setTimeout(() => document.getElementById('composeur-message')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
 
     private modeleDemandeDocuments(listeDocumentsHtml: string): string {

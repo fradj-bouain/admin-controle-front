@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { forkJoin } from 'rxjs';
 import { Salarie } from '../models/salarie.model';
 import { SalarieService } from '../services/salarie.service';
@@ -19,6 +19,8 @@ export class SalarieListComponent implements OnInit {
     salaries: Array<Salarie & { nomEntrepriseCalculee: string }> = [];
     entreprises: Entreprise[] = [];
     loading = false;
+    afficherFiltresAvances = false;
+    menuItems: MenuItem[] = [];
 
     dialogQrCodeVisible = false;
     salarieSelectionne: Salarie | null = null;
@@ -98,5 +100,28 @@ export class SalarieListComponent implements OnInit {
                 });
             }
         });
+    }
+
+    construireMenu(salarie: Salarie): MenuItem[] {
+        const items: MenuItem[] = [
+            { label: 'Modifier', icon: 'pi pi-pencil', routerLink: ['/salaries', salarie.id] }
+        ];
+        if (this.isSuperAdmin || this.isEntreprise) {
+            items.push(
+                {
+                    label: salarie.statut === 'ACTIF' ? 'Désactiver' : 'Activer',
+                    icon: salarie.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check',
+                    command: () => this.confirmerBasculeStatut(salarie)
+                },
+                { separator: true },
+                {
+                    label: 'Supprimer',
+                    icon: 'pi pi-trash',
+                    styleClass: 'text-red-600',
+                    command: () => this.confirmerSuppression(salarie)
+                }
+            );
+        }
+        return items;
     }
 }

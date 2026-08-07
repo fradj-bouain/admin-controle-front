@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { RegleAutomatisation } from '../models/message.model';
 import { RegleAutomatisationService } from '../services/regle-automatisation.service';
 import { ChampSurveillableService } from '../services/champ-surveillable.service';
@@ -13,6 +13,8 @@ export class AutomatisationListComponent implements OnInit {
 
     regles: RegleAutomatisation[] = [];
     loading = false;
+    afficherFiltresAvances = false;
+    menuItems: MenuItem[] = [];
 
     // Alimenté par GET /champs-surveillables (voir ChampSurveillableRegistry
     // côté backend) — plus une liste figée de 2 libellés ici.
@@ -112,5 +114,25 @@ export class AutomatisationListComponent implements OnInit {
                 });
             }
         });
+    }
+
+    // Regroupe envoyer/modifier/activer-désactiver/supprimer dans un seul menu "⋯"
+    // au lieu de 4 icônes nues côte à côte (voir audit UX).
+    construireMenu(regle: RegleAutomatisation): MenuItem[] {
+        const items: MenuItem[] = [];
+        if (regle.actif) {
+            items.push({ label: 'Envoyer maintenant', icon: 'pi pi-send', command: () => this.confirmerEnvoyerMaintenant(regle) });
+        }
+        items.push(
+            { label: 'Modifier', icon: 'pi pi-pencil', routerLink: ['/messagerie/automatisation', regle.id] },
+            {
+                label: regle.actif ? 'Désactiver' : 'Activer',
+                icon: regle.actif ? 'pi pi-ban' : 'pi pi-check',
+                command: () => this.confirmerBasculeStatut(regle)
+            },
+            { separator: true },
+            { label: 'Supprimer', icon: 'pi pi-trash', styleClass: 'text-red-600', command: () => this.confirmerSuppression(regle) }
+        );
+        return items;
     }
 }

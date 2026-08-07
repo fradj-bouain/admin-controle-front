@@ -44,6 +44,13 @@ export class MonEquipeComponent implements OnInit {
         this.charger();
     }
 
+    // La restriction d'accès chantier (voir ScopeAuthorizationService) ne concerne
+    // que les comptes CLIENT — inutile d'afficher cette colonne pour une équipe
+    // Entreprise, où elle n'a pas de sens.
+    get estClient(): boolean {
+        return this.auth.hasRole('CLIENT');
+    }
+
     charger() {
         this.utilisateurService.lister().subscribe((utilisateurs) => {
             this.utilisateurs = utilisateurs.map((u) => ({ ...u, identiteCalculee: `${u.nom} ${u.prenom} (${u.username})` }));

@@ -8,7 +8,7 @@
             <h5 class="m-0">Chantier {{ chantier ? '(' + chantier.nom + ')' : '' }}</h5>
         </div>
         <div class="flex align-items-center gap-2" *ngIf="chantier">
-            <p-tag [severity]="chantier.statut === 'ACTIF' ? 'success' : 'danger'" [value]="chantier.statut"></p-tag>
+            <p-tag [severity]="chantier.statut === 'ACTIF' ? 'success' : 'danger'" [value]="chantier.statut | etatLabel"></p-tag>
             <button
                 *ngIf="isSuperAdmin"
                 pButton
@@ -444,7 +444,7 @@
                 <tr>
                     <td>{{ affectation.nomEntrepriseCalculee }}</td>
                     <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
-                    <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut"></p-tag></td>
+                    <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut | etatLabel"></p-tag></td>
                     <td class="text-center">{{ entrepriseStatSalaries(affectation.id) }}</td>
                     <td>
                         <button pButton type="button" icon="pi pi-ban" class="p-button-text p-button-rounded" *ngIf="affectation.statut === 'ACTIF' && (isSuperAdmin || isEntreprise)" (click)="desactiverAffectationEntreprise(affectation)"></button>

@@ -23,26 +23,21 @@ export class MessageFormPageComponent implements OnInit {
 
     saving = false;
 
-    // Parité d'affichage avec le site legacy (champ "Fichier modèle ODT / PDF"
-    // de l'automatisation d'emails) : pas de colonne backend correspondante ici
-    // non plus, rien n'est envoyé au serveur pour ce champ pour l'instant.
-    fichierModeleNom: string | null = null;
-
     chantiers: Chantier[] = [];
     clients: Client[] = [];
     entreprises: Entreprise[] = [];
     utilisateurs: Utilisateur[] = [];
 
     chantiersOptions: Array<{ id: string; label: string }> = [];
-    clientsOptions: Array<{ id: string; label: string }> = [];
-    entreprisesOptions: Array<{ id: string; label: string }> = [];
-    utilisateursOptions: Array<{ id: string; label: string }> = [];
+
+    // Un seul champ groupé par type au lieu de trois sélecteurs côte à côte qui se
+    // ressemblaient trop (voir audit UX — le texte "Tous ? / Aucun ?" trahissait
+    // l'ambiguïté). Chaque valeur encode son type ("TYPE:id"), décodé à l'envoi.
+    destinatairesOptions: Array<{ label: string; items: Array<{ label: string; value: string }> }> = [];
 
     form = this.fb.group({
         chantierId: [''],
-        utilisateurIds: [[] as string[]],
-        clientIds: [[] as string[]],
-        entrepriseIds: [[] as string[]],
+        destinataires: [[] as string[]],
         copieAdmin: [false],
         sujet: ['', Validators.required],
         contenu: [this.modeleParDefaut(), Validators.required]
@@ -66,16 +61,24 @@ export class MessageFormPageComponent implements OnInit {
         });
         this.clientService.lister().subscribe((clients) => {
             this.clients = clients;
-            this.clientsOptions = clients.map((c) => ({ id: c.id, label: c.raisonSociale }));
+            this.recalculerDestinatairesOptions();
         });
         this.entrepriseService.lister().subscribe((entreprises) => {
             this.entreprises = entreprises;
-            this.entreprisesOptions = entreprises.map((e) => ({ id: e.id, label: e.raisonSociale }));
+            this.recalculerDestinatairesOptions();
         });
         this.utilisateurService.lister().subscribe((utilisateurs) => {
             this.utilisateurs = utilisateurs;
-            this.utilisateursOptions = utilisateurs.map((u) => ({ id: u.id, label: u.username }));
+            this.recalculerDestinatairesOptions();
         });
+    }
+
+    private recalculerDestinatairesOptions() {
+        this.destinatairesOptions = [
+            { label: 'Utilisateurs', items: this.utilisateurs.map((u) => ({ label: u.username, value: `UTILISATEUR:${u.id}` })) },
+            { label: 'Clients', items: this.clients.map((c) => ({ label: c.raisonSociale, value: `CLIENT:${c.id}` })) },
+            { label: 'Entreprises', items: this.entreprises.map((e) => ({ label: e.raisonSociale, value: `ENTREPRISE:${e.id}` })) }
+        ];
     }
 
     annuler() {
@@ -123,9 +126,10 @@ export class MessageFormPageComponent implements OnInit {
                 contenu: value.contenu!
             });
         };
-        (value.utilisateurIds ?? []).forEach((id) => ajouter('UTILISATEUR', id));
-        (value.clientIds ?? []).forEach((id) => ajouter('CLIENT', id));
-        (value.entrepriseIds ?? []).forEach((id) => ajouter('ENTREPRISE', id));
+        (value.destinataires ?? []).forEach((composite) => {
+            const [type, id] = composite.split(':');
+            ajouter(type as SendMessageRequest['destinataireType'], id);
+        });
         if (value.copieAdmin) {
             this.utilisateurs
                 .filter((u) => u.roles.includes('SUPER_ADMIN'))

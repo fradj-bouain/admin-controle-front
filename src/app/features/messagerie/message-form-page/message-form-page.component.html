@@ -29,58 +29,28 @@
             ></p-dropdown>
         </div>
 
-        <div class="formgrid grid">
-            <div class="field col-12 md:col-4">
-                <label for="utilisateurIds">Utilisateurs</label>
-                <p-multiSelect
-                    id="utilisateurIds"
-                    [options]="utilisateursOptions"
-                    formControlName="utilisateurIds"
-                    optionLabel="label"
-                    optionValue="id"
-                    [filter]="true"
-                    filterBy="label"
-                    placeholder="Tous ? / Aucun ?"
-                    display="chip"
-                ></p-multiSelect>
-            </div>
-            <div class="field col-12 md:col-4">
-                <label for="clientIds">Clients</label>
-                <p-multiSelect
-                    id="clientIds"
-                    [options]="clientsOptions"
-                    formControlName="clientIds"
-                    optionLabel="label"
-                    optionValue="id"
-                    [filter]="true"
-                    filterBy="label"
-                    placeholder="Tous ? / Aucun ?"
-                    display="chip"
-                ></p-multiSelect>
-            </div>
-            <div class="field col-12 md:col-4">
-                <label for="entrepriseIds">Entreprises</label>
-                <p-multiSelect
-                    id="entrepriseIds"
-                    [options]="entreprisesOptions"
-                    formControlName="entrepriseIds"
-                    optionLabel="label"
-                    optionValue="id"
-                    [filter]="true"
-                    filterBy="label"
-                    placeholder="Tous ? / Aucun ?"
-                    display="chip"
-                ></p-multiSelect>
-            </div>
+        <div class="field">
+            <label for="destinataires">Destinataires *</label>
+            <p-multiSelect
+                id="destinataires"
+                [options]="destinatairesOptions"
+                formControlName="destinataires"
+                [group]="true"
+                optionLabel="label"
+                optionValue="value"
+                optionGroupLabel="label"
+                optionGroupChildren="items"
+                [filter]="true"
+                filterBy="label"
+                placeholder="Rechercher un client, une entreprise ou un utilisateur..."
+                display="chip"
+            ></p-multiSelect>
+            <small class="text-500 block mt-1">Aucun destinataire sélectionné = message non envoyable.</small>
         </div>
 
         <div class="field-checkbox">
             <p-checkbox formControlName="copieAdmin" [binary]="true" inputId="copieAdmin"></p-checkbox>
-            <label for="copieAdmin" class="ml-2">Envoyer à ADMIN-CONTROL'BTP</label>
-        </div>
-
-        <div class="field">
-            <app-modele-fichier-upload [(fichierNom)]="fichierModeleNom"></app-modele-fichier-upload>
+            <label for="copieAdmin" class="ml-2">M'envoyer une copie de ce message</label>
         </div>
 
         <div class="field">

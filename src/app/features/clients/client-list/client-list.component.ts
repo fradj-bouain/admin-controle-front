@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { Client } from '../models/client.model';
 import { ClientService } from '../services/client.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
@@ -13,6 +13,8 @@ export class ClientListComponent implements OnInit {
 
     clients: Client[] = [];
     loading = false;
+    afficherFiltresAvances = false;
+    menuItems: MenuItem[] = [];
 
     constructor(
         private clientService: ClientService,
@@ -66,5 +68,28 @@ export class ClientListComponent implements OnInit {
                 });
             }
         });
+    }
+
+    construireMenu(client: Client): MenuItem[] {
+        const items: MenuItem[] = [
+            { label: 'Modifier', icon: 'pi pi-pencil', routerLink: ['/clients', client.id] }
+        ];
+        if (this.isSuperAdmin) {
+            items.push(
+                {
+                    label: client.actif ? 'Désactiver' : 'Activer',
+                    icon: client.actif ? 'pi pi-ban' : 'pi pi-check',
+                    command: () => this.confirmerBasculeStatut(client)
+                },
+                { separator: true },
+                {
+                    label: 'Supprimer',
+                    icon: 'pi pi-trash',
+                    styleClass: 'text-red-600',
+                    command: () => this.confirmerSuppression(client)
+                }
+            );
+        }
+        return items;
     }
 }

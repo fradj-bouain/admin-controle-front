@@ -11,21 +11,36 @@
         </ng-template>
     </p-toolbar>
 
-    <p-table #dt [value]="entreprises" [loading]="loading" [paginator]="true" [rows]="10" dataKey="id">
+    <div class="flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+        <span class="p-input-icon-left w-full md:w-25rem">
+            <i class="pi pi-search"></i>
+            <input
+                type="text"
+                pInputText
+                placeholder="Rechercher une entreprise (nom, SIRET, email...)"
+                class="w-full"
+                (input)="dt.filterGlobal($any($event.target).value, 'contains')"
+            />
+        </span>
+        <button pButton type="button" [label]="afficherFiltresAvances ? 'Masquer les filtres avancés' : 'Filtres avancés'" [icon]="afficherFiltresAvances ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" class="p-button-text p-button-sm" (click)="afficherFiltresAvances = !afficherFiltresAvances"></button>
+    </div>
+    <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? entreprises).length }} résultat(s)</p>
+
+    <p-table #dt [value]="entreprises" [loading]="loading" [paginator]="true" [rows]="10" dataKey="id" [globalFilterFields]="['raisonSociale','siret','telephone','email']">
         <ng-template pTemplate="header">
             <tr>
                 <th>Raison sociale</th>
                 <th>SIRET</th>
                 <th>Téléphone</th>
-                <th>Email</th>
+                <th>Chantier actuel</th>
                 <th>Statut</th>
-                <th style="width: 6rem"></th>
+                <th style="width: 4rem"></th>
             </tr>
-            <tr>
+            <tr *ngIf="afficherFiltresAvances">
                 <th><p-columnFilter type="text" field="raisonSociale" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="siret" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="telephone" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                <th><p-columnFilter type="text" field="email" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th></th>
                 <th>
                     <p-columnFilter field="actif" matchMode="equals" [showMenu]="false">
                         <ng-template pTemplate="filter" let-value let-filter="filterCallback">
@@ -46,40 +61,30 @@
                 <td>{{ entreprise.raisonSociale }}</td>
                 <td>{{ entreprise.siret }}</td>
                 <td>{{ entreprise.telephone }}</td>
-                <td>{{ entreprise.email }}</td>
-                <td><p-tag [severity]="entreprise.actif ? 'success' : 'danger'" [value]="entreprise.actif ? 'ACTIF' : 'INACTIF'"></p-tag></td>
                 <td>
-                    <div class="flex align-items-center gap-1 flex-nowrap">
-                        <button
-                            pButton
-                            type="button"
-                            icon="pi pi-pencil"
-                            class="p-button-text p-button-rounded"
-                            pTooltip="Modifier"
-                            [routerLink]="['/entreprises', entreprise.id]"
-                            (click)="$event.stopPropagation()"
-                        ></button>
-                        <button
-                            *ngIf="isSuperAdmin"
-                            pButton
-                            type="button"
-                            [icon]="entreprise.actif ? 'pi pi-ban' : 'pi pi-check'"
-                            class="p-button-text p-button-rounded"
-                            [pTooltip]="entreprise.actif ? 'Désactiver' : 'Activer'"
-                            (click)="confirmerBasculeStatut(entreprise); $event.stopPropagation()"
-                        ></button>
-                        <button
-                            *ngIf="isSuperAdmin"
-                            pButton
-                            type="button"
-                            icon="pi pi-trash"
-                            class="p-button-text p-button-rounded p-button-danger"
-                            pTooltip="Supprimer"
-                            (click)="confirmerSuppression(entreprise); $event.stopPropagation()"
-                        ></button>
-                    </div>
+                    <p-tag *ngIf="entreprise.chantierActuel" severity="info" [value]="entreprise.chantierActuel">
+                        <ng-template pTemplate="icon"><i class="pi pi-map-marker mr-1"></i></ng-template>
+                    </p-tag>
+                    <p-tag *ngIf="!entreprise.chantierActuel" value="Disponible"></p-tag>
+                </td>
+                <td><p-tag [severity]="entreprise.actif ? 'success' : 'danger'" [value]="entreprise.actif | etatLabel"></p-tag></td>
+                <td>
+                    <button
+                        pButton
+                        type="button"
+                        icon="pi pi-ellipsis-v"
+                        class="p-button-text p-button-rounded"
+                        pTooltip="Actions"
+                        (click)="menuItems = construireMenu(entreprise); menu.toggle($event); $event.stopPropagation()"
+                    ></button>
                 </td>
             </tr>
         </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="6" class="text-center text-500 py-4">Aucune entreprise ne correspond à cette recherche.</td>
+            </tr>
+        </ng-template>
     </p-table>
+    <p-menu #menu [popup]="true" [model]="menuItems"></p-menu>
 </div>

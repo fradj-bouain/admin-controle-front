@@ -16,6 +16,8 @@ import { CalendarModule } from 'primeng/calendar';
 import { DropdownModule } from 'primeng/dropdown';
 import { TooltipModule } from 'primeng/tooltip';
 import { SkeletonModule } from 'primeng/skeleton';
+import { MenuModule } from 'primeng/menu';
+import { MultiSelectModule } from 'primeng/multiselect';
 
 import { ComingSoonComponent } from './components/coming-soon/coming-soon.component';
 import { StatTileComponent } from './components/stat-tile/stat-tile.component';
@@ -24,6 +26,7 @@ import { NotifierDocumentDialogComponent } from './components/notifier-document-
 import { ModeleFichierUploadComponent } from './components/modele-fichier-upload/modele-fichier-upload.component';
 import { CardSkeletonComponent } from './components/card-skeleton/card-skeleton.component';
 import { ValiderDocumentDialogComponent } from './components/valider-document-dialog/valider-document-dialog.component';
+import { EtatLabelPipe } from './pipes/etat-label.pipe';
 
 /**
  * Regroupe les modules PrimeNG et composants réutilisés par toutes les
@@ -31,7 +34,7 @@ import { ValiderDocumentDialogComponent } from './components/valider-document-di
  * suppression) afin d'éviter de ré-importer ces mêmes modules partout.
  */
 @NgModule({
-    declarations: [ComingSoonComponent, StatTileComponent, RefuserDocumentDialogComponent, NotifierDocumentDialogComponent, ModeleFichierUploadComponent, CardSkeletonComponent, ValiderDocumentDialogComponent],
+    declarations: [ComingSoonComponent, StatTileComponent, RefuserDocumentDialogComponent, NotifierDocumentDialogComponent, ModeleFichierUploadComponent, CardSkeletonComponent, ValiderDocumentDialogComponent, EtatLabelPipe],
     imports: [
         CommonModule,
         ReactiveFormsModule,
@@ -48,7 +51,9 @@ import { ValiderDocumentDialogComponent } from './components/valider-document-di
         CalendarModule,
         DropdownModule,
         TooltipModule,
-        SkeletonModule
+        SkeletonModule,
+        MenuModule,
+        MultiSelectModule
     ],
     exports: [
         CommonModule,
@@ -67,13 +72,16 @@ import { ValiderDocumentDialogComponent } from './components/valider-document-di
         DropdownModule,
         TooltipModule,
         SkeletonModule,
+        MenuModule,
+        MultiSelectModule,
         ComingSoonComponent,
         StatTileComponent,
         RefuserDocumentDialogComponent,
         NotifierDocumentDialogComponent,
         ModeleFichierUploadComponent,
         CardSkeletonComponent,
-        ValiderDocumentDialogComponent
+        ValiderDocumentDialogComponent,
+        EtatLabelPipe
     ]
 })
 export class SharedModule { }

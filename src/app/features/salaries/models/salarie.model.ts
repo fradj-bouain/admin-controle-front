@@ -12,6 +12,10 @@ export interface Salarie {
     typeContratId?: string;
     fonctionId?: string;
     statut: StatutSalarie;
+    // Nom du chantier sur lequel ce salarié est actuellement affecté (absent/null =
+    // aucun, affiché "Disponible") — à ne pas confondre avec `statut` ci-dessus, un
+    // simple interrupteur administratif sans lien avec une affectation réelle.
+    chantierActuel?: string | null;
 }
 
 export interface CreateSalarieRequest {

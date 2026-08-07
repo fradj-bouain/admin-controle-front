@@ -8,7 +8,7 @@
             <h5 class="m-0">Entreprise {{ entreprise ? '(' + entreprise.raisonSociale + ')' : '' }}</h5>
         </div>
         <div class="flex align-items-center gap-2" *ngIf="entreprise">
-            <p-tag [severity]="entreprise.actif ? 'success' : 'danger'" [value]="entreprise.actif ? 'ACTIF' : 'INACTIF'"></p-tag>
+            <p-tag [severity]="entreprise.actif ? 'success' : 'danger'" [value]="entreprise.actif | etatLabel"></p-tag>
             <button
                 *ngIf="isSuperAdmin"
                 pButton
@@ -311,7 +311,7 @@
                 <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
                 <td>{{ affectation.dateDebut | date: 'dd/MM/yyyy' }}</td>
                 <td>{{ affectation.dateFin ? (affectation.dateFin | date: 'dd/MM/yyyy') : '—' }}</td>
-                <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut"></p-tag></td>
+                <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut | etatLabel"></p-tag></td>
                 <td>
                     <button
                         pButton
@@ -372,7 +372,7 @@
         <ng-template pTemplate="body" let-salarie>
             <tr>
                 <td>{{ salarie.identiteCalculee }}</td>
-                <td><p-tag [severity]="salarie.statut === 'ACTIF' ? 'success' : 'danger'" [value]="salarie.statut"></p-tag></td>
+                <td><p-tag [severity]="salarie.statut === 'ACTIF' ? 'success' : 'danger'" [value]="salarie.statut | etatLabel"></p-tag></td>
                 <td>
                     <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/salaries', salarie.id]"></button>
                 </td>
@@ -470,7 +470,7 @@
                 <tr>
                     <td>{{ utilisateur.prenom }} {{ utilisateur.nom }}</td>
                     <td>{{ utilisateur.username }}</td>
-                    <td><p-tag [severity]="utilisateur.actif ? 'success' : 'danger'" [value]="utilisateur.actif ? 'ACTIF' : 'INACTIF'"></p-tag></td>
+                    <td><p-tag [severity]="utilisateur.actif ? 'success' : 'danger'" [value]="utilisateur.actif | etatLabel"></p-tag></td>
                 </tr>
             </ng-template>
             <ng-template pTemplate="emptymessage">
@@ -491,7 +491,7 @@
         <div class="flex align-items-center gap-3" *ngIf="isNew || afficherDocuments">
             <span class="p-input-icon-left">
                 <i class="pi pi-search"></i>
-                <input type="text" pInputText placeholder="Filtrer..." [(ngModel)]="filtreTexte" (ngModelChange)="onFiltreTexteChange()" />
+                <input type="text" pInputText placeholder="Rechercher un document..." [(ngModel)]="filtreTexte" (ngModelChange)="onFiltreTexteChange()" />
             </span>
             <div class="flex align-items-center gap-2">
                 <p-checkbox
@@ -500,69 +500,105 @@
                     (onChange)="onFiltreObligatoireChange()"
                     inputId="filtreObligatoire"
                 ></p-checkbox>
-                <label for="filtreObligatoire">Obligatoire ?</label>
+                <label for="filtreObligatoire">Afficher seulement les obligatoires</label>
             </div>
             <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="!isNew" (click)="afficherDocuments = false"></button>
         </div>
     </div>
 
-    <small class="text-500 block mb-3" *ngIf="isNew">Les documents marqués obligatoires doivent être renseignés avant de pouvoir créer cette entreprise.</small>
+    <!-- Jauge de progression : toujours visible (repliée ou non), remplace le calcul
+         mental qu'imposait l'ancienne liste plate. -->
+    <div class="mb-3" *ngIf="nbObligatoiresTotal > 0">
+        <div class="flex align-items-center justify-content-between mb-1">
+            <span class="text-600 text-sm font-medium">Documents obligatoires</span>
+            <span class="text-600 text-sm font-medium">{{ nbObligatoiresFournis }} / {{ nbObligatoiresTotal }}</span>
+        </div>
+        <div class="w-full border-round-lg overflow-hidden surface-200" style="height: 0.5rem;">
+            <div class="h-full border-round-lg" [style.width.%]="pourcentageObligatoires" [ngStyle]="{'background-color': pourcentageObligatoires === 100 ? 'var(--brand-success)' : 'var(--brand-accent)'}"></div>
+        </div>
+    </div>
+
+    <small class="text-500 block mb-3" *ngIf="isNew">Les documents obligatoires peuvent être renseignés maintenant ou ajoutés plus tard sur la fiche.</small>
 
     <div *ngIf="!isNew && !afficherDocuments" class="flex align-items-center justify-content-between">
-        <a class="cursor-pointer text-primary" (click)="afficherDocuments = true">{{ nbDocumentsManquants }} documents cachés</a>
+        <a class="cursor-pointer text-primary" (click)="afficherDocuments = true">Voir le détail des documents</a>
         <button pButton type="button" label="Mettre à jour les documents" class="p-button-outlined" (click)="afficherDocuments = true"></button>
     </div>
 
-    <div class="flex align-items-center gap-2 mb-3" *ngIf="isSuperAdmin && !isNew && typesManquantsPourDemande.length > 0">
-        <p-dropdown
-            [options]="typesManquantsPourDemande"
-            optionLabel="libelle"
-            optionValue="id"
-            [(ngModel)]="documentManquantSelectionne"
-            [ngModelOptions]="{standalone: true}"
-            [filter]="true"
-            filterBy="libelle"
-            placeholder="Demander un document manquant..."
-            styleClass="w-full md:w-20rem"
-        ></p-dropdown>
-        <button pButton type="button" icon="pi pi-send" label="Demander" [disabled]="!documentManquantSelectionne" (click)="demanderDocumentManquant()"></button>
-    </div>
-
     <div *ngIf="isNew || afficherDocuments">
-        <div class="flex align-items-center justify-content-between mb-3" *ngIf="!isNew && nbTypesDemandesSelection > 0">
-            <span class="text-600">{{ nbTypesDemandesSelection }} document(s) sélectionné(s)</span>
-            <button pButton type="button" icon="pi pi-send" label="Demander à l'entreprise" (click)="demanderDocumentsSelectionnes()"></button>
+        <ng-container *ngIf="typesAFournir.length > 0">
+            <div class="flex align-items-center gap-2 text-sm font-semibold uppercase text-orange-600 mb-2 mt-2">
+                <i class="pi pi-exclamation-triangle"></i> À fournir ({{ typesAFournir.length }})
+            </div>
+            <ng-container *ngFor="let type of typesAFournir">
+                <ng-container *ngTemplateOutlet="ligneDocument; context: { type: type }"></ng-container>
+            </ng-container>
+        </ng-container>
+
+        <ng-container *ngIf="typesDejaFournis.length > 0">
+            <div class="flex align-items-center gap-2 text-sm font-semibold uppercase text-green-700 mb-2 mt-3">
+                <i class="pi pi-check-circle"></i> Déjà fournis ({{ typesDejaFournis.length }})
+            </div>
+            <ng-container *ngFor="let type of typesDejaFournis">
+                <ng-container *ngTemplateOutlet="ligneDocument; context: { type: type }"></ng-container>
+            </ng-container>
+        </ng-container>
+
+        <ng-container *ngIf="typesOptionnelsRestants.length > 0">
+            <div class="flex align-items-center gap-2 text-sm font-semibold uppercase text-600 mb-2 mt-3">Documents optionnels</div>
+            <div
+                *ngIf="!afficherOptionnels"
+                class="flex align-items-center justify-content-between border-1 border-dashed border-round-lg p-3 cursor-pointer"
+                style="border-color: var(--brand-border);"
+                (click)="afficherOptionnels = true"
+            >
+                <span class="text-600 text-sm">{{ typesOptionnelsRestants.length }} document(s) optionnel(s)</span>
+                <span class="text-primary text-sm font-medium">Afficher <i class="pi pi-chevron-down text-xs"></i></span>
+            </div>
+            <ng-container *ngIf="afficherOptionnels">
+                <button pButton type="button" label="Masquer les optionnels" icon="pi pi-chevron-up" class="p-button-text p-button-sm mb-2" (click)="afficherOptionnels = false"></button>
+                <ng-container *ngFor="let type of typesOptionnelsRestants">
+                    <ng-container *ngTemplateOutlet="ligneDocument; context: { type: type }"></ng-container>
+                </ng-container>
+            </ng-container>
+        </ng-container>
+
+        <p class="text-500 text-center py-3" *ngIf="typesAFournir.length === 0 && typesDejaFournis.length === 0 && typesOptionnelsRestants.length === 0">Aucun type de document configuré pour les entreprises.</p>
+    </div>
+</div>
+
+<!-- Ligne de document réutilisée pour les 3 groupes ci-dessus (à fournir / déjà
+     fournis / optionnels) — un seul gabarit, injecté via ngTemplateOutlet, pour ne
+     pas tripler ce bloc à chaque changement. -->
+<ng-template #ligneDocument let-type="type">
+    <div
+        class="doc-row"
+        [class.missing]="type.obligatoire && !documentsByType[type.id]"
+    >
+        <div class="doc-row__header">
+            <div class="doc-row__title">
+                <span class="doc-row__title-text" [pTooltip]="type.libelle" tooltipPosition="top">{{ type.libelle }}</span>
+            </div>
+            <p-tag
+                *ngIf="documentsByType[type.id]"
+                class="doc-row__status"
+                [severity]="documentsByType[type.id].statutValidation === 'VALIDE' ? 'success' : (documentsByType[type.id].statutValidation === 'REFUSE' ? 'danger' : 'warning')"
+                [value]="documentsByType[type.id].statutValidation | etatLabel"
+            ></p-tag>
+            <p-tag *ngIf="!documentsByType[type.id]" class="doc-row__status" severity="danger" value="Document manquant"></p-tag>
         </div>
 
-        <div
-            *ngFor="let type of typesPourEntrepriseFiltres"
-            class="doc-row"
-            [class.missing]="type.obligatoire && !documentsByType[type.id]"
-        >
-            <div class="doc-row__header">
-                <div class="doc-row__title">
-                    <p-checkbox
-                        *ngIf="!isNew && !documentsByType[type.id]"
-                        [binary]="true"
-                        [(ngModel)]="typesDemandesSelection[type.id]"
-                        [ngModelOptions]="{standalone: true}"
-                        inputId="demande-{{ type.id }}"
-                        class="mt-1"
-                        pTooltip="Demander ce document à l'entreprise"
-                    ></p-checkbox>
-                    <span class="doc-row__title-text" [pTooltip]="type.libelle" tooltipPosition="top">{{ type.libelle }}</span>
+        <div class="doc-row__fields formgrid grid align-items-end">
+            <ng-container *ngIf="!documentsByType[type.id]; else ligneRenseignee">
+                <!-- Le SUPER_ADMIN ne dépose jamais de document lui-même — seule l'entreprise
+                     le fait (valider/refuser reste son seul rôle sur un document, voir plus bas).
+                     Le bouton "Demander" est le seul point d'entrée pour lui réclamer ce document
+                     précis — plus de sélecteur séparé, il agit directement sur la ligne qu'il voit. -->
+                <div class="field col-12 mb-0 flex align-items-center justify-content-between gap-2" *ngIf="isSuperAdmin && !isNew">
+                    <p class="text-500 text-sm m-0">En attente d'un dépôt par l'entreprise.</p>
+                    <button pButton type="button" icon="pi pi-send" label="Demander" class="p-button-outlined p-button-sm flex-shrink-0" (click)="demanderDocument(type)"></button>
                 </div>
-                <p-tag
-                    *ngIf="documentsByType[type.id]"
-                    class="doc-row__status"
-                    [severity]="documentsByType[type.id].statutValidation === 'VALIDE' ? 'success' : (documentsByType[type.id].statutValidation === 'REFUSE' ? 'danger' : 'warning')"
-                    [value]="documentsByType[type.id].statutValidation"
-                ></p-tag>
-                <p-tag *ngIf="!documentsByType[type.id]" class="doc-row__status" severity="danger" value="Document manquant"></p-tag>
-            </div>
-
-            <div class="doc-row__fields formgrid grid align-items-end">
-                <ng-container *ngIf="!documentsByType[type.id]; else ligneRenseignee">
+                <ng-container *ngIf="!isSuperAdmin">
                     <div class="field col-12 md:col-9 mb-0">
                         <label class="text-500 text-sm">Fichier</label>
                         <div class="flex align-items-center gap-1">
@@ -575,34 +611,32 @@
                         <button pButton type="button" label="Renseigner" class="w-full" (click)="renseignerDocument(type)"></button>
                     </div>
                 </ng-container>
+            </ng-container>
 
-                <ng-template #ligneRenseignee>
-                    <div class="field col-6 md:col-3 mb-0" *ngIf="type.dateDebutValiditeRequise">
-                        <label class="text-500 text-sm">Date de validité</label>
-                        <p class="m-0">{{ documentsByType[type.id].dateDebutValidite || '—' }}</p>
-                    </div>
-                    <div class="field col-6 md:col-3 mb-0" *ngIf="type.dateFinValiditeRequise">
-                        <label class="text-500 text-sm">Fin de validité</label>
-                        <p class="m-0">{{ documentsByType[type.id].dateExpiration || '—' }}</p>
-                    </div>
-                    <div class="field col-12 md:col-4 mb-0">
-                        <label class="text-500 text-sm">Fichier</label>
-                        <p class="m-0" *ngIf="documentsByType[type.id].fichierUrl" pTooltip="Aucun stockage de fichier pour l'instant — nom conservé seul">
-                            <i class="pi pi-paperclip mr-1"></i>{{ documentsByType[type.id].fichierUrl }}
-                        </p>
-                        <span *ngIf="!documentsByType[type.id].fichierUrl">—</span>
-                    </div>
-                    <div class="field col-12 md:col-2 mb-0 flex gap-2">
-                        <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="documentsByType[type.id].statutValidation !== 'VALIDE' && isSuperAdmin" (click)="ouvrirValidation(documentsByType[type.id])"></button>
-                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="documentsByType[type.id].statutValidation !== 'REFUSE' && isSuperAdmin" (click)="ouvrirRefus(documentsByType[type.id])"></button>
-                    </div>
-                </ng-template>
-            </div>
+            <ng-template #ligneRenseignee>
+                <div class="field col-6 md:col-3 mb-0" *ngIf="type.dateDebutValiditeRequise">
+                    <label class="text-500 text-sm">Date de validité</label>
+                    <p class="m-0">{{ documentsByType[type.id].dateDebutValidite || '—' }}</p>
+                </div>
+                <div class="field col-6 md:col-3 mb-0" *ngIf="type.dateFinValiditeRequise">
+                    <label class="text-500 text-sm">Fin de validité</label>
+                    <p class="m-0">{{ documentsByType[type.id].dateExpiration || '—' }}</p>
+                </div>
+                <div class="field col-12 md:col-4 mb-0">
+                    <label class="text-500 text-sm">Fichier</label>
+                    <p class="m-0" *ngIf="documentsByType[type.id].fichierUrl" pTooltip="Aucun stockage de fichier pour l'instant — nom conservé seul">
+                        <i class="pi pi-paperclip mr-1"></i>{{ documentsByType[type.id].fichierUrl }}
+                    </p>
+                    <span *ngIf="!documentsByType[type.id].fichierUrl">—</span>
+                </div>
+                <div class="field col-12 md:col-2 mb-0 flex gap-2">
+                    <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="documentsByType[type.id].statutValidation !== 'VALIDE' && isSuperAdmin" (click)="ouvrirValidation(documentsByType[type.id])"></button>
+                    <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="documentsByType[type.id].statutValidation !== 'REFUSE' && isSuperAdmin" (click)="ouvrirRefus(documentsByType[type.id])"></button>
+                </div>
+            </ng-template>
         </div>
-
-        <p class="text-500 text-center py-3" *ngIf="typesPourEntrepriseFiltres.length === 0">Aucun type de document configuré pour les entreprises.</p>
     </div>
-</div>
+</ng-template>
 
 <!-- Historique des documents (repliée par défaut, chargée au premier dépli) -->
 <div class="card mb-3" *ngIf="!isNew">
@@ -684,7 +718,7 @@
 </div>
 
 <!-- Envoyer un message : composeur inline -->
-<div class="card mb-3" *ngIf="!isNew">
+<div id="composeur-message" class="card mb-3" *ngIf="!isNew">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-envelope"></i>

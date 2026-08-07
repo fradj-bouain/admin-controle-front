@@ -85,6 +85,11 @@ export interface Utilisateur {
     clientId?: string;
     controleTiersId?: string;
     actif: boolean;
+    // Uniquement pertinent pour un compte CLIENT : nombre de chantiers auxquels il a
+    // été explicitement assigné. 0 = aucun accès du tout (règle stricte, pas de repli
+    // "voit tout par défaut") — voir l'indicateur affiché sur "Mon équipe" / la liste
+    // des utilisateurs, et ScopeAuthorizationService côté backend.
+    nbChantiersAssignes?: number;
 }
 
 export interface CreateUtilisateurRequest {

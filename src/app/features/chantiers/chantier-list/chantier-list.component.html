@@ -11,7 +11,22 @@
         </ng-template>
     </p-toolbar>
 
-    <p-table #dt [value]="chantiers" [loading]="loading" [paginator]="true" [rows]="10" dataKey="id">
+    <div class="flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+        <span class="p-input-icon-left w-full md:w-25rem">
+            <i class="pi pi-search"></i>
+            <input
+                type="text"
+                pInputText
+                placeholder="Rechercher un chantier (nom, client, ville...)"
+                class="w-full"
+                (input)="dt.filterGlobal($any($event.target).value, 'contains')"
+            />
+        </span>
+        <button pButton type="button" [label]="afficherFiltresAvances ? 'Masquer les filtres avancés' : 'Filtres avancés'" [icon]="afficherFiltresAvances ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" class="p-button-text p-button-sm" (click)="afficherFiltresAvances = !afficherFiltresAvances"></button>
+    </div>
+    <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? chantiers).length }} résultat(s)</p>
+
+    <p-table #dt [value]="chantiers" [loading]="loading" [paginator]="true" [rows]="10" dataKey="id" [globalFilterFields]="['nom','nomClientCalcule','ville']">
         <ng-template pTemplate="header">
             <tr>
                 <th>{{ 'chantier.nom' | translate }}</th>
@@ -19,9 +34,9 @@
                 <th>{{ 'chantier.ville' | translate }}</th>
                 <th>{{ 'chantier.dateDebut' | translate }}</th>
                 <th>{{ 'chantier.statut' | translate }}</th>
-                <th style="width: 8rem"></th>
+                <th style="width: 4rem"></th>
             </tr>
-            <tr>
+            <tr *ngIf="afficherFiltresAvances">
                 <th><p-columnFilter type="text" field="nom" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="nomClientCalcule" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="ville" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
@@ -48,40 +63,25 @@
                 <td>{{ chantier.ville }}</td>
                 <td>{{ chantier.dateDebut }}</td>
                 <td>
-                    <p-tag [severity]="chantier.statut === 'ACTIF' ? 'success' : 'danger'" [value]="chantier.statut"></p-tag>
+                    <p-tag [severity]="chantier.statut === 'ACTIF' ? 'success' : 'danger'" [value]="chantier.statut | etatLabel"></p-tag>
                 </td>
                 <td>
-                    <div class="flex align-items-center gap-1 flex-nowrap">
-                        <button
-                            pButton
-                            type="button"
-                            icon="pi pi-pencil"
-                            class="p-button-text p-button-rounded"
-                            pTooltip="Modifier"
-                            [routerLink]="['/chantiers', chantier.id]"
-                            (click)="$event.stopPropagation()"
-                        ></button>
-                        <button
-                            *ngIf="isSuperAdmin"
-                            pButton
-                            type="button"
-                            [icon]="chantier.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"
-                            class="p-button-text p-button-rounded"
-                            [pTooltip]="(chantier.statut === 'ACTIF' ? 'common.deactivate' : 'common.activate') | translate"
-                            (click)="confirmerBasculeStatut(chantier); $event.stopPropagation()"
-                        ></button>
-                        <button
-                            *ngIf="isSuperAdmin"
-                            pButton
-                            type="button"
-                            icon="pi pi-trash"
-                            class="p-button-text p-button-rounded p-button-danger"
-                            pTooltip="Supprimer"
-                            (click)="confirmerSuppression(chantier); $event.stopPropagation()"
-                        ></button>
-                    </div>
+                    <button
+                        pButton
+                        type="button"
+                        icon="pi pi-ellipsis-v"
+                        class="p-button-text p-button-rounded"
+                        pTooltip="Actions"
+                        (click)="menuItems = construireMenu(chantier); menu.toggle($event); $event.stopPropagation()"
+                    ></button>
                 </td>
             </tr>
         </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="6" class="text-center text-500 py-4">Aucun chantier ne correspond à cette recherche.</td>
+            </tr>
+        </ng-template>
     </p-table>
+    <p-menu #menu [popup]="true" [model]="menuItems"></p-menu>
 </div>

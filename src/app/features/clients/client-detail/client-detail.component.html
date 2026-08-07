@@ -8,7 +8,7 @@
             <h5 class="m-0">Client {{ client ? '(' + client.raisonSociale + ')' : '' }}</h5>
         </div>
         <div class="flex align-items-center gap-2" *ngIf="client">
-            <p-tag [severity]="client.actif ? 'success' : 'danger'" [value]="client.actif ? 'ACTIF' : 'INACTIF'"></p-tag>
+            <p-tag [severity]="client.actif ? 'success' : 'danger'" [value]="client.actif | etatLabel"></p-tag>
             <button
                 *ngIf="isSuperAdmin"
                 pButton
@@ -210,7 +210,23 @@
             <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez le client pour activer cette section.</small>
 
             <ul class="list-none p-0 m-0" *ngIf="!isNew">
-                <li *ngFor="let u of utilisateurs" class="py-2 border-bottom-1 surface-border">{{ u.prenom }} {{ u.nom }}</li>
+                <li
+                    *ngFor="let u of utilisateurs"
+                    class="py-2 border-bottom-1 surface-border"
+                >
+                    <div class="flex align-items-center justify-content-between gap-2">
+                        <div class="min-w-0">
+                            <div class="font-medium white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ u.prenom }} {{ u.nom }}</div>
+                            <div class="text-500 text-sm white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ u.email }}</div>
+                        </div>
+                        <span *ngIf="u.nbChantiersAssignes" class="inline-flex align-items-center gap-2 text-green-700 text-sm font-medium flex-shrink-0">
+                            <i class="pi pi-circle-fill text-xs"></i> {{ u.nbChantiersAssignes }} chantier(s)
+                        </span>
+                        <span *ngIf="!u.nbChantiersAssignes" class="inline-flex align-items-center gap-2 text-orange-600 text-sm font-medium flex-shrink-0" pTooltip="Aucun chantier assigné : cet utilisateur ne voit rien tant qu'il n'est pas assigné depuis une fiche chantier.">
+                            <i class="pi pi-exclamation-triangle text-xs"></i> Aucun accès
+                        </span>
+                    </div>
+                </li>
                 <li *ngIf="utilisateurs.length === 0" class="text-500 py-2">Aucun utilisateur.</li>
             </ul>
 
@@ -275,7 +291,7 @@
             <tr class="cursor-pointer" [routerLink]="['/chantiers', chantier.id]">
                 <td>{{ chantier.nom }}</td>
                 <td>{{ chantier.ville }}</td>
-                <td><p-tag [severity]="chantier.statut === 'ACTIF' ? 'success' : 'danger'" [value]="chantier.statut"></p-tag></td>
+                <td><p-tag [severity]="chantier.statut === 'ACTIF' ? 'success' : 'danger'" [value]="chantier.statut | etatLabel"></p-tag></td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">

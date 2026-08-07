@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { TranslateService } from '@ngx-translate/core';
 import { forkJoin } from 'rxjs';
 import { Chantier } from '../models/chantier.model';
@@ -20,6 +20,8 @@ export class ChantierListComponent implements OnInit {
     chantiers: Array<Chantier & { nomClientCalcule: string }> = [];
     clients: Client[] = [];
     loading = false;
+    afficherFiltresAvances = false;
+    menuItems: MenuItem[] = [];
 
     constructor(
         private chantierService: ChantierService,
@@ -89,5 +91,28 @@ export class ChantierListComponent implements OnInit {
                 });
             }
         });
+    }
+
+    construireMenu(chantier: Chantier): MenuItem[] {
+        const items: MenuItem[] = [
+            { label: 'Modifier', icon: 'pi pi-pencil', routerLink: ['/chantiers', chantier.id] }
+        ];
+        if (this.isSuperAdmin) {
+            items.push(
+                {
+                    label: chantier.statut === 'ACTIF' ? 'Désactiver' : 'Activer',
+                    icon: chantier.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check',
+                    command: () => this.confirmerBasculeStatut(chantier)
+                },
+                { separator: true },
+                {
+                    label: 'Supprimer',
+                    icon: 'pi pi-trash',
+                    styleClass: 'text-red-600',
+                    command: () => this.confirmerSuppression(chantier)
+                }
+            );
+        }
+        return items;
     }
 }
