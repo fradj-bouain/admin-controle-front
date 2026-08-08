@@ -345,15 +345,12 @@
                 </div>
                 <div class="field col-12 md:col-4 mb-0">
                     <label class="text-500 text-sm">Fichier</label>
-                    <button
-                        type="button"
-                        class="p-link flex align-items-center gap-1 p-0"
-                        *ngIf="documentsByType[type.id].nomFichierOriginal"
-                        (click)="ouvrirApercu(documentsByType[type.id])"
-                    >
-                        <i class="pi pi-paperclip"></i>{{ documentsByType[type.id].nomFichierOriginal }}
-                    </button>
-                    <span *ngIf="!documentsByType[type.id].nomFichierOriginal">—</span>
+                    <div class="flex align-items-center gap-1" *ngIf="documentsByType[type.id].nomFichierOriginal; else aucunFichierSalarie">
+                        <i class="pi pi-paperclip text-500"></i>
+                        <span class="white-space-nowrap overflow-hidden text-overflow-ellipsis" [pTooltip]="documentsByType[type.id].nomFichierOriginal">{{ documentsByType[type.id].nomFichierOriginal }}</span>
+                        <button pButton type="button" icon="pi pi-eye" class="p-button-text p-button-rounded p-button-sm flex-shrink-0" pTooltip="Aperçu" (click)="ouvrirApercu(documentsByType[type.id])"></button>
+                    </div>
+                    <ng-template #aucunFichierSalarie><span>—</span></ng-template>
                 </div>
                 <div class="field col-12 md:col-2 mb-0 flex gap-2">
                     <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="documentsByType[type.id].statutValidation !== 'VALIDE' && isSuperAdmin" (click)="ouvrirValidation(documentsByType[type.id])"></button>
@@ -455,8 +452,8 @@
     </div>
 
     <div *ngIf="!afficherComposeur" class="flex align-items-center justify-content-between">
-        <a class="cursor-pointer text-primary" (click)="afficherComposeur = true">Rédiger un message à l'entreprise employeuse</a>
-        <button pButton type="button" label="Nouveau message" class="p-button-outlined" (click)="afficherComposeur = true"></button>
+        <a class="cursor-pointer text-primary" (click)="afficherComposeur = true; documentDemandeEnCours = null">Rédiger un message à l'entreprise employeuse</a>
+        <button pButton type="button" label="Nouveau message" class="p-button-outlined" (click)="afficherComposeur = true; documentDemandeEnCours = null"></button>
     </div>
 
     <form [formGroup]="messageForm" (ngSubmit)="envoyerMessage()" class="p-fluid" *ngIf="afficherComposeur">
@@ -483,7 +480,7 @@
             <small class="text-500 block mt-1">Balises disponibles : [DATE], [SALARIE_NOM]</small>
         </div>
         <div class="flex justify-content-end gap-2 mt-4">
-            <button pButton type="button" label="Annuler" class="p-button-text" (click)="afficherComposeur = false"></button>
+            <button pButton type="button" label="Annuler" class="p-button-text" (click)="afficherComposeur = false; documentDemandeEnCours = null"></button>
             <button pButton type="submit" label="Envoyer" icon="pi pi-send" [loading]="envoiMessageEnCours"></button>
         </div>
     </form>

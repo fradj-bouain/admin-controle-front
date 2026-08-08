@@ -71,8 +71,12 @@ export class ClientListComponent implements OnInit {
     }
 
     construireMenu(client: Client): MenuItem[] {
+        // Un compte Entreprise ne peut que consulter la fiche (le formulaire s'ouvre
+        // en lecture seule, voir client-detail.component) — jamais la modifier.
         const items: MenuItem[] = [
-            { label: 'Modifier', icon: 'pi pi-pencil', routerLink: ['/clients', client.id] }
+            this.isSuperAdmin
+                ? { label: 'Modifier', icon: 'pi pi-pencil', routerLink: ['/clients', client.id] }
+                : { label: 'Consulter', icon: 'pi pi-eye', routerLink: ['/clients', client.id] }
         ];
         if (this.isSuperAdmin) {
             items.push(

@@ -114,6 +114,10 @@ export class SalarieDetailComponent implements OnInit {
     // --- Envoyer un message (composeur inline, replié par défaut) ---
     afficherComposeur = false;
     envoiMessageEnCours = false;
+    // Renseigné uniquement quand le composeur a été ouvert via "Demander" sur une
+    // ligne de document précise — permet au destinataire de déposer le fichier
+    // directement depuis le message reçu (voir message-detail-page).
+    documentDemandeEnCours: string | null = null;
     utilisateurs: Utilisateur[] = [];
     // Parité d'affichage avec le site legacy (logo, balises, bloc coordonnées) :
     // pas de colonne backend correspondante, rien n'est envoyé au serveur pour ce champ.
@@ -512,6 +516,7 @@ export class SalarieDetailComponent implements OnInit {
             sujet: `Document à fournir — ${this.salarie ? this.salarie.prenom + ' ' + this.salarie.nom : ''}`,
             contenu: this.modeleDemandeDocuments(`<li>${type.libelle}</li>`)
         });
+        this.documentDemandeEnCours = type.id;
         this.afficherComposeur = true;
         // Le formulaire de message est plus bas sur la page (après Historique et
         // Relances) : sans ce défilement, cliquer "Demander" semble ne rien faire.
@@ -707,12 +712,18 @@ export class SalarieDetailComponent implements OnInit {
         const value = this.messageForm.getRawValue();
 
         const cibles = new Map<string, SendMessageRequest>();
-        const ajouter = (type: SendMessageRequest['destinataireType'], id: string) => {
-            cibles.set(`${type}:${id}`, { destinataireType: type, destinataireId: id, sujet: value.sujet!, contenu: value.contenu! });
+        const ajouter = (type: SendMessageRequest['destinataireType'], id: string, avecReferenceDocument: boolean) => {
+            cibles.set(`${type}:${id}`, {
+                destinataireType: type, destinataireId: id, sujet: value.sujet!, contenu: value.contenu!,
+                // La référence document n'a de sens que pour le vrai destinataire (l'entreprise
+                // qui doit déposer le fichier) — pas pour la copie informative à l'admin.
+                typeDocumentId: avecReferenceDocument ? this.documentDemandeEnCours ?? undefined : undefined,
+                salarieId: avecReferenceDocument && this.documentDemandeEnCours ? this.salarieId ?? undefined : undefined
+            });
         };
-        ajouter('ENTREPRISE', this.salarie.entrepriseEmployeurId);
+        ajouter('ENTREPRISE', this.salarie.entrepriseEmployeurId, true);
         if (value.copieAdmin) {
-            this.utilisateurs.filter((u) => u.roles.includes('SUPER_ADMIN')).forEach((u) => ajouter('UTILISATEUR', u.id));
+            this.utilisateurs.filter((u) => u.roles.includes('SUPER_ADMIN')).forEach((u) => ajouter('UTILISATEUR', u.id, false));
         }
 
         this.envoiMessageEnCours = true;
@@ -722,6 +733,7 @@ export class SalarieDetailComponent implements OnInit {
                 this.message.add({ severity: 'success', summary: 'Succès', detail: 'Message envoyé à l\'entreprise employeuse' });
                 this.messageForm.reset({ sujet: '', contenu: this.modeleParDefaut(), copieAdmin: false });
                 this.afficherComposeur = false;
+                this.documentDemandeEnCours = null;
             },
             error: () => {
                 this.envoiMessageEnCours = false;

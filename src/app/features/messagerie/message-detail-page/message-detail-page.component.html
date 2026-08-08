@@ -58,4 +58,23 @@
     </div>
 </div>
 
+<div class="card mb-3 no-print" *ngIf="peutDeposerDocument && !documentEnvoye">
+    <div class="card-head">
+        <i class="pi pi-upload"></i>
+        <h6 class="m-0">Déposer le document demandé</h6>
+    </div>
+    <p class="text-500 mt-0 mb-3" *ngIf="typeDocumentDemande">{{ typeDocumentDemande.libelle }}</p>
+    <app-document-upload-preview (fichierChange)="fichierDemande = $event"></app-document-upload-preview>
+    <div class="flex justify-content-end mt-3">
+        <button pButton type="button" label="Envoyer" icon="pi pi-send" [disabled]="!fichierDemande" [loading]="envoiDocumentEnCours" (click)="envoyerDocumentDemande()"></button>
+    </div>
+</div>
+
+<div class="card mb-3 no-print" *ngIf="documentEnvoye">
+    <div class="flex align-items-center gap-2 text-green-600">
+        <i class="pi pi-check-circle text-xl"></i>
+        <span>Document envoyé avec succès.</span>
+    </div>
+</div>
+
 </ng-container>

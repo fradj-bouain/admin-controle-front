@@ -79,6 +79,13 @@ export class ClientDetailComponent implements OnInit {
     ngOnInit(): void {
         this.referenceDataService.listerPays().subscribe((pays) => (this.pays = pays));
 
+        // Un compte Entreprise ne peut que consulter cette fiche (le backend refuse de
+        // toute façon POST/PUT/activer/désactiver côté API) — formulaire verrouillé
+        // pour ne pas laisser croire qu'une saisie pourrait être enregistrée.
+        if (!this.isSuperAdmin) {
+            this.coordonneesForm.disable();
+        }
+
         this.route.paramMap.subscribe((params) => {
             const id = params.get('id');
             this.clientId = id;

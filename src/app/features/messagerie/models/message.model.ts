@@ -8,6 +8,10 @@ export interface Message {
     destinataireId: string;
     sujet: string;
     contenu: string;
+    /** Renseignés seulement pour un message "Demander un document" (voir salarie/entreprise-detail
+        demanderDocument) — permet d'afficher un dépôt direct depuis la consultation du message. */
+    typeDocumentId?: string;
+    salarieId?: string;
     lu: boolean;
     luParUtilisateurId?: string;
     dateLu?: string;
@@ -20,6 +24,8 @@ export interface SendMessageRequest {
     destinataireId: string;
     sujet: string;
     contenu: string;
+    typeDocumentId?: string;
+    salarieId?: string;
 }
 
 export type CibleGroupe = 'SPECIFIQUE' | 'TOUS_UTILISATEURS' | 'TOUS_CLIENTS' | 'TOUTES_ENTREPRISES' | 'TOUS_SALARIES';

@@ -12,6 +12,9 @@ import { Entreprise } from 'src/app/features/entreprises/models/entreprise.model
 import { EntrepriseService } from 'src/app/features/entreprises/services/entreprise.service';
 import { Chantier } from 'src/app/features/chantiers/models/chantier.model';
 import { ChantierService } from 'src/app/features/chantiers/services/chantier.service';
+import { TypeDocument } from 'src/app/features/documents/models/document.model';
+import { TypeDocumentService } from 'src/app/features/documents/services/type-document.service';
+import { DocumentService } from 'src/app/features/documents/services/document.service';
 
 @Component({
     selector: 'app-message-detail-page',
@@ -26,6 +29,12 @@ export class MessageDetailPageComponent implements OnInit {
     utilisateurs: Utilisateur[] = [];
     clients: Client[] = [];
     entreprises: Entreprise[] = [];
+    types: TypeDocument[] = [];
+
+    // --- Dépôt direct du document demandé (voir salarie/entreprise-detail demanderDocument) ---
+    fichierDemande: File | null = null;
+    envoiDocumentEnCours = false;
+    documentEnvoye = false;
 
     constructor(
         private route: ActivatedRoute,
@@ -35,6 +44,8 @@ export class MessageDetailPageComponent implements OnInit {
         private clientService: ClientService,
         private entrepriseService: EntrepriseService,
         private chantierService: ChantierService,
+        private typeDocumentService: TypeDocumentService,
+        private documentService: DocumentService,
         private auth: AuthService,
         private toast: ToastService
     ) { }
@@ -43,6 +54,7 @@ export class MessageDetailPageComponent implements OnInit {
         this.utilisateurService.lister().subscribe((u) => (this.utilisateurs = u));
         this.clientService.lister().subscribe((c) => (this.clients = c));
         this.entrepriseService.lister().subscribe((e) => (this.entreprises = e));
+        this.typeDocumentService.lister().subscribe((t) => (this.types = t));
 
         const id = this.route.snapshot.paramMap.get('id')!;
         this.messageService.obtenir(id).subscribe({
@@ -93,6 +105,39 @@ export class MessageDetailPageComponent implements OnInit {
             default:
                 return this.nomUtilisateur(this.message.destinataireId);
         }
+    }
+
+    get typeDocumentDemande(): TypeDocument | undefined {
+        return this.message?.typeDocumentId ? this.types.find((t) => t.id === this.message!.typeDocumentId) : undefined;
+    }
+
+    /** Seul le vrai destinataire (l'entreprise à qui le document a été demandé) voit
+        ce dépôt direct — pas l'expéditeur, pas une éventuelle copie à un autre compte. */
+    get peutDeposerDocument(): boolean {
+        return !!this.message && !!this.message.typeDocumentId
+            && this.message.destinataireType === 'ENTREPRISE' && this.estDestinataire(this.message);
+    }
+
+    envoyerDocumentDemande() {
+        if (!this.message || !this.fichierDemande || !this.message.typeDocumentId) {
+            return;
+        }
+        this.envoiDocumentEnCours = true;
+        this.documentService.creer({
+            typeDocumentId: this.message.typeDocumentId,
+            salarieId: this.message.salarieId,
+            entrepriseId: this.message.salarieId ? undefined : this.message.destinataireId
+        }, this.fichierDemande).subscribe({
+            next: () => {
+                this.envoiDocumentEnCours = false;
+                this.documentEnvoye = true;
+                this.toast.add({ severity: 'success', summary: 'Succès', detail: 'Document envoyé' });
+            },
+            error: () => {
+                this.envoiDocumentEnCours = false;
+                this.toast.add({ severity: 'error', summary: 'Erreur', detail: 'Envoi impossible' });
+            }
+        });
     }
 
     imprimer() {
