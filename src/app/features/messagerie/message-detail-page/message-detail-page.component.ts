@@ -52,9 +52,11 @@ export class MessageDetailPageComponent implements OnInit {
                 if (message.chantierId) {
                     this.chantierService.obtenir(message.chantierId).subscribe((chantier) => (this.chantier = chantier));
                 }
-                // On ne marque comme lu que si c'est vraiment le destinataire qui
-                // consulte (jamais l'expéditeur relisant son propre envoi).
-                if (!message.lu && message.destinataireType === 'UTILISATEUR' && message.destinataireId === this.auth.userId) {
+                // On ne marque comme lu que si c'est vraiment un destinataire qui
+                // consulte (jamais l'expéditeur relisant son propre envoi) — le message
+                // peut viser ce compte précisément, ou collectivement toute son
+                // Entreprise/son Client (voir MessageService.estDestinataireDe côté API).
+                if (!message.lu && this.estDestinataire(message)) {
                     this.messageService.marquerLu(id).subscribe((maj) => (this.message = maj));
                 }
             },
@@ -64,6 +66,15 @@ export class MessageDetailPageComponent implements OnInit {
                 this.router.navigate(['/messagerie']);
             }
         });
+    }
+
+    private estDestinataire(message: Message): boolean {
+        switch (message.destinataireType) {
+            case 'UTILISATEUR': return message.destinataireId === this.auth.userId;
+            case 'ENTREPRISE': return message.destinataireId === this.auth.entrepriseId;
+            case 'CLIENT': return message.destinataireId === this.auth.clientId;
+            default: return false;
+        }
     }
 
     nomUtilisateur(id?: string): string {

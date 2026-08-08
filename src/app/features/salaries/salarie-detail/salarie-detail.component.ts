@@ -25,6 +25,7 @@ import { AuthService } from 'src/app/core/auth/auth.service';
 
 interface LigneDocument {
     fichierUrl: string;
+    fichier: File | null;
 }
 
 @Component({
@@ -97,6 +98,8 @@ export class SalarieDetailComponent implements OnInit {
     documentARefuser: DocumentItem | null = null;
     dialogValiderVisible = false;
     documentAValider: DocumentItem | null = null;
+    dialogApercuVisible = false;
+    documentAPrevisualiser: DocumentItem | null = null;
 
     // --- Historique des documents (repliée par défaut, chargée à la demande) ---
     historique: HistoriqueModification[] = [];
@@ -235,7 +238,7 @@ export class SalarieDetailComponent implements OnInit {
         this.typesPourSalarie.sort((a, b) => this.prioriteStatutDocument(a) - this.prioriteStatutDocument(b));
         for (const t of this.typesPourSalarie) {
             if (!this.lignesDocument[t.id]) {
-                this.lignesDocument[t.id] = { fichierUrl: '' };
+                this.lignesDocument[t.id] = { fichierUrl: '', fichier: null };
             }
         }
         this.typesAFournir = this.typesPourSalarie.filter((t) => t.obligatoire && !this.documentsByType[t.id]);
@@ -451,13 +454,52 @@ export class SalarieDetailComponent implements OnInit {
         }
     }
 
-    onFichierChoisi(event: Event, typeId: string) {
-        const input = event.target as HTMLInputElement;
-        const fichier = input.files?.[0] ?? null;
-        // Pas encore d'espace de stockage réel côté serveur (voir fichierUrl) :
-        // on garde seulement le nom du fichier choisi, en attendant qu'un
-        // véritable dépôt de fichiers existe.
+    // Signale un document déjà validé qui arrive à échéance, directement sur sa ligne —
+    // avant, seul le système de Relances (configuré à part par l'admin) le rattrapait,
+    // souvent des jours après (voir audit UX).
+    private joursAvantExpiration(document: DocumentItem | undefined): number | null {
+        if (!document?.dateExpiration) {
+            return null;
+        }
+        const aujourdHui = new Date();
+        aujourdHui.setHours(0, 0, 0, 0);
+        const expiration = new Date(document.dateExpiration);
+        expiration.setHours(0, 0, 0, 0);
+        return Math.round((expiration.getTime() - aujourdHui.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    expireBientot(document: DocumentItem | undefined): boolean {
+        if (document?.statutValidation !== 'VALIDE') {
+            return false;
+        }
+        const jours = this.joursAvantExpiration(document);
+        return jours !== null && jours >= 0 && jours <= 30;
+    }
+
+    estExpire(document: DocumentItem | undefined): boolean {
+        if (document?.statutValidation !== 'VALIDE') {
+            return false;
+        }
+        const jours = this.joursAvantExpiration(document);
+        return jours !== null && jours < 0;
+    }
+
+    libelleExpiration(document: DocumentItem | undefined): string {
+        const jours = this.joursAvantExpiration(document);
+        if (jours === null) {
+            return '';
+        }
+        return jours === 0 ? "Expire aujourd'hui" : `Expire dans ${jours} jour(s)`;
+    }
+
+    onFichierChoisi(fichier: File | null, typeId: string) {
+        this.lignesDocument[typeId].fichier = fichier;
         this.lignesDocument[typeId].fichierUrl = fichier ? fichier.name : '';
+    }
+
+    ouvrirApercu(document: DocumentItem) {
+        this.documentAPrevisualiser = document;
+        this.dialogApercuVisible = true;
     }
 
     // Un seul point d'entrée pour demander un document manquant : un bouton
@@ -498,21 +540,17 @@ export class SalarieDetailComponent implements OnInit {
     documentsObligatoiresComplets(): boolean {
         return this.typesPourSalarie
             .filter((t) => t.obligatoire)
-            .every((t) => !!this.lignesDocument[t.id]?.fichierUrl);
+            .every((t) => !!this.lignesDocument[t.id]?.fichier);
     }
 
     private enregistrerDocumentsInitiaux(salarieId: string): Observable<unknown> {
         const appels = this.typesPourSalarie
-            .filter((t) => this.lignesDocument[t.id]?.fichierUrl)
+            .filter((t) => this.lignesDocument[t.id]?.fichier)
             .map((t) => {
                 const ligne = this.lignesDocument[t.id];
                 // Les dates de validité ne sont saisies que par l'administrateur, au moment
                 // de la validation (voir confirmerValidation) — jamais au dépôt.
-                return this.documentService.creer({
-                    typeDocumentId: t.id,
-                    salarieId,
-                    fichierUrl: ligne.fichierUrl || undefined
-                });
+                return this.documentService.creer({ typeDocumentId: t.id, salarieId }, ligne.fichier);
             });
         return appels.length > 0 ? forkJoin(appels) : of(null);
     }
@@ -521,9 +559,8 @@ export class SalarieDetailComponent implements OnInit {
         const ligne = this.lignesDocument[type.id];
         this.documentService.creer({
             typeDocumentId: type.id,
-            salarieId: this.salarieId!,
-            fichierUrl: ligne.fichierUrl || undefined
-        }).subscribe({
+            salarieId: this.salarieId!
+        }, ligne.fichier).subscribe({
             next: () => {
                 this.message.add({ severity: 'success', summary: 'Succès', detail: 'Document enregistré' });
                 this.chargerDocuments(this.salarieId!);

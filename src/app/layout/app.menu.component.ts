@@ -59,15 +59,18 @@ export class AppMenuComponent implements OnInit {
                 icon: 'pi pi-fw pi-users',
                 routerLink: ['/mon-equipe']
             }] : []),
-            // Messagerie (automatisations) et Configuration (données de référence)
-            // ne concernent que le SUPER_ADMIN — masqués pour les autres comptes, qui
-            // de toute façon ne passeraient pas le AuthGuard (data.roles) s'ils y
-            // accédaient directement par URL.
-            ...(estSuperAdmin ? [{
+            // Messagerie : lecture (boîte de réception + envoyés) ouverte à SUPER_ADMIN
+            // et à qui gère sa propre équipe (Client/Entreprise) — un message peut leur
+            // être adressé collectivement. Rédiger/automatisation restent réservés au
+            // SUPER_ADMIN via data.roles sur ces routes précises.
+            ...(estSuperAdmin || gereSaPropreEquipe ? [{
                 label: 'menu.messagerie',
                 icon: 'pi pi-fw pi-envelope',
                 routerLink: ['/messagerie']
             }] : []),
+            // Configuration (données de référence) ne concerne que le SUPER_ADMIN —
+            // masquée pour les autres comptes, qui de toute façon ne passeraient pas
+            // le AuthGuard (data.roles) s'ils y accédaient directement par URL.
             ...(estSuperAdmin ? [{
                 label: 'menu.configuration',
                 icon: 'pi pi-fw pi-cog',

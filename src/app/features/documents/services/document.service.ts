@@ -20,8 +20,22 @@ export class DocumentService {
         return this.http.get<DocumentItem[]>(this.baseUrl, { params: { entrepriseId } });
     }
 
-    creer(request: CreateDocumentRequest): Observable<DocumentItem> {
-        return this.http.post<DocumentItem>(this.baseUrl, request);
+    creer(request: CreateDocumentRequest, fichier?: File | null): Observable<DocumentItem> {
+        const formData = new FormData();
+        formData.append('document', new Blob([JSON.stringify(request)], { type: 'application/json' }));
+        if (fichier) {
+            formData.append('fichier', fichier, fichier.name);
+        }
+        return this.http.post<DocumentItem>(this.baseUrl, formData);
+    }
+
+    /** Contenu binaire pour aperçu inline (iframe/img) — passe par un Blob car la route est authentifiée. */
+    apercuBlob(id: string): Observable<Blob> {
+        return this.http.get(`${this.baseUrl}/${id}/fichier`, { responseType: 'blob' });
+    }
+
+    telechargerBlob(id: string): Observable<Blob> {
+        return this.http.get(`${this.baseUrl}/${id}/fichier`, { params: { telecharger: 'true' }, responseType: 'blob' });
     }
 
     valider(id: string, dates?: { dateDebutValidite?: string; dateExpiration?: string }): Observable<DocumentItem> {

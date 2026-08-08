@@ -4,7 +4,7 @@
     <p-toolbar styleClass="mb-4">
         <ng-template pTemplate="left"><h5 class="m-0">Messagerie</h5></ng-template>
         <ng-template pTemplate="right">
-            <button pButton type="button" icon="pi pi-plus" label="Nouveau message" routerLink="/messagerie/nouveau"></button>
+            <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-plus" label="Nouveau message" routerLink="/messagerie/nouveau"></button>
         </ng-template>
     </p-toolbar>
 
@@ -85,11 +85,11 @@
             </p-table>
         </p-tabPanel>
 
-        <p-tabPanel header="Planification">
+        <p-tabPanel header="Planification" *ngIf="isSuperAdmin">
             <app-planification-list></app-planification-list>
         </p-tabPanel>
 
-        <p-tabPanel header="Automatisation">
+        <p-tabPanel header="Automatisation" *ngIf="isSuperAdmin">
             <app-automatisation-list></app-automatisation-list>
         </p-tabPanel>
     </p-tabView>

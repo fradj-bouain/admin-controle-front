@@ -302,13 +302,16 @@
             <div class="doc-row__title">
                 <span class="doc-row__title-text" [pTooltip]="type.libelle" tooltipPosition="top">{{ type.libelle }}</span>
             </div>
-            <p-tag
-                *ngIf="documentsByType[type.id]"
-                class="doc-row__status"
-                [severity]="documentsByType[type.id].statutValidation === 'VALIDE' ? 'success' : (documentsByType[type.id].statutValidation === 'REFUSE' ? 'danger' : 'warning')"
-                [value]="documentsByType[type.id].statutValidation | etatLabel"
-            ></p-tag>
-            <p-tag *ngIf="!documentsByType[type.id]" class="doc-row__status" severity="danger" value="Document manquant"></p-tag>
+            <div class="doc-row__status flex align-items-center gap-2">
+                <p-tag
+                    *ngIf="documentsByType[type.id]"
+                    [severity]="documentsByType[type.id].statutValidation === 'VALIDE' ? 'success' : (documentsByType[type.id].statutValidation === 'REFUSE' ? 'danger' : 'warning')"
+                    [value]="documentsByType[type.id].statutValidation | etatLabel"
+                ></p-tag>
+                <p-tag *ngIf="!documentsByType[type.id]" severity="danger" value="Document manquant"></p-tag>
+                <p-tag *ngIf="estExpire(documentsByType[type.id])" severity="danger" value="Expiré"></p-tag>
+                <p-tag *ngIf="expireBientot(documentsByType[type.id])" severity="warning" [value]="libelleExpiration(documentsByType[type.id])"></p-tag>
+            </div>
         </div>
 
         <div class="doc-row__fields formgrid grid align-items-end">
@@ -323,15 +326,10 @@
                 </div>
                 <ng-container *ngIf="!isSuperAdmin">
                     <div class="field col-12 md:col-9 mb-0">
-                        <label class="text-500 text-sm">Fichier</label>
-                        <div class="flex align-items-center gap-1">
-                            <label [for]="'fichier-salarie-' + type.id" pButton type="button" icon="pi pi-upload" class="p-button-outlined flex-shrink-0" style="cursor: pointer;" pTooltip="Choisir un fichier"></label>
-                            <input [id]="'fichier-salarie-' + type.id" type="file" class="p-hidden-accessible" (change)="onFichierChoisi($event, type.id)" />
-                            <span class="text-sm text-500 white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ lignesDocument[type.id].fichierUrl || 'Aucun fichier' }}</span>
-                        </div>
+                        <app-document-upload-preview (fichierChange)="onFichierChoisi($event, type.id)"></app-document-upload-preview>
                     </div>
                     <div class="field col-12 md:col-3 mb-0" *ngIf="!isNew">
-                        <button pButton type="button" label="Renseigner" class="w-full" (click)="renseignerDocument(type)"></button>
+                        <button pButton type="button" label="Renseigner" class="w-full" [disabled]="!lignesDocument[type.id].fichier" (click)="renseignerDocument(type)"></button>
                     </div>
                 </ng-container>
             </ng-container>
@@ -347,10 +345,15 @@
                 </div>
                 <div class="field col-12 md:col-4 mb-0">
                     <label class="text-500 text-sm">Fichier</label>
-                    <p class="m-0" *ngIf="documentsByType[type.id].fichierUrl" pTooltip="Aucun stockage de fichier pour l'instant — nom conservé seul">
-                        <i class="pi pi-paperclip mr-1"></i>{{ documentsByType[type.id].fichierUrl }}
-                    </p>
-                    <span *ngIf="!documentsByType[type.id].fichierUrl">—</span>
+                    <button
+                        type="button"
+                        class="p-link flex align-items-center gap-1 p-0"
+                        *ngIf="documentsByType[type.id].nomFichierOriginal"
+                        (click)="ouvrirApercu(documentsByType[type.id])"
+                    >
+                        <i class="pi pi-paperclip"></i>{{ documentsByType[type.id].nomFichierOriginal }}
+                    </button>
+                    <span *ngIf="!documentsByType[type.id].nomFichierOriginal">—</span>
                 </div>
                 <div class="field col-12 md:col-2 mb-0 flex gap-2">
                     <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="documentsByType[type.id].statutValidation !== 'VALIDE' && isSuperAdmin" (click)="ouvrirValidation(documentsByType[type.id])"></button>
@@ -488,3 +491,10 @@
 
 <app-refuser-document-dialog [(visible)]="dialogRefuserVisible" [etatsDisponibles]="etatsPourRefus" (confirme)="confirmerRefus($event)"></app-refuser-document-dialog>
 <app-valider-document-dialog [(visible)]="dialogValiderVisible" [dateDebutRequise]="typeDuDocumentAValider?.dateDebutValiditeRequise ?? true" [dateFinRequise]="typeDuDocumentAValider?.dateFinValiditeRequise ?? true" (confirme)="confirmerValidation($event)"></app-valider-document-dialog>
+<app-document-preview-dialog
+    [(visible)]="dialogApercuVisible"
+    [documentId]="documentAPrevisualiser?.id ?? null"
+    [nomFichier]="documentAPrevisualiser?.nomFichierOriginal ?? null"
+    [typeMime]="documentAPrevisualiser?.typeMime ?? null"
+    [tailleOctets]="documentAPrevisualiser?.tailleOctets ?? null"
+></app-document-preview-dialog>

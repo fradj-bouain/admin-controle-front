@@ -7,11 +7,15 @@ import { PlanificationFormPageComponent } from './planification-form-page/planif
 import { MessageDetailPageComponent } from './message-detail-page/message-detail-page.component';
 
 const routes: Routes = [
+    // Liste (boîte de réception + envoyés) et détail : ouverts à CLIENT/ENTREPRISE par
+    // le parent (voir app-routing.module.ts). Rédiger/automatisation/planification
+    // restent réservés au SUPER_ADMIN — restriction explicite ici, sinon ces routes
+    // hériteraient de l'ouverture faite au niveau du parent.
     { path: '', component: MessageListComponent },
-    { path: 'nouveau', component: MessageFormPageComponent },
-    { path: 'automatisation/nouveau', component: AutomatisationFormPageComponent },
-    { path: 'automatisation/:id', component: AutomatisationFormPageComponent },
-    { path: 'planification/nouveau', component: PlanificationFormPageComponent },
+    { path: 'nouveau', data: { roles: ['SUPER_ADMIN'] }, component: MessageFormPageComponent },
+    { path: 'automatisation/nouveau', data: { roles: ['SUPER_ADMIN'] }, component: AutomatisationFormPageComponent },
+    { path: 'automatisation/:id', data: { roles: ['SUPER_ADMIN'] }, component: AutomatisationFormPageComponent },
+    { path: 'planification/nouveau', data: { roles: ['SUPER_ADMIN'] }, component: PlanificationFormPageComponent },
     { path: ':id', component: MessageDetailPageComponent }
 ];
 

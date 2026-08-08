@@ -648,6 +648,132 @@ a { color: var(--brand-accent-ink); }
     font-weight: 500;
 }
 
+/* ---------- Dépôt de document avec aperçu avant envoi (document-upload-preview) ---------- */
+.doc-preview-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    text-align: center;
+    padding: 1.75rem 1.5rem;
+    border: 1.5px dashed var(--brand-border);
+    border-radius: 10px;
+    background: var(--brand-surface-alt);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.doc-preview-upload:hover,
+.doc-preview-upload--dragover {
+    border-color: var(--brand-accent);
+    background: var(--brand-accent-tint);
+}
+.doc-preview-upload--dragover {
+    border-style: solid;
+}
+.doc-preview-upload__icon {
+    font-size: 1.75rem;
+    color: var(--brand-accent);
+}
+.doc-preview-upload__titre {
+    font-weight: 600;
+    color: var(--text-color, #1F2430);
+}
+.doc-preview-upload__formats {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-soft, #5C6270);
+}
+
+/* Carte d'aperçu une fois un fichier choisi/déposé — partagée entre le widget de
+   dépôt (staging avant envoi) et le dialog d'aperçu admin (fichier déjà stocké). */
+.doc-preview {
+    border: 1px solid var(--brand-border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--brand-surface-alt);
+}
+.doc-preview__header {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid var(--brand-border);
+    background: #fff;
+}
+.doc-preview__badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border-radius: 6px;
+    background: var(--brand-accent);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+.doc-preview__meta {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+.doc-preview__nom {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+.doc-preview__taille {
+    font-size: 0.75rem;
+    color: var(--ink-soft, #5C6270);
+}
+.doc-preview__actions {
+    flex-shrink: 0;
+    display: flex;
+    gap: 0.15rem;
+}
+.doc-preview__body {
+    position: relative;
+    min-height: 16rem;
+    height: 100%;
+}
+.doc-preview__frame {
+    width: 100%;
+    height: 100%;
+    min-height: 16rem;
+    border: 0;
+    display: block;
+}
+.doc-preview__image {
+    display: block;
+    max-width: 100%;
+    max-height: 28rem;
+    margin: 0 auto;
+    object-fit: contain;
+}
+.doc-preview__indisponible {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 12rem;
+    padding: 2rem;
+    text-align: center;
+    color: var(--ink-soft, #5C6270);
+}
+.doc-preview__indisponible i {
+    font-size: 2rem;
+    color: var(--brand-accent);
+}
+
 /* ---------- Bloc "Créer un compte utilisateur" (formulaires de création) ---------- */
 .account-inline-panel {
     margin-top: 1.5rem;

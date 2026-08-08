@@ -40,6 +40,8 @@ export class DocumentListComponent implements OnInit {
     documentAValider: DocumentItem | null = null;
     dialogNotifierVisible = false;
     documentANotifier: DocumentItem | null = null;
+    dialogApercuVisible = false;
+    documentAPrevisualiser: DocumentItem | null = null;
     emailsCandidatsNotification: string[] = [];
     sujetNotification = '';
     activeTabIndex = 0;
@@ -162,17 +164,16 @@ export class DocumentListComponent implements OnInit {
         });
     }
 
-    creerDocument(data: { typeDocumentId: string; dateExpiration?: string; fichierUrl?: string }) {
+    creerDocument(data: { typeDocumentId: string; dateExpiration?: string; fichier?: File | null }) {
         if (!this.entiteId) {
             return;
         }
         this.documentService.creer({
             typeDocumentId: data.typeDocumentId,
             dateExpiration: data.dateExpiration,
-            fichierUrl: data.fichierUrl,
             salarieId: this.cible === 'SALARIE' ? this.entiteId : undefined,
             entrepriseId: this.cible === 'ENTREPRISE' ? this.entiteId : undefined
-        }).subscribe({
+        }, data.fichier).subscribe({
             next: () => {
                 this.message.add({ severity: 'success', summary: 'Succès', detail: 'Document ajouté' });
                 this.onEntiteChange();
@@ -190,6 +191,13 @@ export class DocumentListComponent implements OnInit {
             return '—';
         }
         return this.etats.find((e) => e.id === documentEtatId)?.titre ?? documentEtatId;
+    }
+
+    // --- Aperçu (voir document-preview-dialog, partagé avec les fiches entreprise/salarié) ---
+
+    ouvrirApercu(document: DocumentItem) {
+        this.documentAPrevisualiser = document;
+        this.dialogApercuVisible = true;
     }
 
     // --- Validation (dates de validité saisies par l'administrateur, voir item 5) ---

@@ -4,6 +4,7 @@ import { MessageService as ToastService } from 'primeng/api';
 import { Message } from '../models/message.model';
 import { MessageService } from '../services/message.service';
 import { stripHtml } from 'src/app/shared/utils/html.util';
+import { AuthService } from 'src/app/core/auth/auth.service';
 
 const ONGLETS = ['reception', 'envoyes', 'planification', 'automatisation'];
 
@@ -23,8 +24,16 @@ export class MessageListComponent implements OnInit {
     constructor(
         private messageService: MessageService,
         private toast: ToastService,
-        private route: ActivatedRoute
+        private route: ActivatedRoute,
+        public auth: AuthService
     ) { }
+
+    // Rédiger un message et l'automatisation des relances restent réservés au
+    // SUPER_ADMIN — CLIENT/ENTREPRISE n'ont ici qu'un accès en lecture (voir
+    // messagerie-routing.module.ts pour la restriction équivalente côté routes).
+    get isSuperAdmin(): boolean {
+        return this.auth.hasRole('SUPER_ADMIN');
+    }
 
     ngOnInit(): void {
         const tab = this.route.snapshot.queryParamMap.get('tab');

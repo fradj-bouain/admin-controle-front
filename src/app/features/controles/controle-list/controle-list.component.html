@@ -60,7 +60,7 @@
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-controle>
-                    <tr>
+                    <tr class="cursor-pointer" [routerLink]="['/controles', controle.id]">
                         <td>{{ controle.dateControle }}</td>
                         <td>{{ controle.dateFin }}</td>
                         <td>{{ controle.remarques }}</td>
@@ -68,18 +68,22 @@
                             <p-tag [severity]="controle.termine ? 'success' : 'warning'" [value]="controle.termine ? 'Terminé' : 'En cours'"></p-tag>
                         </td>
                         <td>
-                            <div class="flex align-items-center gap-1 flex-nowrap">
-                                <button *ngIf="isSuperAdmin" pButton type="button" label="Générer un rapport" class="p-button-text" (click)="ouvrirGenerationRapport(controle)"></button>
-                                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/controles', controle.id]"></button>
-                                <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger" pTooltip="Supprimer" (click)="confirmerSuppression(controle)"></button>
-                            </div>
+                            <button
+                                pButton
+                                type="button"
+                                icon="pi pi-ellipsis-v"
+                                class="p-button-text p-button-rounded"
+                                pTooltip="Actions"
+                                (click)="menuItems = construireMenu(controle); menu.toggle($event); $event.stopPropagation()"
+                            ></button>
                         </td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="5" class="text-center text-500">{{ chantierId ? 'Aucun contrôle pour ce chantier.' : 'Sélectionnez un chantier.' }}</td></tr>
+                    <tr><td colspan="5" class="text-center text-500 py-4">{{ chantierId ? 'Aucun contrôle pour ce chantier.' : 'Sélectionnez un chantier.' }}</td></tr>
                 </ng-template>
             </p-table>
+            <p-menu #menu [popup]="true" [model]="menuItems"></p-menu>
         </div>
     </p-tabPanel>
 

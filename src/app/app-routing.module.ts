@@ -23,7 +23,11 @@ const routes: Routes = [
             { path: 'controles', data: { breadcrumb: 'menu.controles' }, loadChildren: () => import('./features/controles/controles.module').then(m => m.ControlesModule) },
             { path: 'documents', data: { breadcrumb: 'menu.documents' }, loadChildren: () => import('./features/documents/documents.module').then(m => m.DocumentsModule) },
             { path: 'mon-equipe', data: { breadcrumb: 'menu.monEquipe', roles: ['CLIENT', 'ENTREPRISE'] }, loadChildren: () => import('./features/mon-equipe/mon-equipe.module').then(m => m.MonEquipeModule) },
-            { path: 'messagerie', data: { breadcrumb: 'menu.messagerie', roles: ['SUPER_ADMIN'] }, loadChildren: () => import('./features/messagerie/messagerie.module').then(m => m.MessagerieModule) },
+            // Accès en lecture (boîte de réception + envoyés) ouvert à CLIENT/ENTREPRISE —
+            // un message peut leur être adressé collectivement (voir MessageController
+            // .boiteReception) ; rédiger/l'automatisation restent réservés au SUPER_ADMIN,
+            // via data.roles sur ces routes précises dans messagerie-routing.module.ts.
+            { path: 'messagerie', data: { breadcrumb: 'menu.messagerie', roles: ['SUPER_ADMIN', 'CLIENT', 'ENTREPRISE'] }, loadChildren: () => import('./features/messagerie/messagerie.module').then(m => m.MessagerieModule) },
             { path: 'configuration', data: { breadcrumb: 'menu.configuration', roles: ['SUPER_ADMIN'] }, loadChildren: () => import('./features/configuration/configuration.module').then(m => m.ConfigurationModule) }
         ]
     },

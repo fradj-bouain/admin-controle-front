@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { Router } from '@angular/router';
 import { Controle, RapportControle } from '../models/controle.model';
 import { ControleService } from '../services/controle.service';
@@ -20,6 +20,7 @@ export class ControleListComponent implements OnInit {
     rapports: RapportControle[] = [];
     loadingControles = false;
     loadingRapports = false;
+    menuItems: MenuItem[] = [];
 
     constructor(
         private controleService: ControleService,
@@ -86,5 +87,22 @@ export class ControleListComponent implements OnInit {
                 });
             }
         });
+    }
+
+    // Regroupe générer un rapport/modifier/supprimer dans un seul menu "⋯", et rend la
+    // ligne cliquable — cohérence avec l'onglet "Rapports" juste à côté (voir audit UX).
+    construireMenu(controle: Controle): MenuItem[] {
+        const items: MenuItem[] = [];
+        if (this.isSuperAdmin) {
+            items.push({ label: 'Générer un rapport', icon: 'pi pi-file', command: () => this.ouvrirGenerationRapport(controle) });
+        }
+        items.push({ label: 'Modifier', icon: 'pi pi-pencil', routerLink: ['/controles', controle.id] });
+        if (this.isSuperAdmin) {
+            items.push(
+                { separator: true },
+                { label: 'Supprimer', icon: 'pi pi-trash', styleClass: 'text-red-600', command: () => this.confirmerSuppression(controle) }
+            );
+        }
+        return items;
     }
 }

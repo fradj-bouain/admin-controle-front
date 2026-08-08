@@ -31,6 +31,11 @@ export class DashboardComponent implements OnInit {
     statChantiers: EtatEntite | null = null;
     statEntreprises: EtatEntite | null = null;
     statSalaries: EtatEntite | null = null;
+    // Exploite `chantierActuel` (déjà calculé par le backend sur la liste des salariés,
+    // voir SalarieController) : combien sont actuellement déployés sur un chantier plutôt
+    // qu'actifs/inactifs administrativement — la question qu'un responsable se pose au
+    // quotidien (voir audit UX).
+    statSalariesChantier: { surChantier: number; disponibles: number } | null = null;
 
     statControles: EtatEntite | null = null;
     statRapports: EtatEntite | null = null;
@@ -108,6 +113,10 @@ export class DashboardComponent implements OnInit {
                 this.statChantiers = this.calculerEtat(chantiers, (c) => c.statut === 'ACTIF');
                 this.statEntreprises = this.calculerEtat(entreprises, (e) => e.actif);
                 this.statSalaries = this.calculerEtat(salaries, (s) => s.statut === 'ACTIF');
+                this.statSalariesChantier = {
+                    surChantier: salaries.filter((s) => !!s.chantierActuel).length,
+                    disponibles: salaries.filter((s) => !s.chantierActuel).length
+                };
 
                 this.chartEtatParc = {
                     labels: ['Chantiers', 'Entreprises', 'Salariés'],

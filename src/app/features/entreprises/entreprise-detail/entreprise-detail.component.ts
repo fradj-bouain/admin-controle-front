@@ -23,6 +23,7 @@ import { AuthService } from 'src/app/core/auth/auth.service';
 
 interface LigneDocument {
     fichierUrl: string;
+    fichier: File | null;
 }
 
 @Component({
@@ -109,6 +110,8 @@ export class EntrepriseDetailComponent implements OnInit {
     documentARefuser: DocumentItem | null = null;
     dialogValiderVisible = false;
     documentAValider: DocumentItem | null = null;
+    dialogApercuVisible = false;
+    documentAPrevisualiser: DocumentItem | null = null;
 
     // --- Salariés (raccourci vers les salariés de cette entreprise) ---
     // identiteCalculee ajouté au chargement, pour permettre un p-columnFilter
@@ -518,7 +521,7 @@ export class EntrepriseDetailComponent implements OnInit {
         this.typesPourEntreprise.sort((a, b) => this.prioriteStatutDocument(a) - this.prioriteStatutDocument(b));
         for (const t of this.typesPourEntreprise) {
             if (!this.lignesDocument[t.id]) {
-                this.lignesDocument[t.id] = { fichierUrl: '' };
+                this.lignesDocument[t.id] = { fichierUrl: '', fichier: null };
             }
         }
         this.typesAFournir = this.typesPourEntreprise.filter((t) => t.obligatoire && !this.documentsByType[t.id]);
@@ -546,13 +549,52 @@ export class EntrepriseDetailComponent implements OnInit {
         }
     }
 
-    onFichierChoisi(event: Event, typeId: string) {
-        const input = event.target as HTMLInputElement;
-        const fichier = input.files?.[0] ?? null;
-        // Pas encore d'espace de stockage réel côté serveur (voir fichierUrl) :
-        // on garde seulement le nom du fichier choisi, en attendant qu'un
-        // véritable dépôt de fichiers existe.
+    // Signale un document déjà validé qui arrive à échéance, directement sur sa ligne —
+    // avant, seul le système de Relances (configuré à part par l'admin) le rattrapait,
+    // souvent des jours après (voir audit UX).
+    private joursAvantExpiration(document: DocumentItem | undefined): number | null {
+        if (!document?.dateExpiration) {
+            return null;
+        }
+        const aujourdHui = new Date();
+        aujourdHui.setHours(0, 0, 0, 0);
+        const expiration = new Date(document.dateExpiration);
+        expiration.setHours(0, 0, 0, 0);
+        return Math.round((expiration.getTime() - aujourdHui.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    expireBientot(document: DocumentItem | undefined): boolean {
+        if (document?.statutValidation !== 'VALIDE') {
+            return false;
+        }
+        const jours = this.joursAvantExpiration(document);
+        return jours !== null && jours >= 0 && jours <= 30;
+    }
+
+    estExpire(document: DocumentItem | undefined): boolean {
+        if (document?.statutValidation !== 'VALIDE') {
+            return false;
+        }
+        const jours = this.joursAvantExpiration(document);
+        return jours !== null && jours < 0;
+    }
+
+    libelleExpiration(document: DocumentItem | undefined): string {
+        const jours = this.joursAvantExpiration(document);
+        if (jours === null) {
+            return '';
+        }
+        return jours === 0 ? "Expire aujourd'hui" : `Expire dans ${jours} jour(s)`;
+    }
+
+    onFichierChoisi(fichier: File | null, typeId: string) {
+        this.lignesDocument[typeId].fichier = fichier;
         this.lignesDocument[typeId].fichierUrl = fichier ? fichier.name : '';
+    }
+
+    ouvrirApercu(document: DocumentItem) {
+        this.documentAPrevisualiser = document;
+        this.dialogApercuVisible = true;
     }
 
     onFiltreObligatoireChange() {
@@ -609,21 +651,17 @@ export class EntrepriseDetailComponent implements OnInit {
     documentsObligatoiresComplets(): boolean {
         return this.typesPourEntreprise
             .filter((t) => t.obligatoire)
-            .every((t) => !!this.lignesDocument[t.id]?.fichierUrl);
+            .every((t) => !!this.lignesDocument[t.id]?.fichier);
     }
 
     private enregistrerDocumentsInitiaux(entrepriseId: string): Observable<unknown> {
         const appels = this.typesPourEntreprise
-            .filter((t) => this.lignesDocument[t.id]?.fichierUrl)
+            .filter((t) => this.lignesDocument[t.id]?.fichier)
             .map((t) => {
                 const ligne = this.lignesDocument[t.id];
                 // Les dates de validité ne sont saisies que par l'administrateur, au moment
                 // de la validation (voir confirmerValidation) — jamais au dépôt.
-                return this.documentService.creer({
-                    typeDocumentId: t.id,
-                    entrepriseId,
-                    fichierUrl: ligne.fichierUrl || undefined
-                });
+                return this.documentService.creer({ typeDocumentId: t.id, entrepriseId }, ligne.fichier);
             });
         return appels.length > 0 ? forkJoin(appels) : of(null);
     }
@@ -632,9 +670,8 @@ export class EntrepriseDetailComponent implements OnInit {
         const ligne = this.lignesDocument[type.id];
         this.documentService.creer({
             typeDocumentId: type.id,
-            entrepriseId: this.entrepriseId!,
-            fichierUrl: ligne.fichierUrl || undefined
-        }).subscribe({
+            entrepriseId: this.entrepriseId!
+        }, ligne.fichier).subscribe({
             next: () => {
                 this.message.add({ severity: 'success', summary: 'Succès', detail: 'Document enregistré' });
                 this.chargerDocuments();

@@ -1,0 +1,42 @@
+<label class="block mb-2" *ngIf="label">{{ label }}</label>
+
+<input #fileInput type="file" [accept]="acceptedExtensions" class="p-hidden-accessible" (change)="onFichierChoisi($event)" />
+
+<div
+    class="doc-preview-upload"
+    [class.doc-preview-upload--dragover]="survole"
+    *ngIf="!fichier"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave()"
+    (drop)="onDrop($event)"
+    (click)="ouvrirSelecteur()"
+>
+    <i class="pi pi-cloud-upload doc-preview-upload__icon"></i>
+    <span class="doc-preview-upload__titre">Glisser un fichier ici, ou cliquez pour parcourir</span>
+    <span class="doc-preview-upload__formats">{{ formatsAffiches }}</span>
+</div>
+
+<small class="p-error block mt-2" *ngIf="erreur">{{ erreur }}</small>
+
+<div class="doc-preview" *ngIf="fichier">
+    <div class="doc-preview__header">
+        <span class="doc-preview__badge">{{ extension.toUpperCase() }}</span>
+        <div class="doc-preview__meta">
+            <span class="doc-preview__nom" [pTooltip]="fichier.name">{{ fichier.name }}</span>
+            <span class="doc-preview__taille">{{ tailleFormatee }}</span>
+        </div>
+        <div class="doc-preview__actions">
+            <button pButton type="button" icon="pi pi-refresh" pTooltip="Remplacer" class="p-button-text p-button-rounded p-button-sm" (click)="ouvrirSelecteur()"></button>
+            <button pButton type="button" icon="pi pi-trash" pTooltip="Retirer" class="p-button-text p-button-rounded p-button-danger p-button-sm" (click)="retirer($event)"></button>
+        </div>
+    </div>
+
+    <div class="doc-preview__body">
+        <iframe *ngIf="modeApercu === 'pdf'" [src]="previewUrlSure" class="doc-preview__frame" title="Aperçu du document"></iframe>
+        <img *ngIf="modeApercu === 'image'" [src]="previewUrl" class="doc-preview__image" alt="Aperçu du document" />
+        <div *ngIf="modeApercu === 'indisponible'" class="doc-preview__indisponible">
+            <i class="pi pi-file"></i>
+            <p>Aperçu non disponible pour ce type de fichier — vérifiez le nom avant d'envoyer.</p>
+        </div>
+    </div>
+</div>

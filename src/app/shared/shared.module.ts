@@ -26,6 +26,8 @@ import { NotifierDocumentDialogComponent } from './components/notifier-document-
 import { ModeleFichierUploadComponent } from './components/modele-fichier-upload/modele-fichier-upload.component';
 import { CardSkeletonComponent } from './components/card-skeleton/card-skeleton.component';
 import { ValiderDocumentDialogComponent } from './components/valider-document-dialog/valider-document-dialog.component';
+import { DocumentUploadPreviewComponent } from './components/document-upload-preview/document-upload-preview.component';
+import { DocumentPreviewDialogComponent } from './components/document-preview-dialog/document-preview-dialog.component';
 import { EtatLabelPipe } from './pipes/etat-label.pipe';
 
 /**
@@ -34,7 +36,7 @@ import { EtatLabelPipe } from './pipes/etat-label.pipe';
  * suppression) afin d'éviter de ré-importer ces mêmes modules partout.
  */
 @NgModule({
-    declarations: [ComingSoonComponent, StatTileComponent, RefuserDocumentDialogComponent, NotifierDocumentDialogComponent, ModeleFichierUploadComponent, CardSkeletonComponent, ValiderDocumentDialogComponent, EtatLabelPipe],
+    declarations: [ComingSoonComponent, StatTileComponent, RefuserDocumentDialogComponent, NotifierDocumentDialogComponent, ModeleFichierUploadComponent, CardSkeletonComponent, ValiderDocumentDialogComponent, DocumentUploadPreviewComponent, DocumentPreviewDialogComponent, EtatLabelPipe],
     imports: [
         CommonModule,
         ReactiveFormsModule,
@@ -81,6 +83,8 @@ import { EtatLabelPipe } from './pipes/etat-label.pipe';
         ModeleFichierUploadComponent,
         CardSkeletonComponent,
         ValiderDocumentDialogComponent,
+        DocumentUploadPreviewComponent,
+        DocumentPreviewDialogComponent,
         EtatLabelPipe
     ]
 })

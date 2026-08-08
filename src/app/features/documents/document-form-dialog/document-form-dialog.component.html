@@ -24,8 +24,8 @@
             <small class="p-error" *ngIf="form.controls.typeDocumentId.invalid && form.controls.typeDocumentId.touched">Ce champ est requis.</small>
         </div>
         <div class="field">
-            <label for="fichierUrl">URL du fichier</label>
-            <input id="fichierUrl" type="text" pInputText formControlName="fichierUrl" class="w-full" placeholder="https://..." />
+            <label>Fichier</label>
+            <app-document-upload-preview (fichierChange)="fichier = $event"></app-document-upload-preview>
         </div>
         <div class="field">
             <label for="dateExpiration">Date d'expiration</label>

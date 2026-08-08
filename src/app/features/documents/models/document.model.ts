@@ -43,6 +43,10 @@ export interface DocumentItem {
     entrepriseId?: string;
     chantierId?: string;
     fichierUrl?: string;
+    /** Nom du fichier tel que déposé — présent uniquement si un fichier a réellement été envoyé (voir GET /{id}/fichier). */
+    nomFichierOriginal?: string;
+    typeMime?: string;
+    tailleOctets?: number;
     dateDebutValidite?: string;
     dateExpiration?: string;
     dateRelance?: string;

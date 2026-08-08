@@ -69,9 +69,9 @@
                 icon="users"
                 color="green"
             ></app-stat-tile>
-            <div class="mt-3 text-500 text-sm" *ngIf="!chargement && statSalaries as s">
-                <span class="text-green-600 font-medium">{{ s.actifs }} actif(s)</span>
-                <span *ngIf="s.inactifs > 0"> · {{ s.inactifs }} inactif(s)</span>
+            <div class="mt-3 text-500 text-sm" *ngIf="!chargement && statSalariesChantier as s">
+                <span class="text-blue-600 font-medium">{{ s.surChantier }} sur chantier</span>
+                <span *ngIf="s.disponibles > 0"> · {{ s.disponibles }} disponible(s)</span>
             </div>
         </div>
     </div>

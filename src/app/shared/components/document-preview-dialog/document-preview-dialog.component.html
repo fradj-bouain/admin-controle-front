@@ -1,0 +1,39 @@
+<p-dialog
+    header="Aperçu du document"
+    [(visible)]="visible"
+    (visibleChange)="visibleChange.emit($event)"
+    [modal]="true"
+    [style]="{ width: pleinEcran ? '95vw' : '50rem' }"
+    [contentStyle]="{ height: pleinEcran ? '85vh' : '32rem' }"
+    (onHide)="close()"
+>
+    <div class="doc-preview-dialog__header flex align-items-center justify-content-between mb-3" *ngIf="nomFichier">
+        <span class="doc-preview-dialog__nom font-medium" [pTooltip]="nomFichier">{{ nomFichier }}</span>
+        <span class="text-500 text-sm flex-shrink-0" *ngIf="tailleFormatee">{{ tailleFormatee }}</span>
+    </div>
+
+    <div class="doc-preview__body h-full" *ngIf="!chargement && !erreur">
+        <iframe *ngIf="modeApercu === 'pdf'" [src]="previewUrlSure" class="doc-preview__frame" title="Aperçu du document"></iframe>
+        <img *ngIf="modeApercu === 'image'" [src]="previewUrl" class="doc-preview__image" alt="Aperçu du document" />
+        <div *ngIf="modeApercu === 'indisponible'" class="doc-preview__indisponible">
+            <i class="pi pi-file"></i>
+            <p>Aperçu non disponible pour ce type de fichier — téléchargez-le pour le consulter.</p>
+        </div>
+    </div>
+
+    <div class="flex flex-column align-items-center justify-content-center gap-2 py-6" *ngIf="chargement">
+        <i class="pi pi-spin pi-spinner text-3xl text-500"></i>
+        <span class="text-500">Chargement de l'aperçu…</span>
+    </div>
+
+    <div class="flex flex-column align-items-center justify-content-center gap-2 py-6" *ngIf="erreur">
+        <i class="pi pi-exclamation-triangle text-3xl text-500"></i>
+        <span class="text-500">{{ erreur }}</span>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <button pButton type="button" icon="pi pi-window-maximize" [label]="pleinEcran ? 'Réduire' : 'Plein écran'" class="p-button-text" (click)="basculerPleinEcran()"></button>
+        <button pButton type="button" icon="pi pi-download" label="Télécharger" class="p-button-outlined" (click)="telecharger()"></button>
+        <button pButton type="button" label="Fermer" class="p-button-text" (click)="close()"></button>
+    </ng-template>
+</p-dialog>
