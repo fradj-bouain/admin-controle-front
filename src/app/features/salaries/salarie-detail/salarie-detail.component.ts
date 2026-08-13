@@ -161,6 +161,47 @@ export class SalarieDetailComponent implements OnInit {
         return this.auth.hasRole('ENTREPRISE');
     }
 
+    // --- Vue Entreprise (même design que la fiche entreprise, voir .ent-* dans brand.scss) ---
+    nomFonction(id?: string): string {
+        return this.fonctions.find((f) => f.id === id)?.libelle ?? '—';
+    }
+
+    nomTypeContrat(id?: string): string {
+        return this.typesContrat.find((t) => t.id === id)?.libelle ?? '—';
+    }
+
+    /** Affectation en cours (pas de dateFin) parmi mesAffectations, déjà chargées pour cette
+        page — pas besoin d'un aller-retour serveur supplémentaire (contrairement à la liste,
+        obtenir() ne renvoie pas Salarie.chantierActuel). */
+    get affectationEnCours(): (AffectationSalarieChantier & { nomChantierCalculee: string }) | undefined {
+        return this.mesAffectations.find((a) => !a.dateFin);
+    }
+
+    private readonly RING_CIRCONFERENCE = 2 * Math.PI * 15.5;
+
+    ringDashoffset(pourcentage: number): number {
+        const clamped = Math.min(100, Math.max(0, pourcentage || 0));
+        return this.RING_CIRCONFERENCE * (1 - clamped / 100);
+    }
+
+    get nbDocumentsExpirantBientot(): number {
+        return this.typesDejaFournis.filter((t) => this.expireBientot(this.documentsByType[t.id])).length;
+    }
+
+    documentSeverite(document: DocumentItem): 'ok' | 'missing' | 'danger' {
+        if (this.estExpire(document) || document.statutValidation === 'REFUSE') {
+            return 'danger';
+        }
+        if (document.statutValidation !== 'VALIDE' || this.expireBientot(document)) {
+            return 'missing';
+        }
+        return 'ok';
+    }
+
+    scrollVersSection(id: string) {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     ngOnInit(): void {
         this.referenceDataService.listerPays().subscribe((pays) => (this.pays = pays));
         this.referenceDataService.listerSalarieFonction().subscribe((fonctions) => (this.fonctions = fonctions));

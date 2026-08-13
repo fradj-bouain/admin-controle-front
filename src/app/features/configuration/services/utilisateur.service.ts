@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { CreateUtilisateurRequest, Utilisateur } from '../models/configuration.model';
+import { CreateUtilisateurRequest, ModifierUtilisateurRequest, Utilisateur } from '../models/configuration.model';
 
 @Injectable({ providedIn: 'root' })
 export class UtilisateurService {
@@ -17,6 +17,10 @@ export class UtilisateurService {
 
     creer(request: CreateUtilisateurRequest): Observable<Utilisateur> {
         return this.http.post<Utilisateur>(this.baseUrl, request);
+    }
+
+    modifier(id: string, request: ModifierUtilisateurRequest): Observable<Utilisateur> {
+        return this.http.put<Utilisateur>(`${this.baseUrl}/${id}`, request);
     }
 
     desactiver(id: string): Observable<Utilisateur> {

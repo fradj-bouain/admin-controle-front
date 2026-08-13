@@ -55,6 +55,10 @@ export interface AffectationEntrepriseChantier {
     id: string;
     chantierId: string;
     entrepriseId: string;
+    // Raison sociale de l'entreprise affectée, résolue côté backend (une Entreprise n'a pas le
+    // droit d'appeler /entreprises/{id} pour une autre entreprise) — absente sur les réponses
+    // qui ne la fournissent pas (ex: GET /entreprises/{id}/chantiers, toujours "soi-même").
+    raisonSocialeEntreprise?: string;
     role: RoleEntreprise;
     affectationParenteId?: string;
     dateDebut: string;

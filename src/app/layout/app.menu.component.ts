@@ -14,7 +14,8 @@ export class AppMenuComponent implements OnInit {
 
     ngOnInit() {
         const estSuperAdmin = this.auth.hasRole('SUPER_ADMIN');
-        const gereSaPropreEquipe = this.auth.hasRole('CLIENT') || this.auth.hasRole('ENTREPRISE');
+        const estEntreprise = this.auth.hasRole('ENTREPRISE');
+        const gereSaPropreEquipe = this.auth.hasRole('CLIENT') || estEntreprise;
 
         this.model = [
             {
@@ -42,11 +43,13 @@ export class AppMenuComponent implements OnInit {
                 icon: 'pi pi-fw pi-users',
                 routerLink: ['/salaries']
             },
-            {
+            // Contrôles/Rapports : réservé au SUPER_ADMIN et au Client (donneur d'ordre) —
+            // masqué pour l'Entreprise, qui n'a pas à consulter ses propres contrôles.
+            ...(!estEntreprise ? [{
                 label: 'menu.controles',
                 icon: 'pi pi-fw pi-verified',
                 routerLink: ['/controles']
-            },
+            }] : []),
             {
                 label: 'menu.documents',
                 icon: 'pi pi-fw pi-file',

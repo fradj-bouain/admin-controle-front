@@ -23,6 +23,9 @@ export class MonEquipeComponent implements OnInit {
     utilisateurs: Array<Utilisateur & { identiteCalculee: string }> = [];
     dialogVisible = false;
     saving = false;
+    // Non-null = la popup édite ce compte plutôt que d'en créer un nouveau (même
+    // formulaire réutilisé, voir ouvrirCreation/ouvrirEdition/submit).
+    utilisateurEnEdition: Utilisateur | null = null;
 
     form = this.fb.group({
         nom: ['', Validators.required],
@@ -58,7 +61,27 @@ export class MonEquipeComponent implements OnInit {
     }
 
     ouvrirCreation() {
+        this.utilisateurEnEdition = null;
         this.form.reset();
+        this.form.controls.password.setValidators(Validators.required);
+        this.form.controls.password.updateValueAndValidity();
+        this.dialogVisible = true;
+    }
+
+    /** Mot de passe volontairement laissé vide : le backend garde l'ancien si ce champ
+        n'est pas rempli (voir UtilisateurService.modifier), pas la peine de le redemander
+        pour une simple correction du nom/email. */
+    ouvrirEdition(utilisateur: Utilisateur) {
+        this.utilisateurEnEdition = utilisateur;
+        this.form.reset({
+            nom: utilisateur.nom,
+            prenom: utilisateur.prenom,
+            email: utilisateur.email,
+            username: utilisateur.username,
+            password: ''
+        });
+        this.form.controls.password.clearValidators();
+        this.form.controls.password.updateValueAndValidity();
         this.dialogVisible = true;
     }
 
@@ -68,8 +91,31 @@ export class MonEquipeComponent implements OnInit {
             return;
         }
         const value = this.form.getRawValue();
-        const monPropreRole = this.auth.hasRole('CLIENT') ? 'CLIENT' : 'ENTREPRISE';
         this.saving = true;
+
+        if (this.utilisateurEnEdition) {
+            this.utilisateurService.modifier(this.utilisateurEnEdition.id, {
+                nom: value.nom!,
+                prenom: value.prenom!,
+                email: value.email!,
+                username: value.username!,
+                password: value.password || undefined
+            }).subscribe({
+                next: () => {
+                    this.saving = false;
+                    this.dialogVisible = false;
+                    this.message.add({ severity: 'success', summary: 'Succès', detail: 'Utilisateur modifié' });
+                    this.charger();
+                },
+                error: (err) => {
+                    this.saving = false;
+                    this.message.add({ severity: 'error', summary: 'Erreur', detail: err?.error?.message ?? 'Modification impossible' });
+                }
+            });
+            return;
+        }
+
+        const monPropreRole = this.auth.hasRole('CLIENT') ? 'CLIENT' : 'ENTREPRISE';
         this.utilisateurService.creer({
             nom: value.nom!,
             prenom: value.prenom!,

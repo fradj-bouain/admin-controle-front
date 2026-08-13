@@ -158,6 +158,54 @@ export class ChantierDetailComponent implements OnInit {
         return this.auth.hasRole('CONTROLEUR');
     }
 
+    // --- Vue Entreprise (lecture seule) : indicateurs propres à SA situation sur ce
+    // chantier, jamais les stats globales qui mélangent toutes les entreprises. ---
+
+    get monAffectationEntreprise(): (AffectationEntrepriseChantier & { nomEntrepriseCalculee: string }) | undefined {
+        return this.affectationsEntreprise.find((a) => a.entrepriseId === this.auth.entrepriseId);
+    }
+
+    /** Sous-traitants directs (affectationParenteId = ma propre affectation) sur CE
+        chantier précisément — à ne pas confondre avec la liste "tous chantiers confondus"
+        de la fiche entreprise. */
+    get mesSousTraitantsIci(): Array<AffectationEntrepriseChantier & { nomEntrepriseCalculee: string }> {
+        const monId = this.monAffectationEntreprise?.id;
+        return monId ? this.affectationsEntreprise.filter((a) => a.affectationParenteId === monId) : [];
+    }
+
+    get mesAffectationsSalarie(): Array<AffectationSalarieChantier & { nomSalarieCalculee: string; contratCalculee: string }> {
+        return this.affectationsSalarie.filter((a) => a.entrepriseId === this.auth.entrepriseId);
+    }
+
+    get mesSalariesStats(): { accorde: number; total: number } {
+        const mes = this.mesAffectationsSalarie;
+        return { accorde: mes.filter((a) => a.statutAcces === 'ACCORDE').length, total: mes.length };
+    }
+
+    /** raisonSocialeEntreprise est embarqué dans la réponse d'affectation côté backend —
+        une Entreprise n'a pas le droit de consulter la fiche d'une autre entreprise, donc
+        nomEntreprise(id) (qui cherche dans this.entreprises, réduit à sa propre fiche pour
+        ce rôle) ne résoudrait jamais le nom d'un sous-traitant. */
+    nomEntrepriseAffectation(a: AffectationEntrepriseChantier): string {
+        return a.raisonSocialeEntreprise ?? this.nomEntreprise(a.entrepriseId);
+    }
+
+    nomPays(id?: string): string {
+        return this.pays.find((p) => p.id === id)?.nom ?? '—';
+    }
+
+    nomClient(id?: string): string {
+        return this.clients.find((c) => c.id === id)?.raisonSociale ?? '—';
+    }
+
+    get lienMaps(): string {
+        if (!this.chantier) {
+            return '#';
+        }
+        const q = [this.chantier.adresse, this.chantier.ville].filter(Boolean).join(', ');
+        return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
+    }
+
     /** Comptes Client rattachés au client de CE chantier — seuls candidats pertinents
         pour une assignation ici (inutile de proposer les comptes d'un autre client). */
     get utilisateursClientDuChantier(): Utilisateur[] {

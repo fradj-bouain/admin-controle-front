@@ -8,32 +8,330 @@
             <h5 class="m-0">Salarié {{ salarie ? '(' + salarie.prenom + ' ' + salarie.nom + ')' : '' }}</h5>
         </div>
         <div class="flex align-items-center gap-2" *ngIf="salarie">
-            <p-tag [severity]="salarie.statut === 'ACTIF' ? 'success' : 'danger'" [value]="salarie.statut | etatLabel"></p-tag>
+            <span class="status-pill" [class.success]="salarie.statut === 'ACTIF'" [class.danger]="salarie.statut !== 'ACTIF'">
+                <span class="status-pill-dot"></span>{{ salarie.statut | etatLabel }}
+            </span>
             <button
-                pButton
                 type="button"
-                icon="pi pi-id-card"
-                label="Badge"
-                class="p-button-outlined"
+                class="icon-btn-soft"
+                pTooltip="Badge"
+                tooltipPosition="bottom"
                 (click)="dialogBadgeVisible = true"
-            ></button>
+            ><i class="pi pi-id-card"></i></button>
             <button
-                *ngIf="isSuperAdmin || isEntreprise"
-                pButton
+                *ngIf="isSuperAdmin"
                 type="button"
-                [label]="salarie.statut === 'ACTIF' ? 'Désactiver' : 'Activer'"
-                [icon]="salarie.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"
-                class="p-button-text"
+                class="icon-btn-soft danger"
+                [pTooltip]="salarie.statut === 'ACTIF' ? 'Désactiver' : 'Activer'"
+                tooltipPosition="bottom"
                 (click)="confirmerBasculeStatut()"
-            ></button>
+            ><i [class]="salarie.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"></i></button>
         </div>
+    </div>
+
+    <!-- Indicateurs (vue Entreprise uniquement, même bandeau que la fiche entreprise) -->
+    <div class="ent-hero-stats" *ngIf="isEntreprise && !isNew">
+        <button type="button" class="ent-stat" (click)="scrollVersSection('ent-documents')">
+            <span class="ent-stat-ring">
+                <svg viewBox="0 0 36 36">
+                    <circle class="ent-stat-ring-track" cx="18" cy="18" r="15.5"></circle>
+                    <circle class="ent-stat-ring-value" cx="18" cy="18" r="15.5"
+                        [attr.stroke]="pourcentageObligatoires === 100 ? 'var(--brand-success)' : 'var(--brand-warning)'"
+                        [attr.stroke-dasharray]="97.39"
+                        [attr.stroke-dashoffset]="ringDashoffset(pourcentageObligatoires)"></circle>
+                </svg>
+            </span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ nbObligatoiresFournis }}<small>/{{ nbObligatoiresTotal }}</small></span>
+                <span class="ent-stat-label">Documents conformes</span>
+            </span>
+        </button>
+        <button type="button" class="ent-stat" (click)="scrollVersSection('ent-chantiers')">
+            <span class="ent-stat-icon tint-accent"><i class="pi pi-map-marker"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value">{{ affectationEnCours?.nomChantierCalculee || 'Disponible' }}</span>
+                <span class="ent-stat-label">Chantier actuel</span>
+            </span>
+        </button>
+        <button type="button" class="ent-stat" (click)="scrollVersSection('ent-coordonnees')">
+            <span class="ent-stat-icon tint-info"><i class="pi pi-file"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value">{{ nomTypeContrat(salarie?.typeContratId) }}</span>
+                <span class="ent-stat-label">Type de contrat</span>
+            </span>
+        </button>
+        <button type="button" class="ent-stat" (click)="scrollVersSection('ent-chantiers')" *ngIf="affectationEnCours">
+            <span class="ent-stat-icon tint-success"><i class="pi pi-verified"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value">{{ affectationEnCours!.statutAcces | etatLabel }}</span>
+                <span class="ent-stat-label">Accès au chantier actuel</span>
+            </span>
+        </button>
     </div>
 </div>
 
 <app-qrcode-dialog [(visible)]="dialogBadgeVisible" [salarie]="salarie"></app-qrcode-dialog>
 
-<!-- Coordonnées -->
-<div class="card mb-3">
+<!-- ============================================================
+     Vue Entreprise (même design que la fiche entreprise) : bandeau d'indicateurs déjà posé
+     dans l'en-tête ci-dessus + mise en page à deux colonnes ici. Remplace, pour ce rôle
+     uniquement, les cartes Coordonnées/Chantier/Documents/Historique ci-dessous (toutes
+     masquées via *ngIf="!isEntreprise") — mêmes formulaires/bindings, juste redisposés :
+     l'Entreprise garde le droit d'éditer ses salariés (contrairement à la fiche entreprise).
+     ============================================================ -->
+<div class="ent-layout mb-3" *ngIf="isEntreprise && !isNew">
+    <div class="ent-col">
+
+        <!-- Coordonnées : même formulaire, disposition compacte -->
+        <div class="card" id="ent-coordonnees">
+            <div class="card-head">
+                <i class="pi pi-user"></i>
+                <h6 class="m-0">Coordonnées</h6>
+            </div>
+            <app-card-skeleton *ngIf="loading" [lignes]="6"></app-card-skeleton>
+            <form *ngIf="!loading" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
+                <div class="field">
+                    <label for="entNom">Nom *</label>
+                    <input id="entNom" type="text" pInputText formControlName="nom" [class.ng-dirty]="coordonneesForm.controls.nom.touched" />
+                    <small class="p-error" *ngIf="coordonneesForm.controls.nom.invalid && coordonneesForm.controls.nom.touched">Ce champ est requis.</small>
+                </div>
+                <div class="field">
+                    <label for="entPrenom">Prénom *</label>
+                    <input id="entPrenom" type="text" pInputText formControlName="prenom" [class.ng-dirty]="coordonneesForm.controls.prenom.touched" />
+                    <small class="p-error" *ngIf="coordonneesForm.controls.prenom.invalid && coordonneesForm.controls.prenom.touched">Ce champ est requis.</small>
+                </div>
+                <div class="field">
+                    <label for="entNationalite">Nationalité</label>
+                    <p-dropdown id="entNationalite" [options]="pays" formControlName="nationalitePaysId" optionLabel="nom" optionValue="id" [filter]="true" filterBy="nom" placeholder="Sélectionner un pays"></p-dropdown>
+                </div>
+                <div class="field">
+                    <label for="entFonction">Fonction *</label>
+                    <p-dropdown id="entFonction" [options]="fonctions" formControlName="fonctionId" optionLabel="libelle" optionValue="id" [filter]="true" filterBy="libelle" placeholder="-- Sélectionner une fonction --" [showClear]="true" [class.ng-dirty]="coordonneesForm.controls.fonctionId.touched"></p-dropdown>
+                    <small class="p-error" *ngIf="coordonneesForm.controls.fonctionId.invalid && coordonneesForm.controls.fonctionId.touched">Ce champ est requis.</small>
+                </div>
+                <div class="field">
+                    <label for="entEntreprise">Entreprise *</label>
+                    <p-dropdown id="entEntreprise" [options]="entreprises" formControlName="entrepriseEmployeurId" optionLabel="raisonSociale" optionValue="id" placeholder="-- Sélectionner une entreprise --" [filter]="true" filterBy="raisonSociale" [class.ng-dirty]="coordonneesForm.controls.entrepriseEmployeurId.touched"></p-dropdown>
+                    <small class="p-error" *ngIf="coordonneesForm.controls.entrepriseEmployeurId.invalid && coordonneesForm.controls.entrepriseEmployeurId.touched">Ce champ est requis.</small>
+                </div>
+                <div class="field">
+                    <label for="entTypeContrat">Type de contrat *</label>
+                    <p-dropdown id="entTypeContrat" [options]="typesContrat" formControlName="typeContratId" optionLabel="libelle" optionValue="id" [filter]="true" filterBy="libelle" placeholder="-- Sélectionner un type de contrat --" [showClear]="true" [class.ng-dirty]="coordonneesForm.controls.typeContratId.touched"></p-dropdown>
+                    <small class="p-error" *ngIf="coordonneesForm.controls.typeContratId.invalid && coordonneesForm.controls.typeContratId.touched">Ce champ est requis.</small>
+                </div>
+                <div class="flex justify-content-end mt-3">
+                    <button pButton type="submit" label="Enregistrer" icon="pi pi-check" [loading]="saving"></button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Chantiers : liste compacte cliquable + même formulaire d'ajout -->
+        <div class="card" id="ent-chantiers">
+            <div class="card-head">
+                <i class="pi pi-map-marker"></i>
+                <h6 class="m-0">Chantiers</h6>
+            </div>
+            <div class="ent-compact-list" *ngIf="mesAffectations.length > 0">
+                <button
+                    type="button"
+                    class="ent-compact-row"
+                    *ngFor="let affectation of mesAffectations"
+                    [routerLink]="['/chantiers', affectation.chantierId]"
+                    [pTooltip]="'Ouvrir le chantier ' + affectation.nomChantierCalculee"
+                >
+                    <span class="ent-compact-row-icon"><i class="pi pi-building"></i></span>
+                    <span class="ent-compact-row-body">
+                        <span class="ent-compact-row-title">{{ affectation.nomChantierCalculee }}</span>
+                        <span class="ent-compact-row-sub">
+                            {{ affectation.dateDebut | date: 'dd/MM/yyyy' }} — {{ affectation.dateFin ? (affectation.dateFin | date: 'dd/MM/yyyy') : 'en cours' }}
+                        </span>
+                    </span>
+                    <span class="ent-compact-row-end">
+                        <p-tag
+                            [severity]="affectation.statutAcces === 'ACCORDE' ? 'success' : (affectation.statutAcces === 'REFUSE' ? 'danger' : 'warning')"
+                            [value]="affectation.statutAcces | etatLabel"
+                        ></p-tag>
+                    </span>
+                </button>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="mesAffectations.length === 0">Aucun chantier affecté pour l'instant.</p>
+
+            <form [formGroup]="affectationForm" (ngSubmit)="submitAffectation()" class="mt-3 pt-3" style="border-top: 1px solid var(--brand-border);">
+                <div class="field">
+                    <label for="entChantierId">Chantier *</label>
+                    <p-dropdown id="entChantierId" [options]="chantiersDisponibles" formControlName="chantierId" optionLabel="nom" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Sélectionner un chantier --" styleClass="w-full" [class.ng-dirty]="affectationForm.controls.chantierId.touched"></p-dropdown>
+                    <small class="p-error" *ngIf="affectationForm.controls.chantierId.invalid && affectationForm.controls.chantierId.touched">Ce champ est requis.</small>
+                </div>
+                <div class="field">
+                    <label for="entAffectationEntreprise">Rôle de l'entreprise employeuse sur ce chantier *</label>
+                    <p-dropdown id="entAffectationEntreprise" [options]="affectationsEntrepriseDuChantier" formControlName="affectationEntrepriseChantierId" optionValue="id" placeholder="-- Sélectionner --" styleClass="w-full" [class.ng-dirty]="affectationForm.controls.affectationEntrepriseChantierId.touched">
+                        <ng-template let-a pTemplate="item">{{ nomEntreprise(a?.entrepriseId) }} ({{ a?.role }})</ng-template>
+                        <ng-template let-a pTemplate="selectedItem">{{ nomEntreprise(a?.entrepriseId) }} ({{ a?.role }})</ng-template>
+                    </p-dropdown>
+                    <small class="p-error" *ngIf="affectationForm.controls.affectationEntrepriseChantierId.invalid && affectationForm.controls.affectationEntrepriseChantierId.touched">Ce champ est requis.</small>
+                    <small class="text-500" *ngIf="affectationForm.value.chantierId && affectationsEntrepriseDuChantier.length === 0">
+                        L'entreprise employeuse de ce salarié n'est pas affectée à ce chantier.
+                    </small>
+                </div>
+                <button pButton type="submit" label="Affecter à ce chantier" icon="pi pi-plus" class="w-full"></button>
+            </form>
+        </div>
+
+    </div>
+
+    <div class="ent-col">
+
+        <!-- Documents : jauge + lignes compactes, cliquables vers l'aperçu du fichier -->
+        <div class="card" id="ent-documents">
+            <div class="card-head justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-folder"></i>
+                    <h6 class="m-0">Documents</h6>
+                </div>
+                <span class="p-input-icon-left">
+                    <i class="pi pi-search"></i>
+                    <input type="text" pInputText placeholder="Rechercher…" [(ngModel)]="filtreTexte" [ngModelOptions]="{standalone: true}" (ngModelChange)="onFiltreTexteChange()" style="width: 11rem;" />
+                </span>
+            </div>
+
+            <div class="ent-doc-progress" *ngIf="nbObligatoiresTotal > 0">
+                <span class="ent-doc-progress-ring">
+                    <svg viewBox="0 0 36 36">
+                        <circle class="ent-stat-ring-track" cx="18" cy="18" r="15.5"></circle>
+                        <circle class="ent-stat-ring-value" cx="18" cy="18" r="15.5"
+                            [attr.stroke]="pourcentageObligatoires === 100 ? 'var(--brand-success)' : 'var(--brand-warning)'"
+                            [attr.stroke-dasharray]="97.39"
+                            [attr.stroke-dashoffset]="ringDashoffset(pourcentageObligatoires)"></circle>
+                    </svg>
+                    <span class="ent-doc-progress-num">{{ pourcentageObligatoires }}%</span>
+                </span>
+                <span class="ent-doc-progress-text">
+                    <span class="ent-doc-progress-title">{{ nbObligatoiresFournis }} documents obligatoires sur {{ nbObligatoiresTotal }} fournis</span>
+                    <span class="ent-doc-progress-sub">
+                        <ng-container *ngIf="typesAFournir.length > 0">{{ typesAFournir.length }} document(s) restent à fournir</ng-container>
+                        <ng-container *ngIf="typesAFournir.length === 0">Tous les documents obligatoires sont fournis</ng-container>
+                        <ng-container *ngIf="nbDocumentsExpirantBientot > 0"> · {{ nbDocumentsExpirantBientot }} expire(nt) bientôt</ng-container>
+                    </span>
+                </span>
+            </div>
+
+            <ng-container *ngIf="typesAFournir.length > 0">
+                <div class="ent-doc-section-label warn">
+                    <i class="pi pi-exclamation-triangle"></i> À fournir ({{ typesAFournir.length }})
+                </div>
+                <ng-container *ngFor="let type of typesAFournir">
+                    <ng-container *ngTemplateOutlet="ligneDocumentEntreprise; context: { type: type }"></ng-container>
+                </ng-container>
+            </ng-container>
+
+            <ng-container *ngIf="typesDejaFournis.length > 0">
+                <div class="ent-doc-section-label ok">
+                    <i class="pi pi-check-circle"></i> Déjà fournis ({{ typesDejaFournis.length }})
+                </div>
+                <ng-container *ngFor="let type of typesDejaFournis">
+                    <ng-container *ngTemplateOutlet="ligneDocumentEntreprise; context: { type: type }"></ng-container>
+                </ng-container>
+            </ng-container>
+
+            <ng-container *ngIf="typesOptionnelsRestants.length > 0">
+                <div class="ent-doc-section-label muted">Documents optionnels</div>
+                <button type="button" class="ent-optional-toggle" *ngIf="!afficherOptionnels" (click)="afficherOptionnels = true">
+                    <span>{{ typesOptionnelsRestants.length }} document(s) optionnel(s)</span>
+                    <span class="link">Afficher <i class="pi pi-chevron-down text-xs"></i></span>
+                </button>
+                <ng-container *ngIf="afficherOptionnels">
+                    <button pButton type="button" label="Masquer les optionnels" icon="pi pi-chevron-up" class="p-button-text p-button-sm mb-2" (click)="afficherOptionnels = false"></button>
+                    <ng-container *ngFor="let type of typesOptionnelsRestants">
+                        <ng-container *ngTemplateOutlet="ligneDocumentEntreprise; context: { type: type }"></ng-container>
+                    </ng-container>
+                </ng-container>
+            </ng-container>
+
+            <p class="text-500 text-center py-3" *ngIf="typesAFournir.length === 0 && typesDejaFournis.length === 0 && typesOptionnelsRestants.length === 0">Aucun type de document configuré pour les salariés.</p>
+        </div>
+
+        <!-- Historique : lignes simples -->
+        <div class="card">
+            <div class="card-head justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-history"></i>
+                    <h6 class="m-0">Historique des documents</h6>
+                </div>
+                <span class="card-head-action" *ngIf="!afficherHistorique" style="cursor:pointer; color: var(--brand-accent-ink); font-size: 0.78rem; font-weight: 600;" (click)="basculerHistorique()">Afficher</span>
+            </div>
+            <div *ngIf="!afficherHistorique">
+                <p class="text-500 text-sm m-0">Consultez les dernières validations, refus et dépôts de documents.</p>
+            </div>
+            <div *ngIf="afficherHistorique">
+                <div class="ent-history-item" *ngFor="let entree of historique | slice:0:8">
+                    <span class="ent-history-date tabular-nums">{{ entree.createdAt | date: 'dd/MM/yyyy' }}</span>
+                    <span class="ent-history-text">{{ libelleDocumentHistorique(entree) }} — {{ libelleAction(entree.action) }}</span>
+                </div>
+                <p class="text-500 text-sm m-0" *ngIf="historique.length === 0">Aucune modification enregistrée.</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Ligne de document compacte (vue Entreprise) : les documents "déjà fournis" sont un
+     bouton cliquable qui ouvre directement l'aperçu du fichier (source de l'information) ;
+     les documents "à fournir" gardent le widget de dépôt existant (une zone de dépôt ne peut
+     pas être un simple lien de navigation). -->
+<ng-template #ligneDocumentEntreprise let-type="type">
+    <div class="ent-doc-row ent-doc-row--upload missing" *ngIf="!documentsByType[type.id]">
+        <div class="ent-doc-row-header">
+            <span class="ent-doc-row-icon warn"><i class="pi pi-file"></i></span>
+            <span class="ent-doc-row-body">
+                <span class="ent-doc-row-title" [pTooltip]="type.libelle" tooltipPosition="top">{{ type.libelle }}</span>
+                <span class="ent-doc-row-sub">Document manquant</span>
+            </span>
+            <p-tag severity="warning" value="À fournir"></p-tag>
+        </div>
+        <div class="ent-doc-row-dropzone">
+            <app-document-upload-preview (fichierChange)="onFichierChoisi($event, type.id)"></app-document-upload-preview>
+            <button pButton type="button" label="Renseigner" class="p-button-sm flex-shrink-0" [disabled]="!lignesDocument[type.id].fichier" (click)="renseignerDocument(type)"></button>
+        </div>
+    </div>
+
+    <button
+        type="button"
+        class="ent-doc-row"
+        [ngClass]="documentSeverite(documentsByType[type.id])"
+        *ngIf="documentsByType[type.id]"
+        (click)="ouvrirApercu(documentsByType[type.id])"
+        [pTooltip]="'Voir ' + type.libelle"
+        tooltipPosition="top"
+    >
+        <span class="ent-doc-row-icon" [ngClass]="documentSeverite(documentsByType[type.id])">
+            <i class="pi"
+                [class.pi-check]="documentSeverite(documentsByType[type.id]) === 'ok'"
+                [class.pi-clock]="documentSeverite(documentsByType[type.id]) === 'missing'"
+                [class.pi-times]="documentSeverite(documentsByType[type.id]) === 'danger'"
+            ></i>
+        </span>
+        <span class="ent-doc-row-body">
+            <span class="ent-doc-row-title">{{ type.libelle }}</span>
+            <span class="ent-doc-row-sub">
+                <i class="pi pi-paperclip" style="font-size: 0.68rem; flex-shrink: 0;" *ngIf="documentsByType[type.id].nomFichierOriginal"></i>
+                <span class="ent-doc-row-filename">{{ documentsByType[type.id].nomFichierOriginal || 'Aucun fichier' }}</span>
+            </span>
+        </span>
+        <span class="ent-doc-row-end">
+            <p-tag *ngIf="estExpire(documentsByType[type.id])" severity="danger" value="Expiré"></p-tag>
+            <p-tag *ngIf="expireBientot(documentsByType[type.id])" severity="warning" [value]="libelleExpiration(documentsByType[type.id])"></p-tag>
+            <p-tag
+                [severity]="documentsByType[type.id].statutValidation === 'VALIDE' ? 'success' : (documentsByType[type.id].statutValidation === 'REFUSE' ? 'danger' : 'warning')"
+                [value]="documentsByType[type.id].statutValidation | etatLabel"
+            ></p-tag>
+            <i class="pi pi-chevron-right text-500" style="font-size: 0.7rem;"></i>
+        </span>
+    </button>
+</ng-template>
+
+<!-- Coordonnées : carte complète pour SUPER_ADMIN/Client/Contrôleur — l'Entreprise a sa
+     propre carte (même formulaire, disposition compacte) dans la vue deux colonnes plus bas. -->
+<div class="card mb-3" *ngIf="!isEntreprise">
     <div class="card-head">
         <i class="pi pi-user"></i>
         <h6 class="m-0">Coordonnées</h6>
@@ -127,8 +425,9 @@
     </form>
 </div>
 
-<!-- Informations relatives au chantier -->
-<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
+<!-- Informations relatives au chantier : carte complète pour SUPER_ADMIN/Client/Contrôleur —
+     l'Entreprise a sa propre carte compacte (liste cliquable + même formulaire d'ajout). -->
+<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise">
     <div class="card-head">
         <i class="pi pi-truck"></i>
         <h6 class="m-0">Informations relatives au chantier</h6>
@@ -209,8 +508,9 @@
 </div>
 
 <!-- Documents (ouverts par défaut en création : peuvent être renseignés tout de
-     suite ou laissés vides et complétés plus tard sur la fiche) -->
-<div class="card mb-3">
+     suite ou laissés vides et complétés plus tard sur la fiche). Masquée pour l'Entreprise,
+     qui a sa propre carte (vue deux colonnes) — voir #ligneDocumentEntreprise plus bas. -->
+<div class="card mb-3" *ngIf="!isEntreprise">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-folder"></i>
@@ -361,8 +661,9 @@
     </div>
 </ng-template>
 
-<!-- Historique des documents (repliée par défaut, chargée au premier dépli) -->
-<div class="card mb-3" *ngIf="!isNew">
+<!-- Historique des documents (repliée par défaut, chargée au premier dépli). Masquée pour
+     l'Entreprise, qui a sa propre version compacte dans la vue deux colonnes plus bas. -->
+<div class="card mb-3" *ngIf="!isNew && !isEntreprise">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-history"></i>
@@ -399,8 +700,9 @@
     </p-table>
 </div>
 
-<!-- Relances : rappels envoyés (automatiques ou manuels) pour les documents de ce salarié -->
-<div class="card mb-3" *ngIf="!isNew">
+<!-- Relances : rappels envoyés (automatiques ou manuels) pour les documents de ce salarié.
+     C'est le Client (donneur d'ordre) qui relance, jamais l'entreprise elle-même — masqué en vue Entreprise. -->
+<div class="card mb-3" *ngIf="!isNew && !isEntreprise">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-send"></i>
@@ -440,9 +742,11 @@
     </p-table>
 </div>
 
-<!-- Envoyer un message : composeur inline, route vers l'entreprise employeuse
-     (le salarié n'a pas de compte/boîte de réception dans cette appli) -->
-<div id="composeur-message" class="card mb-3" *ngIf="!isNew">
+<!-- Envoyer un message : composeur inline, route vers l'entreprise employeuse du salarié
+     (le salarié n'a pas de compte/boîte de réception dans cette appli). Masqué en vue
+     Entreprise : envoyerMessage() cible l'entreprise employeuse — si le viewer EST cette
+     entreprise, ça reviendrait à s'envoyer un message à elle-même. -->
+<div id="composeur-message" class="card mb-3" *ngIf="!isNew && !isEntreprise">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-envelope"></i>

@@ -20,10 +20,459 @@
             ></button>
         </div>
     </div>
+
+    <!-- Indicateurs (vue Entreprise uniquement) : conformité documentaire, chantiers,
+         salariés, sous-traitants — chacun cliquable vers sa source plutôt que décoratif
+         (demande client). Le pourcentage documentaire est déjà calculé plus bas
+         (nbObligatoiresFournis/nbObligatoiresTotal) ; on le réutilise ici tel quel. -->
+    <div class="ent-hero-stats" *ngIf="isEntreprise && !isNew">
+        <button type="button" class="ent-stat" (click)="scrollVersSection('ent-documents')">
+            <span class="ent-stat-ring">
+                <svg viewBox="0 0 36 36">
+                    <circle class="ent-stat-ring-track" cx="18" cy="18" r="15.5"></circle>
+                    <circle class="ent-stat-ring-value" cx="18" cy="18" r="15.5"
+                        [attr.stroke]="pourcentageObligatoires === 100 ? 'var(--brand-success)' : 'var(--brand-warning)'"
+                        [attr.stroke-dasharray]="97.39"
+                        [attr.stroke-dashoffset]="ringDashoffset(pourcentageObligatoires)"></circle>
+                </svg>
+            </span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ nbObligatoiresFournis }}<small>/{{ nbObligatoiresTotal }}</small></span>
+                <span class="ent-stat-label">Documents conformes</span>
+            </span>
+        </button>
+        <button type="button" class="ent-stat" [routerLink]="['/chantiers']">
+            <span class="ent-stat-icon tint-accent"><i class="pi pi-map-marker"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ mesAffectations.length }}</span>
+                <span class="ent-stat-label">Chantier(s) affecté(s)</span>
+            </span>
+        </button>
+        <button type="button" class="ent-stat" [routerLink]="['/salaries']">
+            <span class="ent-stat-icon tint-info"><i class="pi pi-users"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ salaries.length }}</span>
+                <span class="ent-stat-label">Salarié(s) ({{ nbSalariesActifs }} actif(s))</span>
+            </span>
+        </button>
+        <button type="button" class="ent-stat" (click)="scrollVersSection('ent-sous-traitants')">
+            <span class="ent-stat-icon tint-success"><i class="pi pi-sitemap"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ sousTraitants.length }}</span>
+                <span class="ent-stat-label">Sous-traitant(s)</span>
+            </span>
+        </button>
+    </div>
 </div>
 
-<!-- Coordonnées -->
-<div class="card mb-3">
+<!-- ============================================================
+     Vue Entreprise (prototype validé par le client) : bandeau d'indicateurs
+     déjà posé dans l'en-tête ci-dessus + mise en page à deux colonnes ici.
+     Remplace entièrement, pour ce rôle uniquement, les cartes Coordonnées/
+     Affectation/Sous-traitants/Documents/Historique ci-dessous (toutes
+     masquées via *ngIf="!isEntreprise"). Chaque ligne d'information est
+     cliquable vers sa source (chantier, aperçu de fichier) — demande client.
+     ============================================================ -->
+<div class="ent-layout mb-3" *ngIf="isEntreprise && !isNew">
+    <div class="ent-col">
+
+        <!-- Coordonnées (compact, lecture seule) -->
+        <div class="card">
+            <div class="card-head">
+                <i class="pi pi-building"></i>
+                <h6 class="m-0">Coordonnées</h6>
+            </div>
+            <app-card-skeleton *ngIf="loading" [lignes]="6"></app-card-skeleton>
+            <ng-container *ngIf="!loading">
+                <div class="ent-kv-grid">
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Téléphone</div>
+                        <div class="ent-kv-value">{{ entreprise?.telephone || '—' }}</div>
+                    </div>
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Email</div>
+                        <div class="ent-kv-value">{{ entreprise?.email || '—' }}</div>
+                    </div>
+                </div>
+                <div class="ent-kv-grid single mt-3">
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Adresse</div>
+                        <div class="ent-kv-value wrap">
+                            {{ entreprise?.adresse || '—' }}<ng-container *ngIf="entreprise?.adresse2">, {{ entreprise?.adresse2 }}</ng-container><ng-container *ngIf="entreprise?.adresse3">, {{ entreprise?.adresse3 }}</ng-container>
+                        </div>
+                    </div>
+                </div>
+                <div class="ent-kv-grid mt-3">
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Ville</div>
+                        <div class="ent-kv-value">{{ entreprise?.ville || '—' }}</div>
+                    </div>
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Pays</div>
+                        <div class="ent-kv-value">{{ nomPays(entreprise?.paysId) }}</div>
+                    </div>
+                </div>
+
+                <details class="ent-legal">
+                    <summary>
+                        <i class="pi pi-lock"></i>
+                        Informations légales
+                        <i class="pi pi-chevron-down ent-legal-chev"></i>
+                    </summary>
+                    <div class="ent-legal-body">
+                        <div class="ent-kv">
+                            <div class="ent-kv-label">Corps de métier</div>
+                            <div class="ent-kv-value">{{ nomCorpsDeMetier(entreprise?.corpsDeMetierId) }}</div>
+                        </div>
+                        <div class="ent-kv">
+                            <div class="ent-kv-label">Siret</div>
+                            <div class="ent-kv-value">{{ entreprise?.siret || '—' }}</div>
+                        </div>
+                        <div class="ent-kv">
+                            <div class="ent-kv-label">Siren</div>
+                            <div class="ent-kv-value">{{ entreprise?.siren || '—' }}</div>
+                        </div>
+                        <div class="ent-kv">
+                            <div class="ent-kv-label">RCS / RCI</div>
+                            <div class="ent-kv-value">{{ entreprise?.rcsRci || '—' }}</div>
+                        </div>
+                        <p class="ent-legal-note">Gérées par l'administrateur — contactez-le pour toute correction.</p>
+                    </div>
+                </details>
+            </ng-container>
+        </div>
+
+        <!-- Affectations : cliquables vers le chantier -->
+        <div class="card">
+            <div class="card-head">
+                <i class="pi pi-map-marker"></i>
+                <h6 class="m-0">Affectations</h6>
+            </div>
+            <div class="ent-compact-list" *ngIf="mesAffectations.length > 0">
+                <button
+                    type="button"
+                    class="ent-compact-row"
+                    *ngFor="let affectation of mesAffectations"
+                    [routerLink]="['/chantiers', affectation.chantierId]"
+                    [pTooltip]="'Ouvrir le chantier ' + affectation.nomChantierCalculee"
+                >
+                    <span class="ent-compact-row-icon"><i class="pi pi-building"></i></span>
+                    <span class="ent-compact-row-body">
+                        <span class="ent-compact-row-title">{{ affectation.nomChantierCalculee }}</span>
+                        <span class="ent-compact-row-sub">Depuis le {{ affectation.dateDebut | date: 'dd/MM/yyyy' }}</span>
+                    </span>
+                    <span class="ent-compact-row-end">
+                        <p-tag severity="info" [value]="affectation.role"></p-tag>
+                    </span>
+                </button>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="mesAffectations.length === 0">Aucun chantier affecté pour l'instant.</p>
+        </div>
+
+        <!-- Sous-traitants : cliquables vers le chantier concerné -->
+        <div class="card" id="ent-sous-traitants">
+            <div class="card-head">
+                <i class="pi pi-sitemap"></i>
+                <h6 class="m-0">Sous-traitants</h6>
+            </div>
+            <div class="ent-compact-list" *ngIf="sousTraitants.length > 0">
+                <button
+                    type="button"
+                    class="ent-compact-row"
+                    *ngFor="let affectation of sousTraitants"
+                    [routerLink]="['/chantiers', affectation.chantierId]"
+                    [pTooltip]="'Ouvrir le chantier ' + affectation.nomChantierCalculee"
+                >
+                    <span class="ent-compact-row-icon"><i class="pi pi-briefcase"></i></span>
+                    <span class="ent-compact-row-body">
+                        <span class="ent-compact-row-title">{{ nomSousTraitant(affectation) }}</span>
+                        <span class="ent-compact-row-sub">{{ affectation.nomChantierCalculee }}</span>
+                    </span>
+                    <span class="ent-compact-row-end">
+                        <p-tag severity="info" [value]="affectation.role"></p-tag>
+                    </span>
+                </button>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="sousTraitants.length === 0">Aucun sous-traitant rattaché pour l'instant.</p>
+        </div>
+
+        <!-- Salariés : liste compacte, cliquable vers la fiche du salarié -->
+        <div class="card">
+            <div class="card-head justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-users"></i>
+                    <h6 class="m-0">Salariés</h6>
+                </div>
+                <button
+                    pButton
+                    type="button"
+                    icon="pi pi-plus"
+                    label="Ajouter"
+                    class="p-button-sm"
+                    [routerLink]="['/salaries/nouveau']"
+                    [queryParams]="{ entrepriseId: entrepriseId }"
+                ></button>
+            </div>
+            <div class="ent-compact-list" *ngIf="salaries.length > 0">
+                <button
+                    type="button"
+                    class="ent-compact-row"
+                    *ngFor="let salarie of salaries"
+                    [routerLink]="['/salaries', salarie.id]"
+                    [pTooltip]="'Ouvrir la fiche de ' + salarie.identiteCalculee"
+                >
+                    <span class="ent-compact-row-icon"><i class="pi pi-user"></i></span>
+                    <span class="ent-compact-row-body">
+                        <span class="ent-compact-row-title">{{ salarie.identiteCalculee }}</span>
+                        <span class="ent-compact-row-sub" *ngIf="salarie.chantierActuel">{{ salarie.chantierActuel }}</span>
+                    </span>
+                    <span class="ent-compact-row-end">
+                        <p-tag [severity]="salarie.statut === 'ACTIF' ? 'success' : 'danger'" [value]="salarie.statut | etatLabel"></p-tag>
+                    </span>
+                </button>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="salaries.length === 0">Aucun salarié pour cette entreprise.</p>
+        </div>
+
+    </div>
+
+    <div class="ent-col">
+
+        <!-- Documents : jauge + lignes compactes, cliquables vers l'aperçu du fichier -->
+        <div class="card" id="ent-documents">
+            <div class="card-head justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-folder"></i>
+                    <h6 class="m-0">Documents</h6>
+                </div>
+                <span class="p-input-icon-left">
+                    <i class="pi pi-search"></i>
+                    <input type="text" pInputText placeholder="Rechercher…" [(ngModel)]="filtreTexte" (ngModelChange)="onFiltreTexteChange()" style="width: 11rem;" />
+                </span>
+            </div>
+
+            <div class="ent-doc-progress" *ngIf="nbObligatoiresTotal > 0">
+                <span class="ent-doc-progress-ring">
+                    <svg viewBox="0 0 36 36">
+                        <circle class="ent-stat-ring-track" cx="18" cy="18" r="15.5"></circle>
+                        <circle class="ent-stat-ring-value" cx="18" cy="18" r="15.5"
+                            [attr.stroke]="pourcentageObligatoires === 100 ? 'var(--brand-success)' : 'var(--brand-warning)'"
+                            [attr.stroke-dasharray]="97.39"
+                            [attr.stroke-dashoffset]="ringDashoffset(pourcentageObligatoires)"></circle>
+                    </svg>
+                    <span class="ent-doc-progress-num">{{ pourcentageObligatoires }}%</span>
+                </span>
+                <span class="ent-doc-progress-text">
+                    <span class="ent-doc-progress-title">{{ nbObligatoiresFournis }} documents obligatoires sur {{ nbObligatoiresTotal }} fournis</span>
+                    <span class="ent-doc-progress-sub">
+                        <ng-container *ngIf="typesAFournir.length > 0">{{ typesAFournir.length }} document(s) restent à fournir</ng-container>
+                        <ng-container *ngIf="typesAFournir.length === 0">Tous les documents obligatoires sont fournis</ng-container>
+                        <ng-container *ngIf="nbDocumentsExpirantBientot > 0"> · {{ nbDocumentsExpirantBientot }} expire(nt) bientôt</ng-container>
+                    </span>
+                </span>
+            </div>
+
+            <ng-container *ngIf="typesAFournir.length > 0">
+                <div class="ent-doc-section-label warn">
+                    <i class="pi pi-exclamation-triangle"></i> À fournir ({{ typesAFournir.length }})
+                </div>
+                <ng-container *ngFor="let type of typesAFournir">
+                    <ng-container *ngTemplateOutlet="ligneDocumentEntreprise; context: { type: type }"></ng-container>
+                </ng-container>
+            </ng-container>
+
+            <ng-container *ngIf="typesDejaFournis.length > 0">
+                <div class="ent-doc-section-label ok">
+                    <i class="pi pi-check-circle"></i> Déjà fournis ({{ typesDejaFournis.length }})
+                </div>
+                <ng-container *ngFor="let type of typesDejaFournis">
+                    <ng-container *ngTemplateOutlet="ligneDocumentEntreprise; context: { type: type }"></ng-container>
+                </ng-container>
+            </ng-container>
+
+            <ng-container *ngIf="typesOptionnelsRestants.length > 0">
+                <div class="ent-doc-section-label muted">Documents optionnels</div>
+                <button type="button" class="ent-optional-toggle" *ngIf="!afficherOptionnels" (click)="afficherOptionnels = true">
+                    <span>{{ typesOptionnelsRestants.length }} document(s) optionnel(s)</span>
+                    <span class="link">Afficher <i class="pi pi-chevron-down text-xs"></i></span>
+                </button>
+                <ng-container *ngIf="afficherOptionnels">
+                    <button pButton type="button" label="Masquer les optionnels" icon="pi pi-chevron-up" class="p-button-text p-button-sm mb-2" (click)="afficherOptionnels = false"></button>
+                    <ng-container *ngFor="let type of typesOptionnelsRestants">
+                        <ng-container *ngTemplateOutlet="ligneDocumentEntreprise; context: { type: type }"></ng-container>
+                    </ng-container>
+                </ng-container>
+            </ng-container>
+
+            <p class="text-500 text-center py-3" *ngIf="typesAFournir.length === 0 && typesDejaFournis.length === 0 && typesOptionnelsRestants.length === 0">Aucun type de document configuré pour les entreprises.</p>
+        </div>
+
+        <!-- Historique : lignes simples -->
+        <div class="card">
+            <div class="card-head justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-history"></i>
+                    <h6 class="m-0">Historique des documents</h6>
+                </div>
+                <span class="card-head-action" *ngIf="!afficherHistorique" style="cursor:pointer; color: var(--brand-accent-ink); font-size: 0.78rem; font-weight: 600;" (click)="basculerHistorique()">Afficher</span>
+            </div>
+            <div *ngIf="!afficherHistorique">
+                <p class="text-500 text-sm m-0">Consultez les dernières validations, refus et dépôts de documents.</p>
+            </div>
+            <div *ngIf="afficherHistorique">
+                <div class="ent-history-item" *ngFor="let entree of historique | slice:0:8">
+                    <span class="ent-history-date tabular-nums">{{ entree.createdAt | date: 'dd/MM/yyyy' }}</span>
+                    <span class="ent-history-text">{{ libelleDocumentHistorique(entree) }} — {{ libelleAction(entree.action) }}</span>
+                </div>
+                <p class="text-500 text-sm m-0" *ngIf="historique.length === 0">Aucune modification enregistrée.</p>
+            </div>
+        </div>
+
+        <!-- Utilisateurs : comptes rattachés à cette entreprise (pas de fiche détail à ouvrir,
+             donc lignes non cliquables — juste l'identité et le statut du compte). -->
+        <div class="card">
+            <div class="card-head justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-id-card"></i>
+                    <h6 class="m-0">Utilisateurs</h6>
+                </div>
+                <button
+                    pButton
+                    type="button"
+                    icon="pi pi-plus"
+                    label="Ajouter"
+                    class="p-button-sm"
+                    (click)="afficherFormulaireUtilisateur = !afficherFormulaireUtilisateur"
+                ></button>
+            </div>
+
+            <form [formGroup]="nouveauCompteForm" (ngSubmit)="ajouterUtilisateur()" class="p-fluid mb-3" *ngIf="afficherFormulaireUtilisateur">
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-6">
+                        <label for="entNcPrenom">Prénom *</label>
+                        <input id="entNcPrenom" type="text" pInputText formControlName="prenom" [class.ng-dirty]="nouveauCompteForm.controls.prenom.touched" />
+                        <small class="p-error" *ngIf="nouveauCompteForm.controls.prenom.invalid && nouveauCompteForm.controls.prenom.touched">Ce champ est requis.</small>
+                    </div>
+                    <div class="field col-12 md:col-6">
+                        <label for="entNcNom">Nom *</label>
+                        <input id="entNcNom" type="text" pInputText formControlName="nom" [class.ng-dirty]="nouveauCompteForm.controls.nom.touched" />
+                        <small class="p-error" *ngIf="nouveauCompteForm.controls.nom.invalid && nouveauCompteForm.controls.nom.touched">Ce champ est requis.</small>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="entNcEmail">Email *</label>
+                    <input id="entNcEmail" type="email" pInputText formControlName="email" [class.ng-dirty]="nouveauCompteForm.controls.email.touched" />
+                    <small class="p-error" *ngIf="nouveauCompteForm.controls.email.invalid && nouveauCompteForm.controls.email.touched">Adresse email valide requise.</small>
+                </div>
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-6">
+                        <label for="entNcUsername">Nom d'utilisateur *</label>
+                        <input id="entNcUsername" type="text" pInputText formControlName="username" [class.ng-dirty]="nouveauCompteForm.controls.username.touched" />
+                        <small class="p-error" *ngIf="nouveauCompteForm.controls.username.invalid && nouveauCompteForm.controls.username.touched">Ce champ est requis.</small>
+                    </div>
+                    <div class="field col-12 md:col-6">
+                        <label for="entNcPassword">Mot de passe *</label>
+                        <div class="flex gap-2 align-items-start">
+                            <p-password
+                                id="entNcPassword"
+                                formControlName="password"
+                                [toggleMask]="true"
+                                [feedback]="true"
+                                styleClass="w-full"
+                                inputStyleClass="w-full"
+                                [class.ng-dirty]="nouveauCompteForm.controls.password.touched"
+                            ></p-password>
+                            <button pButton type="button" icon="pi pi-sync" pTooltip="Générer un mot de passe" class="p-button-outlined flex-shrink-0" (click)="genererMotDePasseCompte()"></button>
+                        </div>
+                        <small class="p-error" *ngIf="nouveauCompteForm.controls.password.invalid && nouveauCompteForm.controls.password.touched">8 caractères minimum.</small>
+                    </div>
+                </div>
+                <div class="flex justify-content-end">
+                    <button pButton type="submit" label="Créer le compte" icon="pi pi-check"></button>
+                </div>
+            </form>
+
+            <div class="ent-compact-list" *ngIf="utilisateurs.length > 0">
+                <div class="ent-compact-row" style="cursor: default;" *ngFor="let utilisateur of utilisateurs">
+                    <span class="ent-compact-row-icon"><i class="pi pi-user"></i></span>
+                    <span class="ent-compact-row-body">
+                        <span class="ent-compact-row-title">{{ utilisateur.prenom }} {{ utilisateur.nom }}</span>
+                        <span class="ent-compact-row-sub">{{ utilisateur.username }}</span>
+                    </span>
+                    <span class="ent-compact-row-end">
+                        <p-tag [severity]="utilisateur.actif ? 'success' : 'danger'" [value]="utilisateur.actif | etatLabel"></p-tag>
+                    </span>
+                </div>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="utilisateurs.length === 0">Aucun utilisateur rattaché à cette entreprise.</p>
+        </div>
+
+    </div>
+</div>
+
+<!-- Ligne de document compacte (vue Entreprise) : les documents "déjà fournis" sont un
+     bouton cliquable qui ouvre directement l'aperçu du fichier (source de l'information) ;
+     les documents "à fournir" gardent le widget de dépôt existant (une zone de dépôt ne peut
+     pas être un simple lien de navigation). -->
+<ng-template #ligneDocumentEntreprise let-type="type">
+    <!-- Document manquant : en-tête (icône+titre) sur sa propre ligne, zone de dépôt en
+         pleine largeur en dessous — jamais écrasée dans une colonne étroite. -->
+    <div class="ent-doc-row ent-doc-row--upload missing" *ngIf="!documentsByType[type.id]">
+        <div class="ent-doc-row-header">
+            <span class="ent-doc-row-icon warn"><i class="pi pi-file"></i></span>
+            <span class="ent-doc-row-body">
+                <span class="ent-doc-row-title" [pTooltip]="type.libelle" tooltipPosition="top">{{ type.libelle }}</span>
+                <span class="ent-doc-row-sub">Document manquant</span>
+            </span>
+            <p-tag severity="warning" value="À fournir"></p-tag>
+        </div>
+        <div class="ent-doc-row-dropzone">
+            <app-document-upload-preview (fichierChange)="onFichierChoisi($event, type.id)"></app-document-upload-preview>
+            <button pButton type="button" label="Renseigner" class="p-button-sm flex-shrink-0" [disabled]="!lignesDocument[type.id].fichier" (click)="renseignerDocument(type)"></button>
+        </div>
+    </div>
+
+    <!-- Document fourni : toute la ligne cliquable → aperçu du fichier. Le liseré/l'icône
+         reflètent le vrai statut (ok/en attente/refusé/expiré), pas seulement "un fichier existe". -->
+    <button
+        type="button"
+        class="ent-doc-row"
+        [ngClass]="documentSeverite(documentsByType[type.id])"
+        *ngIf="documentsByType[type.id]"
+        (click)="ouvrirApercu(documentsByType[type.id])"
+        [pTooltip]="'Voir ' + type.libelle"
+        tooltipPosition="top"
+    >
+        <span class="ent-doc-row-icon" [ngClass]="documentSeverite(documentsByType[type.id])">
+            <i class="pi"
+                [class.pi-check]="documentSeverite(documentsByType[type.id]) === 'ok'"
+                [class.pi-clock]="documentSeverite(documentsByType[type.id]) === 'missing'"
+                [class.pi-times]="documentSeverite(documentsByType[type.id]) === 'danger'"
+            ></i>
+        </span>
+        <span class="ent-doc-row-body">
+            <span class="ent-doc-row-title">{{ type.libelle }}</span>
+            <span class="ent-doc-row-sub">
+                <i class="pi pi-paperclip" style="font-size: 0.68rem; flex-shrink: 0;" *ngIf="documentsByType[type.id].nomFichierOriginal"></i>
+                <span class="ent-doc-row-filename">{{ documentsByType[type.id].nomFichierOriginal || 'Aucun fichier' }}</span>
+            </span>
+        </span>
+        <span class="ent-doc-row-end">
+            <p-tag *ngIf="estExpire(documentsByType[type.id])" severity="danger" value="Expiré"></p-tag>
+            <p-tag *ngIf="expireBientot(documentsByType[type.id])" severity="warning" [value]="libelleExpiration(documentsByType[type.id])"></p-tag>
+            <p-tag
+                [severity]="documentsByType[type.id].statutValidation === 'VALIDE' ? 'success' : (documentsByType[type.id].statutValidation === 'REFUSE' ? 'danger' : 'warning')"
+                [value]="documentsByType[type.id].statutValidation | etatLabel"
+            ></p-tag>
+            <i class="pi pi-chevron-right text-500" style="font-size: 0.7rem;"></i>
+        </span>
+    </button>
+</ng-template>
+
+<!-- Coordonnées : carte complète (formulaire admin / lecture seule Client-Contrôleur) —
+     masquée pour l'Entreprise, qui a sa propre carte compacte dans la vue deux colonnes
+     plus bas (voir .ent-layout). -->
+<div class="card mb-3" *ngIf="!isEntreprise">
     <div class="card-head">
         <i class="pi pi-building"></i>
         <h6 class="m-0">Coordonnées</h6>
@@ -31,27 +480,86 @@
 
     <app-card-skeleton *ngIf="loading" [lignes]="8"></app-card-skeleton>
 
-    <form *ngIf="!loading" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
+    <!-- Lecture seule pour le Client/Contrôleur (jamais éditable pour eux non plus). -->
+    <div *ngIf="!loading && !isSuperAdmin" class="entreprise-readonly">
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-6">
+                <label class="text-500 text-sm">Nom</label>
+                <div class="font-medium">{{ entreprise?.raisonSociale || '—' }}</div>
+            </div>
+            <div class="field col-12 md:col-6">
+                <label class="text-500 text-sm">Corps de métier</label>
+                <div class="font-medium">{{ nomCorpsDeMetier(entreprise?.corpsDeMetierId) }}</div>
+            </div>
+        </div>
+        <div class="field">
+            <label class="text-500 text-sm">Adresse</label>
+            <div class="font-medium">
+                {{ entreprise?.adresse || '—' }}<ng-container *ngIf="entreprise?.adresse2">, {{ entreprise?.adresse2 }}</ng-container><ng-container *ngIf="entreprise?.adresse3">, {{ entreprise?.adresse3 }}</ng-container>
+            </div>
+        </div>
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-6">
+                <label class="text-500 text-sm">Ville</label>
+                <div class="font-medium">{{ entreprise?.ville || '—' }}</div>
+            </div>
+            <div class="field col-12 md:col-6">
+                <label class="text-500 text-sm">Pays</label>
+                <div class="font-medium">{{ nomPays(entreprise?.paysId) }}</div>
+            </div>
+        </div>
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-6">
+                <label class="text-500 text-sm">Téléphone</label>
+                <div class="font-medium">{{ entreprise?.telephone || '—' }}</div>
+            </div>
+            <div class="field col-12 md:col-6">
+                <label class="text-500 text-sm">Email</label>
+                <div class="font-medium">{{ entreprise?.email || '—' }}</div>
+            </div>
+        </div>
+
+        <div class="flex align-items-center gap-2 mt-2 mb-3">
+            <i class="pi pi-lock text-500"></i>
+            <h6 class="m-0 text-500">Informations légales</h6>
+            <small class="text-500">— gérées par l'administrateur</small>
+        </div>
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-4">
+                <label class="text-500 text-sm">Siren</label>
+                <div class="font-medium">{{ entreprise?.siren || '—' }}</div>
+            </div>
+            <div class="field col-12 md:col-4">
+                <label class="text-500 text-sm">Siret</label>
+                <div class="font-medium">{{ entreprise?.siret || '—' }}</div>
+            </div>
+            <div class="field col-12 md:col-4">
+                <label class="text-500 text-sm">RCS / RCI</label>
+                <div class="font-medium">{{ entreprise?.rcsRci || '—' }}</div>
+            </div>
+        </div>
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-6">
+                <label class="text-500 text-sm">N° de TVA Intra</label>
+                <div class="font-medium">{{ entreprise?.tvaIntra || '—' }}</div>
+            </div>
+            <div class="field col-12 md:col-6">
+                <label class="text-500 text-sm">N° de cotisant URSSAF / CCSS / CAR</label>
+                <div class="font-medium">{{ entreprise?.numCotisant || '—' }}</div>
+            </div>
+        </div>
+        <div class="field" *ngIf="entreprise?.commentaire">
+            <label class="text-500 text-sm">Commentaire / Info</label>
+            <div class="font-medium">{{ entreprise?.commentaire }}</div>
+        </div>
+        <small class="text-500 block mt-3">Pour toute correction, contactez votre administrateur.</small>
+    </div>
+
+    <form *ngIf="!loading && isSuperAdmin" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
         <div class="field">
             <label for="raisonSociale">Nom *</label>
             <input id="raisonSociale" type="text" pInputText formControlName="raisonSociale" [class.ng-dirty]="coordonneesForm.controls.raisonSociale.touched" />
             <small class="p-error" *ngIf="coordonneesForm.controls.raisonSociale.invalid && coordonneesForm.controls.raisonSociale.touched">Ce champ est requis.</small>
-        </div>
-
-        <div class="field">
-            <label for="corpsDeMetierId">Corps de métier *</label>
-            <p-dropdown
-                id="corpsDeMetierId"
-                [options]="corpsDeMetiers"
-                formControlName="corpsDeMetierId"
-                optionLabel="libelle"
-                optionValue="id"
-                [filter]="true"
-                filterBy="libelle"
-                placeholder="Sélectionner un corps de métier"
-                [class.ng-dirty]="coordonneesForm.controls.corpsDeMetierId.touched"
-            ></p-dropdown>
-            <small class="p-error" *ngIf="coordonneesForm.controls.corpsDeMetierId.invalid && coordonneesForm.controls.corpsDeMetierId.touched">Ce champ est requis.</small>
         </div>
 
         <div class="formgrid grid">
@@ -113,6 +621,29 @@
             <label for="email">Email</label>
             <input id="email" type="email" pInputText formControlName="email" [class.ng-dirty]="coordonneesForm.controls.email.touched" />
             <small class="p-error" *ngIf="coordonneesForm.controls.email.invalid && coordonneesForm.controls.email.touched">Adresse email invalide.</small>
+        </div>
+
+        <!-- Informations légales : identité administrative de l'entreprise, remplie une fois à
+             la création et rarement retouchée. Ce formulaire n'est de toute façon visible qu'au
+             SUPER_ADMIN (voir *ngIf plus haut) — l'Entreprise a la version lecture seule. -->
+        <div class="flex align-items-center gap-2 mt-2 mb-3">
+            <h6 class="m-0 text-500">Informations légales</h6>
+        </div>
+
+        <div class="field">
+            <label for="corpsDeMetierId">Corps de métier *</label>
+            <p-dropdown
+                id="corpsDeMetierId"
+                [options]="corpsDeMetiers"
+                formControlName="corpsDeMetierId"
+                optionLabel="libelle"
+                optionValue="id"
+                [filter]="true"
+                filterBy="libelle"
+                placeholder="Sélectionner un corps de métier"
+                [class.ng-dirty]="coordonneesForm.controls.corpsDeMetierId.touched"
+            ></p-dropdown>
+            <small class="p-error" *ngIf="coordonneesForm.controls.corpsDeMetierId.invalid && coordonneesForm.controls.corpsDeMetierId.touched">Ce champ est requis.</small>
         </div>
 
         <div class="formgrid grid">
@@ -213,13 +744,15 @@
 
         <div class="flex justify-content-end gap-2 mt-4">
             <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
-            <button *ngIf="isSuperAdmin || (!isNew && isEntreprise)" pButton type="submit" [label]="isNew ? 'Ajouter' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
+            <button pButton type="submit" [label]="isNew ? 'Ajouter' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
         </div>
     </form>
 </div>
 
-<!-- Affectation à un chantier -->
-<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
+<!-- Affectation à un chantier : gestion (ajout/retrait) réservée au SUPER_ADMIN — le client
+     décide qui intervient sur son chantier. Masquée pour l'Entreprise, qui a sa propre carte
+     compacte (lecture seule, cliquable vers le chantier) dans la vue deux colonnes plus bas. -->
+<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-map-marker"></i>
@@ -232,11 +765,11 @@
 
     <div *ngIf="!isNew && !afficherAffectation" class="flex align-items-center justify-content-between">
         <a class="cursor-pointer text-primary" (click)="afficherAffectation = true">{{ mesAffectations.length }} chantier(s) affecté(s)</a>
-        <button pButton type="button" label="Gérer les affectations" class="p-button-outlined" (click)="afficherAffectation = true"></button>
+        <button pButton type="button" [label]="isSuperAdmin ? 'Gérer les affectations' : 'Voir les affectations'" class="p-button-outlined" (click)="afficherAffectation = true"></button>
     </div>
 
     <ng-container *ngIf="!isNew && afficherAffectation">
-    <form [formGroup]="affectationForm" (ngSubmit)="submitAffectation()">
+    <form [formGroup]="affectationForm" (ngSubmit)="submitAffectation()" *ngIf="isSuperAdmin">
         <div class="formgrid grid">
             <div class="field col-12 md:col-3">
                 <label for="chantierId">Chantier *</label>
@@ -318,7 +851,7 @@
                         type="button"
                         icon="pi pi-ban"
                         class="p-button-text p-button-rounded"
-                        *ngIf="affectation.statut === 'ACTIF'"
+                        *ngIf="affectation.statut === 'ACTIF' && isSuperAdmin"
                         (click)="desactiverAffectation(affectation)"
                     ></button>
                 </td>
@@ -328,8 +861,39 @@
     </ng-container>
 </div>
 
-<!-- Salariés (raccourci) -->
-<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
+<!-- Sous-traitants : entreprises STT1/STT2 rattachées à celle-ci sur ses chantiers. Lecture
+     seule pour SUPER_ADMIN/Client/Contrôleur — l'Entreprise a sa propre carte compacte
+     (cliquable vers le chantier) dans la vue deux colonnes plus bas. -->
+<div class="card mb-3" *ngIf="!isNew && !isEntreprise">
+    <div class="card-head">
+        <i class="pi pi-sitemap"></i>
+        <h6 class="m-0">Sous-traitants</h6>
+    </div>
+
+    <p-table [value]="sousTraitants" dataKey="id" *ngIf="sousTraitants.length > 0">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Chantier</th>
+                <th>Sous-traitant</th>
+                <th>Rôle</th>
+                <th>Statut</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-affectation>
+            <tr [class.text-500]="!!affectation.dateFin">
+                <td>{{ affectation.nomChantierCalculee }}</td>
+                <td>{{ nomSousTraitant(affectation) }}</td>
+                <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
+                <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut | etatLabel"></p-tag></td>
+            </tr>
+        </ng-template>
+    </p-table>
+    <p class="text-500 text-sm m-0" *ngIf="sousTraitants.length === 0">Aucun sous-traitant rattaché pour l'instant.</p>
+</div>
+
+<!-- Salariés (raccourci) : table complète pour SUPER_ADMIN/Client/Contrôleur — l'Entreprise
+     a sa propre carte compacte (vue deux colonnes) dans le même style que le reste de sa page. -->
+<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-users"></i>
@@ -384,8 +948,10 @@
     </p-table>
 </div>
 
-<!-- Utilisateurs (comptes rattachés à cette entreprise) -->
-<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
+<!-- Utilisateurs (comptes rattachés à cette entreprise) : table complète pour
+     SUPER_ADMIN/Client/Contrôleur — l'Entreprise a sa propre carte compacte (vue deux
+     colonnes), le formulaire de création reste identique (juste redisposé). -->
+<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-id-card"></i>
@@ -481,8 +1047,9 @@
 </div>
 
 <!-- Documents (ouverts par défaut en création : les documents obligatoires
-     doivent être renseignés avant de pouvoir créer l'entreprise) -->
-<div class="card mb-3">
+     doivent être renseignés avant de pouvoir créer l'entreprise). Masquée pour l'Entreprise,
+     qui a sa propre carte (vue deux colonnes) — voir #ligneDocumentEntreprise plus bas. -->
+<div class="card mb-3" *ngIf="!isEntreprise">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-folder"></i>
@@ -638,8 +1205,9 @@
     </div>
 </ng-template>
 
-<!-- Historique des documents (repliée par défaut, chargée au premier dépli) -->
-<div class="card mb-3" *ngIf="!isNew">
+<!-- Historique des documents (repliée par défaut, chargée au premier dépli). Masquée pour
+     l'Entreprise, qui a sa propre version compacte dans la vue deux colonnes plus bas. -->
+<div class="card mb-3" *ngIf="!isNew && !isEntreprise">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-history"></i>
@@ -676,8 +1244,9 @@
     </p-table>
 </div>
 
-<!-- Relances : rappels envoyés (automatiques ou manuels) pour les documents de cette entreprise -->
-<div class="card mb-3" *ngIf="!isNew">
+<!-- Relances : rappels envoyés (automatiques ou manuels) pour les documents de cette entreprise.
+     C'est le Client (donneur d'ordre) qui relance, jamais l'entreprise elle-même — masqué en vue Entreprise. -->
+<div class="card mb-3" *ngIf="!isNew && !isEntreprise">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-send"></i>
@@ -717,8 +1286,9 @@
     </p-table>
 </div>
 
-<!-- Envoyer un message : composeur inline -->
-<div id="composeur-message" class="card mb-3" *ngIf="!isNew">
+<!-- Envoyer un message : composeur inline. Masqué pour l'Entreprise (demande client) — le
+     dialogue avec l'admin passe par un autre canal, pas cette rédaction libre. -->
+<div id="composeur-message" class="card mb-3" *ngIf="!isNew && !isEntreprise">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-envelope"></i>

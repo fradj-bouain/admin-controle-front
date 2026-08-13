@@ -13,7 +13,8 @@ const LIBELLES: Record<string, string> = {
     INACTIF: 'Inactif',
     EN_ATTENTE: 'En attente',
     VALIDE: 'Validé',
-    REFUSE: 'Refusé'
+    REFUSE: 'Refusé',
+    ACCORDE: 'Accordé'
 };
 
 @Pipe({ name: 'etatLabel' })

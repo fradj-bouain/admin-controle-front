@@ -49,6 +49,7 @@
                 <td><p-tag [severity]="utilisateur.actif ? 'success' : 'danger'" [value]="utilisateur.actif | etatLabel"></p-tag></td>
                 <td>
                     <div class="flex align-items-center gap-1 flex-nowrap">
+                        <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEdition(utilisateur)"></button>
                         <button
                             pButton
                             type="button"
@@ -65,7 +66,7 @@
     </p-table>
 </div>
 
-<p-dialog header="Nouvel utilisateur" [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '480px' }">
+<p-dialog [header]="utilisateurEnEdition ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'" [(visible)]="dialogVisible" [modal]="true" [style]="{ width: '480px' }">
     <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
@@ -91,9 +92,10 @@
             <small class="p-error" *ngIf="form.controls.username.invalid && form.controls.username.touched">Ce champ est requis.</small>
         </div>
         <div class="field">
-            <label for="password">Mot de passe *</label>
+            <label for="password">Mot de passe {{ utilisateurEnEdition ? '' : '*' }}</label>
             <input id="password" type="password" pInputText formControlName="password" [class.ng-dirty]="form.controls.password.touched" />
             <small class="p-error" *ngIf="form.controls.password.invalid && form.controls.password.touched">Ce champ est requis.</small>
+            <small class="text-500" *ngIf="utilisateurEnEdition">Laisser vide pour conserver le mot de passe actuel.</small>
         </div>
         <div class="flex justify-content-end gap-2 mt-4">
             <button pButton type="button" label="Annuler" class="p-button-text" (click)="dialogVisible = false"></button>

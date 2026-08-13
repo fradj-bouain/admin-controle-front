@@ -104,3 +104,12 @@ export interface CreateUtilisateurRequest {
     clientId?: string;
     controleTiersId?: string;
 }
+
+export interface ModifierUtilisateurRequest {
+    nom: string;
+    prenom: string;
+    email: string;
+    username: string;
+    // Vide/absent = mot de passe inchangé (voir UtilisateurService.modifier côté backend).
+    password?: string;
+}

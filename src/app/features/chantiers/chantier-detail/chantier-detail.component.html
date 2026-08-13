@@ -20,9 +20,164 @@
             ></button>
         </div>
     </div>
+
+    <!-- Indicateurs (vue Entreprise uniquement) : sa propre situation sur ce chantier —
+         jamais les statistiques globales qui mélangent toutes les entreprises. -->
+    <div class="ent-hero-stats" *ngIf="isEntreprise && !isNew">
+        <span class="ent-stat">
+            <span class="ent-stat-icon tint-accent"><i class="pi pi-sitemap"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value">{{ monAffectationEntreprise?.role || '—' }}</span>
+                <span class="ent-stat-label">Mon rôle sur ce chantier</span>
+            </span>
+        </span>
+        <span class="ent-stat">
+            <span class="ent-stat-icon tint-info"><i class="pi pi-calendar"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value">{{ (chantier?.dateDebut | date: 'dd/MM/yy') || '—' }} → {{ (chantier?.dateFinPrevue | date: 'dd/MM/yy') || 'en cours' }}</span>
+                <span class="ent-stat-label">Période du chantier</span>
+            </span>
+        </span>
+        <span class="ent-stat">
+            <span class="ent-stat-icon tint-success"><i class="pi pi-users"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ mesSalariesStats.accorde }}<small>/{{ mesSalariesStats.total }}</small></span>
+                <span class="ent-stat-label">Mes salariés avec accès</span>
+            </span>
+        </span>
+        <span class="ent-stat">
+            <span class="ent-stat-icon tint-accent"><i class="pi pi-briefcase"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ mesSousTraitantsIci.length }}</span>
+                <span class="ent-stat-label">Sous-traitant(s) sur ce chantier</span>
+            </span>
+        </span>
+    </div>
 </div>
 
-<div class="grid">
+<!-- ============================================================
+     Vue Entreprise (lecture seule) : indicateurs déjà posés dans l'en-tête + mise en page
+     à deux colonnes ici. Remplace Détail du chantier/Responsable/Statistiques/Contrôles/
+     Utilisateurs/Entreprises affectées/Salariés affectés (tous masqués via *ngIf="!isEntreprise"
+     plus bas) — l'Entreprise ne gère plus rien depuis cette fiche, elle consulte sa propre
+     situation (voir retour client : "entreprise ne doit pas gérer les affectations"). -->
+<div class="ent-layout mb-3" *ngIf="isEntreprise && !isNew">
+    <div class="ent-col">
+
+        <!-- Détail du chantier : lecture seule -->
+        <div class="card">
+            <div class="card-head">
+                <i class="pi pi-map-marker"></i>
+                <h6 class="m-0">Détail du chantier</h6>
+            </div>
+            <app-card-skeleton *ngIf="loading" [lignes]="6"></app-card-skeleton>
+            <ng-container *ngIf="!loading && chantier">
+                <div class="ent-kv-grid">
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Client</div>
+                        <div class="ent-kv-value">{{ nomClient(chantier.clientId) }}</div>
+                    </div>
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Prestation</div>
+                        <div class="ent-kv-value">{{ chantier.prestation || '—' }}</div>
+                    </div>
+                </div>
+                <div class="ent-kv-grid single mt-3">
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Adresse</div>
+                        <div class="ent-kv-value wrap">
+                            {{ chantier.adresse || '—' }}<ng-container *ngIf="chantier.adresse2">, {{ chantier.adresse2 }}</ng-container><ng-container *ngIf="chantier.adresse3">, {{ chantier.adresse3 }}</ng-container>
+                            <a [href]="lienMaps" target="_blank" rel="noopener" class="ml-2" style="font-size:0.78rem; font-weight:600;"><i class="pi pi-external-link" style="font-size:0.7rem;"></i> Ouvrir dans Maps</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="ent-kv-grid mt-3">
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Ville</div>
+                        <div class="ent-kv-value">{{ chantier.ville || '—' }}</div>
+                    </div>
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Pays</div>
+                        <div class="ent-kv-value">{{ nomPays(chantier.paysId) }}</div>
+                    </div>
+                </div>
+                <div class="ent-kv-grid mt-3">
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Date de début</div>
+                        <div class="ent-kv-value">{{ (chantier.dateDebut | date: 'dd/MM/yyyy') || '—' }}</div>
+                    </div>
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Date de fin prévue</div>
+                        <div class="ent-kv-value">{{ (chantier.dateFinPrevue | date: 'dd/MM/yyyy') || '—' }}</div>
+                    </div>
+                </div>
+            </ng-container>
+        </div>
+
+        <!-- Mes sous-traitants sur ce chantier -->
+        <div class="card">
+            <div class="card-head">
+                <i class="pi pi-sitemap"></i>
+                <h6 class="m-0">Mes sous-traitants ici</h6>
+            </div>
+            <div class="ent-compact-list" *ngIf="mesSousTraitantsIci.length > 0">
+                <div class="ent-compact-row" style="cursor:default;" *ngFor="let affectation of mesSousTraitantsIci">
+                    <span class="ent-compact-row-icon"><i class="pi pi-briefcase"></i></span>
+                    <span class="ent-compact-row-body">
+                        <span class="ent-compact-row-title">{{ nomEntrepriseAffectation(affectation) }}</span>
+                        <span class="ent-compact-row-sub">Depuis le {{ affectation.dateDebut | date: 'dd/MM/yyyy' }}</span>
+                    </span>
+                    <span class="ent-compact-row-end">
+                        <p-tag severity="info" [value]="affectation.role"></p-tag>
+                    </span>
+                </div>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="mesSousTraitantsIci.length === 0">Aucun sous-traitant rattaché sur ce chantier pour l'instant.</p>
+        </div>
+
+    </div>
+
+    <div class="ent-col">
+
+        <!-- Mes salariés sur ce chantier -->
+        <div class="card">
+            <div class="card-head">
+                <i class="pi pi-users"></i>
+                <h6 class="m-0">Mes salariés sur ce chantier ({{ mesAffectationsSalarie.length }})</h6>
+            </div>
+            <div class="ent-compact-list" *ngIf="mesAffectationsSalarie.length > 0">
+                <button
+                    type="button"
+                    class="ent-compact-row"
+                    *ngFor="let affectation of mesAffectationsSalarie"
+                    [routerLink]="['/salaries', affectation.salarieId]"
+                    [pTooltip]="'Ouvrir la fiche de ' + affectation.nomSalarieCalculee"
+                >
+                    <span class="ent-compact-row-icon"><i class="pi pi-user"></i></span>
+                    <span class="ent-compact-row-body">
+                        <span class="ent-compact-row-title">{{ affectation.nomSalarieCalculee }}</span>
+                        <span class="ent-compact-row-sub">{{ affectation.contratCalculee }}</span>
+                    </span>
+                    <span class="ent-compact-row-end">
+                        <p-tag
+                            [severity]="affectation.statutAcces === 'ACCORDE' ? 'success' : (affectation.statutAcces === 'REFUSE' ? 'danger' : 'warning')"
+                            [value]="affectation.statutAcces | etatLabel"
+                        ></p-tag>
+                    </span>
+                </button>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="mesAffectationsSalarie.length === 0">Aucun de vos salariés n'est encore affecté à ce chantier.</p>
+        </div>
+
+    </div>
+</div>
+
+<div class="id-footnote mb-3" *ngIf="isEntreprise && !isNew">
+    <i class="pi pi-info-circle"></i>
+    Le responsable du chantier, les utilisateurs du back-office et les contrôles ne sont pas visibles depuis votre compte Entreprise.
+</div>
+
+<div class="grid" *ngIf="!isEntreprise">
     <div class="col-12 lg:col-8">
         <!-- Détail du chantier -->
         <div class="card mb-3">
@@ -174,8 +329,9 @@
 </div>
 
 <ng-container *ngIf="!isNew">
-    <!-- Statistiques -->
-    <div class="card mb-3">
+    <!-- Statistiques : mélange toutes les entreprises du chantier — masquée pour l'Entreprise,
+         qui a ses propres indicateurs (bandeau d'en-tête) et sa liste de salariés plus bas. -->
+    <div class="card mb-3" *ngIf="!isEntreprise">
         <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-chart-bar"></i>
@@ -233,8 +389,8 @@
         </ng-container>
     </div>
 
-    <!-- Contrôles -->
-    <div class="card mb-3">
+    <!-- Contrôles : masquée pour l'Entreprise (demande client). -->
+    <div class="card mb-3" *ngIf="!isEntreprise">
         <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-pencil"></i>
@@ -303,8 +459,8 @@
         </ng-container>
     </div>
 
-    <!-- Utilisateurs du Back Office -->
-    <div class="card mb-3">
+    <!-- Utilisateurs du Back Office : masquée pour l'Entreprise (demande client). -->
+    <div class="card mb-3" *ngIf="!isEntreprise">
         <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-users"></i>
@@ -395,8 +551,9 @@
         </ng-container>
     </div>
 
-    <!-- Entreprises affectées -->
-    <div class="card mb-3">
+    <!-- Entreprises affectées : gestion + vue globale (toutes entreprises confondues) —
+         masquée pour l'Entreprise, qui a sa propre carte "Mes sous-traitants ici" plus haut. -->
+    <div class="card mb-3" *ngIf="!isEntreprise">
         <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-building"></i>
@@ -475,8 +632,9 @@
         </ng-container>
     </div>
 
-    <!-- Salariés affectés -->
-    <div class="card mb-3">
+    <!-- Salariés affectés : gestion + vue globale (tous salariés confondus) — masquée pour
+         l'Entreprise, qui a sa propre carte "Mes salariés sur ce chantier" plus haut. -->
+    <div class="card mb-3" *ngIf="!isEntreprise">
         <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-users"></i>

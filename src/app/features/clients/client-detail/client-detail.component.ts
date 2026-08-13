@@ -76,6 +76,22 @@ export class ClientDetailComponent implements OnInit {
         return this.auth.hasRole('SUPER_ADMIN');
     }
 
+    get isEntreprise(): boolean {
+        return this.auth.hasRole('ENTREPRISE');
+    }
+
+    nomPays(id?: string): string {
+        return this.pays.find((p) => p.id === id)?.nom ?? '—';
+    }
+
+    get clientInitiales(): string {
+        const mots = (this.client?.raisonSociale ?? '').trim().split(/\s+/).filter(Boolean);
+        if (mots.length === 0) {
+            return '?';
+        }
+        return mots.length === 1 ? mots[0].slice(0, 2).toUpperCase() : (mots[0][0] + mots[1][0]).toUpperCase();
+    }
+
     ngOnInit(): void {
         this.referenceDataService.listerPays().subscribe((pays) => (this.pays = pays));
 

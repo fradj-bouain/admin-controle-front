@@ -69,6 +69,12 @@ export class EntrepriseDetailComponent implements OnInit {
     // nomChantierCalculee ajouté au chargement, pour permettre un p-columnFilter
     // texte simple sur le nom du chantier (le champ brut n'a que chantierId).
     mesAffectations: Array<AffectationEntrepriseChantier & { nomChantierCalculee: string }> = [];
+    // Sous-traitants (STT1/STT2) rattachés à cette entreprise sur ses chantiers — lecture seule,
+    // visible à tout le monde (SUPER_ADMIN comme Entreprise) : cette info manquait complètement
+    // avant (demande client). Recalculé explicitement dans recalculerSousTraitants(), jamais une
+    // getter (voir la note sur typesAFournir plus bas — un p-table peut aussi mal réagir à un
+    // tableau qui change de référence sans changer de contenu).
+    sousTraitants: Array<AffectationEntrepriseChantier & { nomChantierCalculee: string }> = [];
     roles: RoleEntreprise[] = ['PRINCIPALE', 'STT1', 'STT2'];
     affectationsChantierSelectionne: AffectationEntrepriseChantier[] = [];
     parentsDisponibles: Array<{ id: string; label: string }> = [];
@@ -203,6 +209,52 @@ export class EntrepriseDetailComponent implements OnInit {
 
     get isSuperAdmin(): boolean {
         return this.auth.hasRole('SUPER_ADMIN');
+    }
+
+    // --- Affichage lecture seule (Entreprise/Client/Contrôleur — seul le SUPER_ADMIN édite) ---
+    nomPays(id?: string): string {
+        return this.pays.find((p) => p.id === id)?.nom ?? '—';
+    }
+
+    nomCorpsDeMetier(id?: string): string {
+        return this.corpsDeMetiers.find((c) => c.id === id)?.libelle ?? '—';
+    }
+
+    // --- Vue Entreprise (prototype validé) : indicateurs + navigation vers la source ---
+    // Circonférence fixe de l'anneau SVG (viewBox 36x36, rayon 15.5 — voir brand.scss
+    // .ent-stat-ring / .ent-doc-progress-ring) : 2πr ≈ 97.39.
+    private readonly RING_CIRCONFERENCE = 2 * Math.PI * 15.5;
+
+    ringDashoffset(pourcentage: number): number {
+        const clamped = Math.min(100, Math.max(0, pourcentage || 0));
+        return this.RING_CIRCONFERENCE * (1 - clamped / 100);
+    }
+
+    get nbSalariesActifs(): number {
+        return this.salaries.filter((s) => s.statut === 'ACTIF').length;
+    }
+
+    get nbDocumentsExpirantBientot(): number {
+        return this.typesDejaFournis.filter((t) => this.expireBientot(this.documentsByType[t.id])).length;
+    }
+
+    /** Sévérité visuelle d'une ligne document fournie (liseré + icône, voir .ent-doc-row dans
+        brand.scss) — un document "En attente"/"Refusé"/expiré ne doit jamais paraître aussi
+        conforme qu'un document réellement validé, même s'il a un fichier attaché. */
+    documentSeverite(document: DocumentItem): 'ok' | 'missing' | 'danger' {
+        if (this.estExpire(document) || document.statutValidation === 'REFUSE') {
+            return 'danger';
+        }
+        if (document.statutValidation !== 'VALIDE' || this.expireBientot(document)) {
+            return 'missing';
+        }
+        return 'ok';
+    }
+
+    /** Ancre de page (stat "Documents"/"Sous-traitants" du bandeau d'en-tête) plutôt qu'un
+        changement de route — l'information est déjà sur cette page, un simple scroll suffit. */
+    scrollVersSection(id: string) {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     get isEntreprise(): boolean {
@@ -410,7 +462,29 @@ export class EntrepriseDetailComponent implements OnInit {
                 .sort((a, b) => b.dateDebut.localeCompare(a.dateDebut))
                 .map((a) => ({ ...a, nomChantierCalculee: this.nomChantier(a.chantierId) }));
             this.recalculerChantiersDisponibles();
+            this.recalculerSousTraitants();
         });
+    }
+
+    /** Sous-traitants directs (affectationParenteId = une de MES affectations) sur chacun de
+        mes chantiers. GET /chantiers/{id}/entreprises est ouvert à l'entreprise affectée (voir
+        AffectationEntrepriseChantierController), donc pas besoin de droits supplémentaires. */
+    private recalculerSousTraitants() {
+        if (this.mesAffectations.length === 0) {
+            this.sousTraitants = [];
+            return;
+        }
+        const mesAffectationIds = new Set(this.mesAffectations.map((a) => a.id));
+        const chantierIds = [...new Set(this.mesAffectations.map((a) => a.chantierId))];
+        forkJoin(chantierIds.map((id) => this.affectationService.lister(id))).subscribe((listesParChantier) => {
+            this.sousTraitants = listesParChantier.flat()
+                .filter((a) => a.affectationParenteId && mesAffectationIds.has(a.affectationParenteId))
+                .map((a) => ({ ...a, nomChantierCalculee: this.nomChantier(a.chantierId) }));
+        });
+    }
+
+    nomSousTraitant(affectation: AffectationEntrepriseChantier): string {
+        return affectation.raisonSocialeEntreprise ?? this.nomEntreprise(affectation.entrepriseId);
     }
 
     private recalculerChantiersDisponibles() {

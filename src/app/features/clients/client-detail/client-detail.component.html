@@ -1,7 +1,10 @@
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
-<div class="card mb-3">
+<!-- Bandeau retour + statut/actions : redondant avec la carte d'identité en vue Entreprise
+     (nom + statut y sont déjà) — masqué pour ce rôle, le bouton retour est repris dans le
+     bandeau sombre de la carte d'identité juste en dessous. -->
+<div class="card mb-3" *ngIf="!isEntreprise">
     <div class="flex align-items-center justify-content-between">
         <div class="flex align-items-center gap-3">
             <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
@@ -22,7 +25,78 @@
     </div>
 </div>
 
-<div class="grid">
+<!-- Vue Entreprise : carte d'identité en lecture seule — pas de formulaire désactivé,
+     pas de bloc Utilisateurs (comptes internes du client, hors sujet), pas de Liste des
+     chantiers (elle en verrait des chantiers où elle n'intervient même pas). -->
+<div class="mb-3" *ngIf="isEntreprise">
+    <div class="id-card" *ngIf="!loading && client">
+        <div class="id-card-band">
+            <button type="button" class="id-card-back" pTooltip="Retour à la liste" tooltipPosition="bottom" (click)="retour()">
+                <i class="pi pi-arrow-left"></i>
+            </button>
+            <div class="id-card-mark">{{ clientInitiales }}</div>
+            <div class="id-card-name-row">
+                <span class="id-card-name">{{ client.raisonSociale }}</span>
+                <div class="id-card-sub">
+                    <span class="status-pill" [class.success]="client.actif" [class.danger]="!client.actif">
+                        <span class="status-pill-dot"></span>{{ client.actif | etatLabel }}
+                    </span>
+                    <span *ngIf="client.ville">· {{ client.ville }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="id-card-body">
+            <div class="id-kv-grid">
+                <div>
+                    <div class="id-kv-label">Téléphone</div>
+                    <div class="id-kv-value">{{ client.telephone || '—' }}</div>
+                </div>
+                <div>
+                    <div class="id-kv-label">Email</div>
+                    <div class="id-kv-value">{{ client.email || '—' }}</div>
+                </div>
+            </div>
+            <div class="id-kv-grid single mt-3">
+                <div>
+                    <div class="id-kv-label">Adresse</div>
+                    <div class="id-kv-value wrap">
+                        {{ client.adresse || '—' }}<ng-container *ngIf="client.adresse2">, {{ client.adresse2 }}</ng-container><ng-container *ngIf="client.adresse3">, {{ client.adresse3 }}</ng-container>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ouverte par défaut (pas un tiroir replié) — demande explicite du client. -->
+            <div class="id-legal-section">
+                <div class="id-legal-section-title"><i class="pi pi-lock"></i>Informations légales</div>
+                <div class="id-kv-grid">
+                    <div>
+                        <div class="id-kv-label">Siren</div>
+                        <div class="id-kv-value">{{ client.siren || '—' }}</div>
+                    </div>
+                    <div>
+                        <div class="id-kv-label">Siret</div>
+                        <div class="id-kv-value">{{ client.siret || '—' }}</div>
+                    </div>
+                    <div>
+                        <div class="id-kv-label">RCS / RCI</div>
+                        <div class="id-kv-value">{{ client.rcsRci || '—' }}</div>
+                    </div>
+                    <div>
+                        <div class="id-kv-label">N° de TVA Intra</div>
+                        <div class="id-kv-value">{{ client.tvaIntra || '—' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="id-footnote">
+        <i class="pi pi-info-circle"></i>
+        Les comptes utilisateurs et la liste des chantiers de ce client ne sont pas visibles depuis votre compte Entreprise.
+    </div>
+</div>
+
+<div class="grid" *ngIf="!isEntreprise">
     <div class="col-12 lg:col-8">
         <!-- Coordonnées -->
         <div class="card mb-3">
@@ -244,8 +318,9 @@
     </div>
 </div>
 
-<!-- Liste des chantiers -->
-<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
+<!-- Liste des chantiers : masquée pour l'Entreprise (elle y verrait des chantiers du
+     client où elle n'intervient même pas — voir note dans la carte d'identité). -->
+<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-map-marker"></i>

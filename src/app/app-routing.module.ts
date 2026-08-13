@@ -20,7 +20,9 @@ const routes: Routes = [
             { path: 'chantiers', data: { breadcrumb: 'menu.chantiers' }, loadChildren: () => import('./features/chantiers/chantiers.module').then(m => m.ChantiersModule) },
             { path: 'entreprises', data: { breadcrumb: 'menu.entreprises' }, loadChildren: () => import('./features/entreprises/entreprises.module').then(m => m.EntreprisesModule) },
             { path: 'salaries', data: { breadcrumb: 'menu.salaries' }, loadChildren: () => import('./features/salaries/salaries.module').then(m => m.SalariesModule) },
-            { path: 'controles', data: { breadcrumb: 'menu.controles' }, loadChildren: () => import('./features/controles/controles.module').then(m => m.ControlesModule) },
+            // Contrôles/Rapports : réservé au SUPER_ADMIN et au CLIENT (donneur d'ordre) — ne
+            // concerne pas l'Entreprise, qui n'a pas à voir/gérer ses propres contrôles.
+            { path: 'controles', data: { breadcrumb: 'menu.controles', roles: ['SUPER_ADMIN', 'CLIENT', 'CONTROLEUR'] }, loadChildren: () => import('./features/controles/controles.module').then(m => m.ControlesModule) },
             { path: 'documents', data: { breadcrumb: 'menu.documents' }, loadChildren: () => import('./features/documents/documents.module').then(m => m.DocumentsModule) },
             { path: 'mon-equipe', data: { breadcrumb: 'menu.monEquipe', roles: ['CLIENT', 'ENTREPRISE'] }, loadChildren: () => import('./features/mon-equipe/mon-equipe.module').then(m => m.MonEquipeModule) },
             // Accès en lecture (boîte de réception + envoyés) ouvert à CLIENT/ENTREPRISE —
