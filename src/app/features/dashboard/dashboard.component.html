@@ -30,7 +30,7 @@
     </div>
 </div>
 
-<div class="grid" *ngIf="!estControleur">
+<div class="grid" *ngIf="!estControleur && !estEntreprise">
     <div class="col-12 md:col-4">
         <div class="card mb-0">
             <app-stat-tile
@@ -114,7 +114,7 @@
     </p-table>
 </div>
 
-<div class="grid" *ngIf="!chargement && !estControleur">
+<div class="grid" *ngIf="!chargement && !estControleur && !estEntreprise">
     <div class="col-12 lg:col-6">
         <div class="card">
             <h6 class="mb-4">État du parc</h6>
@@ -127,5 +127,154 @@
             <h6 class="mb-4">Salariés par type de contrat</h6>
             <p-chart type="bar" [data]="chartTypesContrat" [options]="chartOptions" height="16rem"></p-chart>
         </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     Dashboard Entreprise : indicateurs propres à sa situation (conformité
+     documentaire, chantiers, salariés) plutôt que le dashboard "standard"
+     (tuile Entreprises inutile pour ce rôle, toujours 1/1 — voir retour client)
+     + un bloc "À traiter" et "Aide & support" absents jusqu'ici pour l'Entreprise.
+     ============================================================ -->
+<div class="card mb-3" *ngIf="estEntreprise && !chargement">
+    <h5 class="m-0">Bonjour, {{ nomEntreprise }}</h5>
+    <p class="text-500 text-sm mt-1 mb-0">Voici où en est votre conformité et vos chantiers en cours.</p>
+
+    <div class="ent-hero-stats">
+        <button type="button" class="ent-stat" [routerLink]="['/entreprises']">
+            <span class="ent-stat-ring">
+                <svg viewBox="0 0 36 36">
+                    <circle class="ent-stat-ring-track" cx="18" cy="18" r="15.5"></circle>
+                    <circle class="ent-stat-ring-value" cx="18" cy="18" r="15.5"
+                        [attr.stroke]="statDocumentsEntreprise?.pourcentage === 100 ? 'var(--brand-success)' : 'var(--brand-warning)'"
+                        [attr.stroke-dasharray]="97.39"
+                        [attr.stroke-dashoffset]="97.39 - (97.39 * (statDocumentsEntreprise?.pourcentage ?? 0) / 100)"></circle>
+                </svg>
+            </span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ statDocumentsEntreprise?.fournis ?? 0 }}<small>/{{ statDocumentsEntreprise?.total ?? 0 }}</small></span>
+                <span class="ent-stat-label">Documents conformes</span>
+            </span>
+        </button>
+        <button type="button" class="ent-stat" [routerLink]="['/chantiers']">
+            <span class="ent-stat-icon tint-accent"><i class="pi pi-map-marker"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ statChantiers?.actifs ?? 0 }}</span>
+                <span class="ent-stat-label">Chantiers actifs</span>
+            </span>
+        </button>
+        <button type="button" class="ent-stat" [routerLink]="['/salaries']">
+            <span class="ent-stat-icon tint-info"><i class="pi pi-users"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ statSalaries?.total ?? 0 }}<small> · {{ statSalariesChantier?.surChantier ?? 0 }} sur chantier</small></span>
+                <span class="ent-stat-label">Salariés</span>
+            </span>
+        </button>
+        <button type="button" class="ent-stat" [routerLink]="['/entreprises']">
+            <span class="ent-stat-icon tint-warning"><i class="pi pi-clock"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ nbDocumentsExpirantBientot }}</span>
+                <span class="ent-stat-label">Documents expirent bientôt</span>
+            </span>
+        </button>
+    </div>
+</div>
+
+<div class="ent-layout mb-3" *ngIf="estEntreprise && !chargement">
+    <div class="ent-col">
+
+        <!-- À traiter -->
+        <div class="card">
+            <div class="card-head">
+                <i class="pi pi-check-square"></i>
+                <h6 class="m-0">À traiter</h6>
+            </div>
+            <ng-container *ngIf="documentsATraiter.length > 0">
+                <button type="button" class="ent-doc-row" [ngClass]="d.severite === 'danger' ? 'danger' : 'missing'" [routerLink]="['/entreprises']" *ngFor="let d of documentsATraiter">
+                    <span class="ent-doc-row-icon" [ngClass]="d.severite === 'danger' ? 'danger' : 'warn'">
+                        <i class="pi" [class.pi-file]="d.severite === 'danger'" [class.pi-clock]="d.severite === 'warn'"></i>
+                    </span>
+                    <span class="ent-doc-row-body">
+                        <span class="ent-doc-row-title">{{ d.libelle }}</span>
+                        <span class="ent-doc-row-sub">{{ d.sousTitre }}</span>
+                    </span>
+                    <span class="ent-doc-row-end">
+                        <p-tag [severity]="d.severite === 'danger' ? 'danger' : 'warning'" [value]="d.severite === 'danger' ? 'À fournir' : 'Bientôt'"></p-tag>
+                    </span>
+                </button>
+            </ng-container>
+            <p class="text-500 text-sm m-0" *ngIf="documentsATraiter.length === 0">Rien à signaler — tous vos documents obligatoires sont à jour.</p>
+        </div>
+
+        <!-- Mes chantiers -->
+        <div class="card">
+            <div class="card-head justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-map-marker"></i>
+                    <h6 class="m-0">Mes chantiers</h6>
+                </div>
+                <a class="card-head-action" style="font-size:0.78rem; font-weight:600; color:var(--brand-accent-ink); cursor:pointer;" [routerLink]="['/chantiers']">Tout voir</a>
+            </div>
+            <div class="ent-compact-list" *ngIf="mesChantiersActifs.length > 0">
+                <button type="button" class="ent-compact-row" [routerLink]="['/chantiers']" *ngFor="let c of mesChantiersActifs">
+                    <span class="ent-compact-row-icon"><i class="pi pi-building"></i></span>
+                    <span class="ent-compact-row-body">
+                        <span class="ent-compact-row-title">{{ c.nom }}</span>
+                        <span class="ent-compact-row-sub">{{ c.nomClient }}</span>
+                    </span>
+                </button>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="mesChantiersActifs.length === 0">Aucun chantier actif pour l'instant.</p>
+        </div>
+
+    </div>
+
+    <div class="ent-col">
+
+        <!-- Aide & support -->
+        <div class="support-card">
+            <div class="support-card-inner">
+                <h3>Besoin d'aide ?</h3>
+                <p>L'équipe ADMIN-CONTROL'BTP vous accompagne pour toute question sur vos documents ou vos chantiers.</p>
+
+                <div class="support-item">
+                    <span class="support-item-icon"><i class="pi pi-phone"></i></span>
+                    <span class="support-item-text">
+                        <div class="support-item-label">Téléphone</div>
+                        <div class="support-item-value">+33 (0)5 35 54 23 58</div>
+                    </span>
+                </div>
+                <div class="support-item">
+                    <span class="support-item-icon"><i class="pi pi-envelope"></i></span>
+                    <span class="support-item-text">
+                        <div class="support-item-label">Email</div>
+                        <div class="support-item-value"><a href="mailto:suivi.chantier.control.btp&#64;gmail.com">suivi.chantier.control.btp&#64;gmail.com</a></div>
+                    </span>
+                </div>
+                <div class="support-item">
+                    <span class="support-item-icon"><i class="pi pi-clock"></i></span>
+                    <span class="support-item-text">
+                        <div class="support-item-label">Horaires</div>
+                        <div class="support-item-value">Lun–Ven, 8h30–12h00</div>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activité récente -->
+        <div class="card">
+            <div class="card-head">
+                <i class="pi pi-history"></i>
+                <h6 class="m-0">Activité récente</h6>
+            </div>
+            <div *ngIf="activiteRecente.length > 0">
+                <div class="ent-history-item" *ngFor="let a of activiteRecente">
+                    <span class="ent-history-date tabular-nums">{{ a.date | date: 'dd/MM/yyyy' }}</span>
+                    <span class="ent-history-text">{{ a.texte }}</span>
+                </div>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="activiteRecente.length === 0">Aucune activité récente.</p>
+        </div>
+
     </div>
 </div>

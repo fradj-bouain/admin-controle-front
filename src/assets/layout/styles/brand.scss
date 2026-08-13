@@ -1673,3 +1673,47 @@ a { color: var(--brand-accent-ink); }
     margin-top: 1.25rem;
 }
 .id-footnote i { color: var(--brand-accent-ink); flex-shrink: 0; }
+
+/* ================================================================
+ * Tableau de bord — bloc « Aide & support » (vue Entreprise). Le reste du
+ * dashboard Entreprise réutilise .ent-hero-stats/.ent-doc-row/.ent-compact-row/
+ * .ent-history-item déjà posés pour les fiches détail — rien de nouveau à styler.
+ * ================================================================ */
+.support-card {
+    background: linear-gradient(155deg, var(--brand-sidebar) 0%, #22262f 100%);
+    border-radius: 14px;
+    padding: 1.5rem 1.6rem;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+}
+.support-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(135deg, rgba(181, 105, 28, 0.1) 0 1px, transparent 1px 26px);
+    pointer-events: none;
+}
+.support-card-inner { position: relative; z-index: 1; }
+.support-card h3 { color: #fff; font-family: 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 700; font-size: 1.05rem; margin: 0; }
+.support-card p { color: rgba(255, 255, 255, 0.65); font-size: 0.85rem; margin: 0.5rem 0 1.2rem; line-height: 1.5; }
+.support-item { display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem 0; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+.support-item:first-of-type { border-top: none; }
+.support-item-icon {
+    width: 2rem; height: 2rem; border-radius: 8px;
+    background: rgba(181, 105, 28, 0.25); color: #e8b788;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    font-size: 0.85rem;
+}
+.support-item-text { min-width: 0; }
+.support-item-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: rgba(255, 255, 255, 0.5); }
+.support-item-value { font-size: 0.86rem; font-weight: 600; color: #fff; }
+.support-item-value a { color: #fff; text-decoration: none; }
+.support-item-value a:hover { text-decoration: underline; }
+.support-btn {
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    width: 100%; margin-top: 1.2rem; padding: 0.7rem; border-radius: 8px;
+    background: var(--brand-accent); color: #fff; font-weight: 600; font-size: 0.85rem;
+    border: none; cursor: pointer; text-decoration: none;
+}
+.support-btn:hover { background: var(--brand-accent-hover); color: #fff; }

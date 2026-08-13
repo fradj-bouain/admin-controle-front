@@ -26,6 +26,9 @@ export interface Entreprise {
     // = aucun, affiché "Disponible") — à ne pas confondre avec `actif` ci-dessus, un
     // simple interrupteur administratif sans lien avec une affectation réelle.
     chantierActuel?: string | null;
+    // Rang(s) (PRINCIPALE/STT1/STT2) sur ses chantiers en cours — absent/null = aucune
+    // affectation active. Plusieurs rangs distincts possibles, séparés par ", ".
+    rangActuel?: string | null;
 }
 
 export interface CreateEntrepriseRequest {

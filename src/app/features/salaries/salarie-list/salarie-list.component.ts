@@ -5,6 +5,8 @@ import { Salarie } from '../models/salarie.model';
 import { SalarieService } from '../services/salarie.service';
 import { Entreprise } from 'src/app/features/entreprises/models/entreprise.model';
 import { EntrepriseService } from 'src/app/features/entreprises/services/entreprise.service';
+import { SalarieFonction } from 'src/app/features/configuration/models/configuration.model';
+import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
 
 @Component({
@@ -14,10 +16,11 @@ import { AuthService } from 'src/app/core/auth/auth.service';
 })
 export class SalarieListComponent implements OnInit {
 
-    // nomEntrepriseCalculee ajoutée au chargement, pour permettre un
-    // p-columnFilter texte simple (le champ brut n'a que entrepriseEmployeurId).
-    salaries: Array<Salarie & { nomEntrepriseCalculee: string }> = [];
+    // nomEntrepriseCalculee/libelleFonctionCalculee ajoutées au chargement, pour permettre
+    // un p-columnFilter texte simple (les champs bruts n'ont que des ids).
+    salaries: Array<Salarie & { nomEntrepriseCalculee: string; libelleFonctionCalculee: string }> = [];
     entreprises: Entreprise[] = [];
+    fonctions: SalarieFonction[] = [];
     loading = false;
     afficherFiltresAvances = false;
     menuItems: MenuItem[] = [];
@@ -28,6 +31,7 @@ export class SalarieListComponent implements OnInit {
     constructor(
         private salarieService: SalarieService,
         private entrepriseService: EntrepriseService,
+        private referenceDataService: ReferenceDataService,
         private confirmation: ConfirmationService,
         private message: MessageService,
         public auth: AuthService
@@ -49,11 +53,17 @@ export class SalarieListComponent implements OnInit {
         this.loading = true;
         forkJoin({
             salaries: this.salarieService.lister(),
-            entreprises: this.entrepriseService.lister()
+            entreprises: this.entrepriseService.lister(),
+            fonctions: this.referenceDataService.listerSalarieFonction()
         }).subscribe({
-            next: ({ salaries, entreprises }) => {
+            next: ({ salaries, entreprises, fonctions }) => {
                 this.entreprises = entreprises;
-                this.salaries = salaries.map((s) => ({ ...s, nomEntrepriseCalculee: this.nomEntreprise(s.entrepriseEmployeurId) }));
+                this.fonctions = fonctions;
+                this.salaries = salaries.map((s) => ({
+                    ...s,
+                    nomEntrepriseCalculee: this.nomEntreprise(s.entrepriseEmployeurId),
+                    libelleFonctionCalculee: this.nomFonction(s.fonctionId)
+                }));
                 this.loading = false;
             },
             error: () => {
@@ -70,6 +80,10 @@ export class SalarieListComponent implements OnInit {
 
     nomEntreprise(entrepriseId: string): string {
         return this.entreprises.find((e) => e.id === entrepriseId)?.raisonSociale ?? entrepriseId;
+    }
+
+    nomFonction(fonctionId?: string): string {
+        return this.fonctions.find((f) => f.id === fonctionId)?.libelle ?? '—';
     }
 
     confirmerBasculeStatut(salarie: Salarie) {
