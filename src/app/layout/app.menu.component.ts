@@ -17,6 +17,11 @@ export class AppMenuComponent implements OnInit {
         const estEntreprise = this.auth.hasRole('ENTREPRISE');
         const estClient = this.auth.hasRole('CLIENT');
         const gereSaPropreEquipe = estClient || estEntreprise;
+        // "Mon équipe" (créer/modifier/désactiver/supprimer des comptes) est réservé, côté
+        // Client, au profil "accès total" (voir Utilisateur.accesTousChantiers) — un
+        // "responsable de chantier" n'a pas à administrer le reste de l'équipe. Sans
+        // incidence sur Entreprise, qui n'a pas cette notion à deux niveaux.
+        const peutGererEquipe = estEntreprise || (estClient && this.auth.accesTousChantiers);
 
         this.model = [
             {
@@ -72,8 +77,9 @@ export class AppMenuComponent implements OnInit {
                 routerLink: ['/documents']
             }] : []),
             // Mon équipe : auto-gestion des comptes utilisateurs rattachés à sa propre
-            // session (Client ou Entreprise) — n'existe pas pour Contrôleur.
-            ...(gereSaPropreEquipe ? [{
+            // session (Client ou Entreprise) — n'existe pas pour Contrôleur, ni pour un
+            // Client "responsable de chantier" (voir peutGererEquipe).
+            ...(peutGererEquipe ? [{
                 label: 'menu.monEquipe',
                 icon: 'pi pi-fw pi-users',
                 routerLink: ['/mon-equipe']

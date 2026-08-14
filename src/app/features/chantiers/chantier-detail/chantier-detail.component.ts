@@ -310,19 +310,25 @@ export class ChantierDetailComponent implements OnInit {
     }
 
     /** Comptes Client rattachés au client de CE chantier — seuls candidats pertinents
-        pour une assignation ici (inutile de proposer les comptes d'un autre client). */
-    get utilisateursClientDuChantier(): Utilisateur[] {
-        if (!this.chantier) {
-            return [];
-        }
-        return this.utilisateurs.filter((u) => u.clientId === this.chantier!.clientId);
-    }
+        pour une assignation ici (inutile de proposer les comptes d'un autre client).
+        Champ recalculé explicitement (jamais une getter) : un getter réévalué à chaque
+        cycle de détection de changement, combiné à un p-dropdown filtrable, produit une
+        nouvelle référence de tableau en continu — PrimeNG perd alors la sélection/le
+        filtre en cours (déjà rencontré ailleurs dans cette fiche, voir mesAffectations/
+        affectationsEntreprise, jamais des getters pour la même raison). */
+    utilisateursClientDuChantier: Utilisateur[] = [];
 
     /** Parmi les assignations de ce chantier, celles qui concernent un compte Client
         (le reste, potentiellement des comptes internes, reste dans "Utilisateurs du
         Back Office" — même table chantier_utilisateur, affichage simplement séparé). */
-    get utilisateursClientAssignes(): Utilisateur[] {
-        return this.utilisateursClientDuChantier.filter((u) => this.chantierUtilisateurIds.includes(u.id));
+    utilisateursClientAssignes: Utilisateur[] = [];
+
+    private recalculerUtilisateursClient() {
+        this.utilisateursClientDuChantier = this.chantier
+            ? this.utilisateurs.filter((u) => u.clientId === this.chantier!.clientId)
+            : [];
+        this.utilisateursClientAssignes = this.utilisateursClientDuChantier
+            .filter((u) => this.chantierUtilisateurIds.includes(u.id));
     }
 
     ngOnInit(): void {
@@ -330,7 +336,10 @@ export class ChantierDetailComponent implements OnInit {
         this.referenceDataService.listerPays().subscribe((pays) => (this.pays = pays));
         this.referenceDataService.listerTypeContratSalarie().subscribe((types) => (this.typesContrat = types));
         this.referenceDataService.listerControleTiers().subscribe((tiers) => (this.controleTiersListe = tiers));
-        this.utilisateurService.lister().subscribe((utilisateurs) => (this.utilisateurs = utilisateurs));
+        this.utilisateurService.lister().subscribe((utilisateurs) => {
+            this.utilisateurs = utilisateurs;
+            this.recalculerUtilisateursClient();
+        });
         this.salarieService.lister().subscribe((salaries) => {
             this.salaries = salaries;
             this.recalculerSalariesDisponibles();
@@ -369,6 +378,7 @@ export class ChantierDetailComponent implements OnInit {
         this.chantierService.obtenir(id).subscribe({
             next: (c) => {
                 this.chantier = c;
+                this.recalculerUtilisateursClient();
                 this.coordonneesForm.patchValue({
                     ...c,
                     dateDebut: c.dateDebut ? new Date(c.dateDebut) : null,
@@ -545,6 +555,7 @@ export class ChantierDetailComponent implements OnInit {
     chargerUtilisateurs(chantierId: string) {
         this.chantierUtilisateurService.lister(chantierId).subscribe((liste) => {
             this.chantierUtilisateurIds = liste.map((u) => u.utilisateurId);
+            this.recalculerUtilisateursClient();
         });
     }
 

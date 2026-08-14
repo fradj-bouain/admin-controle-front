@@ -16,6 +16,9 @@ interface JwtClaims {
     roles: string[];
     entreprise_id?: string;
     client_id?: string;
+    // Uniquement présent aux côtés de client_id (voir AuthenticationService) : profil
+    // "accès total" vs "responsable de chantier" d'un compte Client.
+    acces_tous_chantiers?: boolean;
     controle_tiers_id?: string;
     exp: number;
 }
@@ -77,6 +80,11 @@ export class AuthService {
 
     get clientId(): string | undefined {
         return this.claims()?.client_id;
+    }
+
+    /** Uniquement pertinent pour un compte Client — false pour tout le reste. */
+    get accesTousChantiers(): boolean {
+        return this.claims()?.acces_tous_chantiers ?? false;
     }
 
     get controleTiersId(): string | undefined {
