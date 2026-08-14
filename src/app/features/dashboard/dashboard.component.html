@@ -30,7 +30,7 @@
     </div>
 </div>
 
-<div class="grid" *ngIf="!estControleur && !estEntreprise">
+<div class="grid" *ngIf="!estControleur && !estEntreprise && !estClient">
     <div class="col-12 md:col-4">
         <div class="card mb-0">
             <app-stat-tile
@@ -114,7 +114,7 @@
     </p-table>
 </div>
 
-<div class="grid" *ngIf="!chargement && !estControleur && !estEntreprise">
+<div class="grid" *ngIf="!chargement && !estControleur && !estEntreprise && !estClient">
     <div class="col-12 lg:col-6">
         <div class="card">
             <h6 class="mb-4">État du parc</h6>
@@ -274,6 +274,157 @@
                 </div>
             </div>
             <p class="text-500 text-sm m-0" *ngIf="activiteRecente.length === 0">Aucune activité récente.</p>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================
+     Dashboard Client : vue d'ensemble rassurante d'un maître d'ouvrage sur SES
+     chantiers — jamais le registre complet (Documents/Contrôles/Salariés/Entreprises
+     bruts n'ont pas leur place ici, voir menu Client). Les chiffres reflètent
+     automatiquement son périmètre réel : "accès total" voit tout le client, un
+     "responsable de chantier" ne voit que ses chantiers assignés (voir estClient).
+     ============================================================ -->
+<div class="card mb-3" *ngIf="estClient && !chargement">
+    <h5 class="m-0">Bonjour, {{ nomClient }}</h5>
+    <p class="text-500 text-sm mt-1 mb-0">Voici l'état de vos chantiers et des entreprises qui y interviennent.</p>
+
+    <div class="mt-3 p-3 border-round flex align-items-center gap-2 text-sm font-medium"
+         [ngClass]="banniereClientOk ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'">
+        <i class="pi" [class.pi-check-circle]="banniereClientOk" [class.pi-exclamation-triangle]="!banniereClientOk"></i>
+        {{ banniereClientTexte }}
+    </div>
+
+    <div class="ent-hero-stats">
+        <button type="button" class="ent-stat" [routerLink]="['/chantiers']">
+            <span class="ent-stat-icon tint-accent"><i class="pi pi-map-marker"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ statChantiers?.actifs ?? 0 }}</span>
+                <span class="ent-stat-label">Chantiers actifs</span>
+            </span>
+        </button>
+        <button type="button" class="ent-stat" [routerLink]="['/entreprises']">
+            <span class="ent-stat-icon tint-info"><i class="pi pi-briefcase"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ nbEntreprisesIntervenantes }}</span>
+                <span class="ent-stat-label">Entreprises intervenantes</span>
+            </span>
+        </button>
+        <button type="button" class="ent-stat" [routerLink]="['/salaries']">
+            <span class="ent-stat-icon tint-success"><i class="pi pi-users"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ nbSalariesSurChantiers }}</span>
+                <span class="ent-stat-label">Salariés sur mes chantiers</span>
+            </span>
+        </button>
+        <button type="button" class="ent-stat" [routerLink]="['/controles']">
+            <span class="ent-stat-icon tint-warning"><i class="pi pi-verified"></i></span>
+            <span class="ent-stat-body">
+                <span class="ent-stat-value tabular-nums">{{ statControles?.actifs ?? 0 }}<small>/{{ statControles?.total ?? 0 }}</small></span>
+                <span class="ent-stat-label">Contrôles terminés</span>
+            </span>
+        </button>
+    </div>
+</div>
+
+<div class="ent-layout mb-3" *ngIf="estClient && !chargement">
+    <div class="ent-col">
+
+        <!-- Mes chantiers -->
+        <div class="card">
+            <div class="card-head">
+                <i class="pi pi-map-marker"></i>
+                <h6 class="m-0">Mes chantiers</h6>
+            </div>
+            <div class="ent-compact-list" *ngIf="mesChantiersClient.length > 0">
+                <button type="button" class="ent-compact-row" [routerLink]="['/chantiers', c.id]" *ngFor="let c of mesChantiersClient">
+                    <span class="ent-compact-row-icon"><i class="pi pi-building"></i></span>
+                    <span class="ent-compact-row-body">
+                        <span class="ent-compact-row-title">{{ c.nom }}</span>
+                        <span class="ent-compact-row-sub" *ngIf="c.ville">{{ c.ville }}</span>
+                    </span>
+                    <span class="ent-compact-row-end"><p-tag severity="success" value="Actif"></p-tag></span>
+                </button>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="mesChantiersClient.length === 0">Aucun chantier actif pour l'instant.</p>
+        </div>
+
+        <!-- Entreprises sur mes chantiers -->
+        <div class="card">
+            <div class="card-head justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-briefcase"></i>
+                    <h6 class="m-0">Entreprises sur mes chantiers</h6>
+                </div>
+                <a class="card-head-action" style="font-size:0.78rem; font-weight:600; color:var(--brand-accent-ink); cursor:pointer;" [routerLink]="['/entreprises']">Tout voir</a>
+            </div>
+            <div class="ent-compact-list" *ngIf="entreprisesSurMesChantiers.length > 0">
+                <button type="button" class="ent-compact-row" [routerLink]="['/entreprises', e.id]" *ngFor="let e of entreprisesSurMesChantiers">
+                    <span class="ent-compact-row-icon"><i class="pi pi-briefcase"></i></span>
+                    <span class="ent-compact-row-body">
+                        <span class="ent-compact-row-title">{{ e.raisonSociale }}</span>
+                        <span class="ent-compact-row-sub" *ngIf="e.chantierActuel">{{ e.chantierActuel }}</span>
+                    </span>
+                    <span class="ent-compact-row-end" *ngIf="e.rangActuel"><p-tag severity="info" [value]="e.rangActuel"></p-tag></span>
+                </button>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="entreprisesSurMesChantiers.length === 0">Aucune entreprise sur vos chantiers pour l'instant.</p>
+        </div>
+
+    </div>
+
+    <div class="ent-col">
+
+        <!-- Derniers contrôles -->
+        <div class="card">
+            <div class="card-head">
+                <i class="pi pi-verified"></i>
+                <h6 class="m-0">Derniers contrôles</h6>
+            </div>
+            <div class="ent-compact-list" *ngIf="derniersControlesClient.length > 0">
+                <div class="ent-compact-row" style="cursor:default;" *ngFor="let c of derniersControlesClient">
+                    <span class="ent-compact-row-icon"><i class="pi" [class.pi-check-square]="c.termine" [class.pi-clock]="!c.termine"></i></span>
+                    <span class="ent-compact-row-body">
+                        <span class="ent-compact-row-title">{{ c.chantierNom }}</span>
+                        <span class="ent-compact-row-sub">{{ c.termine ? 'Contrôlé le' : 'Prévu le' }} {{ c.date | date: 'dd/MM/yyyy' }}</span>
+                    </span>
+                    <span class="ent-compact-row-end">
+                        <p-tag [severity]="c.termine ? 'success' : 'warning'" [value]="c.termine ? 'Terminé' : 'En cours'"></p-tag>
+                    </span>
+                </div>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="derniersControlesClient.length === 0">Aucun contrôle pour l'instant.</p>
+        </div>
+
+        <!-- Aide & support -->
+        <div class="support-card">
+            <div class="support-card-inner">
+                <h3>Besoin d'aide ?</h3>
+                <p>L'équipe ADMIN-CONTROL'BTP vous accompagne pour toute question sur vos chantiers ou les entreprises qui y interviennent.</p>
+
+                <div class="support-item">
+                    <span class="support-item-icon"><i class="pi pi-phone"></i></span>
+                    <span class="support-item-text">
+                        <div class="support-item-label">Téléphone</div>
+                        <div class="support-item-value">+33 (0)5 35 54 23 58</div>
+                    </span>
+                </div>
+                <div class="support-item">
+                    <span class="support-item-icon"><i class="pi pi-envelope"></i></span>
+                    <span class="support-item-text">
+                        <div class="support-item-label">Email</div>
+                        <div class="support-item-value"><a href="mailto:suivi.chantier.control.btp&#64;gmail.com">suivi.chantier.control.btp&#64;gmail.com</a></div>
+                    </span>
+                </div>
+                <div class="support-item">
+                    <span class="support-item-icon"><i class="pi pi-clock"></i></span>
+                    <span class="support-item-text">
+                        <div class="support-item-label">Horaires</div>
+                        <div class="support-item-value">Lun–Ven, 8h30–12h00</div>
+                    </span>
+                </div>
+            </div>
         </div>
 
     </div>

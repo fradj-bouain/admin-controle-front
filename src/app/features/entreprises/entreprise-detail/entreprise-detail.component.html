@@ -1,7 +1,7 @@
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
-<div class="card mb-3">
+<div class="card mb-3" *ngIf="!isClient">
     <div class="flex align-items-center justify-content-between">
         <div class="flex align-items-center gap-3">
             <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
@@ -410,6 +410,262 @@
     </div>
 </div>
 
+<!-- ============================================================
+     Vue Client (lecture seule) : cette entreprise consultée par un compte Client, limitée
+     à ce qui le concerne — chantiers EN COMMUN uniquement (jamais le reste du portefeuille
+     de l'entreprise, voir EntrepriseController.listerChantiers), salariés nominatifs sur
+     CES chantiers (voir retour client : un décompte ne suffit pas), conformité documentaire
+     en lecture seule (aucun dépôt/validation possible pour ce rôle). Remplace entièrement,
+     pour ce rôle uniquement, tout ce qui précède (formulaire admin, gestion des
+     affectations/sous-traitants/utilisateurs, messagerie). ============================================================ -->
+<div class="chantier-hero" *ngIf="isClient && !isNew">
+    <div class="chantier-hero-inner">
+        <div class="chantier-hero-top">
+            <div class="chantier-hero-title-row">
+                <button type="button" class="id-card-back" pTooltip="Retour" tooltipPosition="bottom" (click)="retour()">
+                    <i class="pi pi-arrow-left"></i>
+                </button>
+                <div class="chantier-hero-mark">{{ (entreprise?.raisonSociale || '?') | slice:0:2 | uppercase }}</div>
+                <div *ngIf="entreprise">
+                    <h1 class="chantier-hero-title">{{ entreprise.raisonSociale }}</h1>
+                    <div class="chantier-hero-sub">
+                        <span class="status-pill" [class.success]="entreprise.actif" [class.danger]="!entreprise.actif">
+                            <span class="status-pill-dot"></span>{{ entreprise.actif | etatLabel }}
+                        </span>
+                        <span>·</span>
+                        <span>{{ nomCorpsDeMetier(entreprise.corpsDeMetierId) }}</span>
+                        <ng-container *ngIf="entreprise.ville"><span>·</span><span>{{ entreprise.ville }}</span></ng-container>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chantier-hero-stats">
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-icon"><i class="pi pi-sitemap"></i></span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value">{{ roleClient }}</span>
+                    <span class="chantier-hstat-label">Rôle sur mes chantiers</span>
+                </span>
+            </div>
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-icon blue"><i class="pi pi-map-marker"></i></span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value tabular-nums">{{ mesAffectations.length }}</span>
+                    <span class="chantier-hstat-label">Chantier(s) en commun</span>
+                </span>
+            </div>
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-ring">
+                    <svg viewBox="0 0 36 36">
+                        <circle class="chantier-hstat-ring-track" cx="18" cy="18" r="15.5"></circle>
+                        <circle class="chantier-hstat-ring-value" cx="18" cy="18" r="15.5"
+                            [attr.stroke]="pourcentageObligatoires === 100 ? '#a9e0bf' : '#f0d19f'"
+                            [attr.stroke-dasharray]="97.39"
+                            [attr.stroke-dashoffset]="ringDashoffset(pourcentageObligatoires)"></circle>
+                    </svg>
+                    <span class="chantier-hstat-ring-num">{{ pourcentageObligatoires }}%</span>
+                </span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value tabular-nums">{{ nbObligatoiresFournis }}<small>/{{ nbObligatoiresTotal }}</small></span>
+                    <span class="chantier-hstat-label">Documents conformes</span>
+                </span>
+            </div>
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-icon"><i class="pi pi-users"></i></span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value tabular-nums">{{ salariesSurMesChantiersClient.length }}</span>
+                    <span class="chantier-hstat-label">Salarié(s) sur mes chantiers</span>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="ent-layout mb-3" *ngIf="isClient && !isNew">
+    <div class="ent-col">
+
+        <!-- Coordonnées + identification -->
+        <div class="card">
+            <div class="card-head">
+                <i class="pi pi-building"></i>
+                <h6 class="m-0">Coordonnées</h6>
+            </div>
+            <ng-container *ngIf="entreprise">
+                <div class="ent-kv-grid">
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Téléphone</div>
+                        <div class="ent-kv-value">{{ entreprise.telephone || '—' }}</div>
+                    </div>
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Email</div>
+                        <div class="ent-kv-value">{{ entreprise.email || '—' }}</div>
+                    </div>
+                </div>
+                <div class="ent-kv-grid single mt-3">
+                    <div class="ent-kv">
+                        <div class="ent-kv-label">Adresse</div>
+                        <div class="ent-kv-value wrap">
+                            {{ entreprise.adresse || '—' }}<ng-container *ngIf="entreprise.adresse2">, {{ entreprise.adresse2 }}</ng-container><ng-container *ngIf="entreprise.adresse3">, {{ entreprise.adresse3 }}</ng-container>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ent-legal" style="border-top: 1px dashed var(--brand-border); margin-top: 1.1rem; padding-top: 1rem;">
+                    <div class="ent-legal-title" style="display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; font-weight:600; color:var(--ink-soft, #5C6270); margin-bottom: 0.9rem;">
+                        <i class="pi pi-lock"></i> Identification
+                    </div>
+                    <div class="ent-legal-body">
+                        <div class="ent-kv">
+                            <div class="ent-kv-label">Corps de métier</div>
+                            <div class="ent-kv-value">{{ nomCorpsDeMetier(entreprise.corpsDeMetierId) }}</div>
+                        </div>
+                        <div class="ent-kv">
+                            <div class="ent-kv-label">Siret</div>
+                            <div class="ent-kv-value">{{ entreprise.siret || '—' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </ng-container>
+        </div>
+
+        <!-- Chantiers en commun -->
+        <div class="card">
+            <div class="card-head">
+                <i class="pi pi-map-marker"></i>
+                <h6 class="m-0">Chantiers en commun</h6>
+            </div>
+            <div class="ent-compact-list" *ngIf="mesAffectations.length > 0">
+                <button
+                    type="button"
+                    class="ent-compact-row"
+                    *ngFor="let affectation of mesAffectations"
+                    [routerLink]="['/chantiers', affectation.chantierId]"
+                    [pTooltip]="'Ouvrir le chantier ' + affectation.nomChantierCalculee"
+                >
+                    <span class="ent-compact-row-icon"><i class="pi pi-building"></i></span>
+                    <span class="ent-compact-row-body">
+                        <span class="ent-compact-row-title">{{ affectation.nomChantierCalculee }}</span>
+                        <span class="ent-compact-row-sub">Depuis le {{ affectation.dateDebut | date: 'dd/MM/yyyy' }}</span>
+                    </span>
+                    <span class="ent-compact-row-end">
+                        <p-tag severity="info" [value]="affectation.role"></p-tag>
+                    </span>
+                </button>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="mesAffectations.length === 0">Aucun chantier en commun pour l'instant.</p>
+        </div>
+
+        <!-- Salariés sur ce chantier : liste nominative, statut d'accès par chantier -->
+        <div class="card">
+            <div class="card-head">
+                <i class="pi pi-users"></i>
+                <h6 class="m-0">Salariés sur ce chantier ({{ salariesSurMesChantiersClient.length }})</h6>
+            </div>
+            <app-card-skeleton *ngIf="chargementSalariesClient" [lignes]="3"></app-card-skeleton>
+            <ng-container *ngIf="!chargementSalariesClient">
+                <div class="ent-compact-list" *ngIf="salariesSurMesChantiersClient.length > 0">
+                    <button
+                        type="button"
+                        class="ent-compact-row"
+                        *ngFor="let s of salariesSurMesChantiersClient"
+                        [routerLink]="['/salaries', s.salarieId]"
+                        [pTooltip]="'Ouvrir la fiche de ' + s.nom"
+                    >
+                        <span class="ent-compact-row-icon"><i class="pi pi-user"></i></span>
+                        <span class="ent-compact-row-body">
+                            <span class="ent-compact-row-title">{{ s.nom }}</span>
+                            <span class="ent-compact-row-sub">{{ s.contrat }}<ng-container *ngIf="mesAffectations.length > 1"> · {{ s.chantierNom }}</ng-container></span>
+                        </span>
+                        <span class="ent-compact-row-end">
+                            <p-tag
+                                [severity]="s.statutAcces === 'ACCORDE' ? 'success' : (s.statutAcces === 'REFUSE' ? 'danger' : 'warning')"
+                                [value]="s.statutAcces | etatLabel"
+                            ></p-tag>
+                        </span>
+                    </button>
+                </div>
+                <p class="text-500 text-sm m-0" *ngIf="salariesSurMesChantiersClient.length === 0">Aucun salarié de cette entreprise affecté à vos chantiers pour l'instant.</p>
+            </ng-container>
+        </div>
+
+    </div>
+
+    <div class="ent-col">
+
+        <!-- Documents : lecture seule, aucun dépôt/validation pour ce rôle -->
+        <div class="card">
+            <div class="card-head">
+                <i class="pi pi-folder"></i>
+                <h6 class="m-0">Documents</h6>
+            </div>
+
+            <div class="ent-doc-progress" *ngIf="nbObligatoiresTotal > 0">
+                <span class="ent-doc-progress-ring">
+                    <svg viewBox="0 0 36 36">
+                        <circle class="ent-stat-ring-track" cx="18" cy="18" r="15.5"></circle>
+                        <circle class="ent-stat-ring-value" cx="18" cy="18" r="15.5"
+                            [attr.stroke]="pourcentageObligatoires === 100 ? 'var(--brand-success)' : 'var(--brand-warning)'"
+                            [attr.stroke-dasharray]="97.39"
+                            [attr.stroke-dashoffset]="ringDashoffset(pourcentageObligatoires)"></circle>
+                    </svg>
+                    <span class="ent-doc-progress-num">{{ pourcentageObligatoires }}%</span>
+                </span>
+                <span class="ent-doc-progress-text">
+                    <span class="ent-doc-progress-title">{{ nbObligatoiresFournis }} documents obligatoires sur {{ nbObligatoiresTotal }} fournis</span>
+                    <span class="ent-doc-progress-sub">
+                        <ng-container *ngIf="typesAFournir.length > 0">{{ typesAFournir.length }} document(s) restent à fournir</ng-container>
+                        <ng-container *ngIf="typesAFournir.length === 0">Tous les documents obligatoires sont fournis</ng-container>
+                        <ng-container *ngIf="nbDocumentsExpirantBientot > 0"> · {{ nbDocumentsExpirantBientot }} expire(nt) bientôt</ng-container>
+                    </span>
+                </span>
+            </div>
+
+            <div class="ent-doc-row" [ngClass]="'missing'" *ngFor="let type of typesAFournir">
+                <span class="ent-doc-row-icon warn"><i class="pi pi-file"></i></span>
+                <span class="ent-doc-row-body">
+                    <span class="ent-doc-row-title">{{ type.libelle }}</span>
+                    <span class="ent-doc-row-sub">Document manquant</span>
+                </span>
+                <span class="ent-doc-row-end"><p-tag severity="warning" value="À fournir"></p-tag></span>
+            </div>
+
+            <div class="ent-doc-row" [ngClass]="documentSeverite(documentsByType[type.id])" *ngFor="let type of typesDejaFournis">
+                <span class="ent-doc-row-icon" [ngClass]="documentSeverite(documentsByType[type.id])">
+                    <i class="pi"
+                        [class.pi-check]="documentSeverite(documentsByType[type.id]) === 'ok'"
+                        [class.pi-clock]="documentSeverite(documentsByType[type.id]) === 'missing'"
+                        [class.pi-times]="documentSeverite(documentsByType[type.id]) === 'danger'"
+                    ></i>
+                </span>
+                <span class="ent-doc-row-body">
+                    <span class="ent-doc-row-title">{{ type.libelle }}</span>
+                    <span class="ent-doc-row-sub">
+                        <ng-container *ngIf="documentSeverite(documentsByType[type.id]) === 'ok'">À jour</ng-container>
+                        <ng-container *ngIf="estExpire(documentsByType[type.id])">Expiré</ng-container>
+                        <ng-container *ngIf="!estExpire(documentsByType[type.id]) && expireBientot(documentsByType[type.id])">{{ libelleExpiration(documentsByType[type.id]) }}</ng-container>
+                        <ng-container *ngIf="documentsByType[type.id].statutValidation !== 'VALIDE' && !estExpire(documentsByType[type.id])">{{ documentsByType[type.id].statutValidation | etatLabel }}</ng-container>
+                    </span>
+                </span>
+                <span class="ent-doc-row-end">
+                    <p-tag
+                        [severity]="documentSeverite(documentsByType[type.id]) === 'ok' ? 'success' : (documentSeverite(documentsByType[type.id]) === 'danger' ? 'danger' : 'warning')"
+                        [value]="documentSeverite(documentsByType[type.id]) === 'ok' ? 'Conforme' : (documentSeverite(documentsByType[type.id]) === 'danger' ? 'Refusé' : 'Bientôt')"
+                    ></p-tag>
+                </span>
+            </div>
+
+            <p class="text-500 text-center py-3" *ngIf="typesAFournir.length === 0 && typesDejaFournis.length === 0">Aucun type de document configuré pour les entreprises.</p>
+
+            <div class="id-footnote accent" style="margin-top: 1.25rem;">
+                <i class="pi pi-info-circle"></i>
+                Vous consultez uniquement les informations utiles au suivi de cette entreprise sur vos chantiers.
+            </div>
+        </div>
+
+    </div>
+</div>
+
 <!-- Ligne de document compacte (vue Entreprise) : les documents "déjà fournis" sont un
      bouton cliquable qui ouvre directement l'aperçu du fichier (source de l'information) ;
      les documents "à fournir" gardent le widget de dépôt existant (une zone de dépôt ne peut
@@ -472,7 +728,7 @@
 <!-- Coordonnées : carte complète (formulaire admin / lecture seule Client-Contrôleur) —
      masquée pour l'Entreprise, qui a sa propre carte compacte dans la vue deux colonnes
      plus bas (voir .ent-layout). -->
-<div class="card mb-3" *ngIf="!isEntreprise">
+<div class="card mb-3" *ngIf="!isEntreprise && !isClient">
     <div class="card-head">
         <i class="pi pi-building"></i>
         <h6 class="m-0">Coordonnées</h6>
@@ -752,7 +1008,7 @@
 <!-- Affectation à un chantier : gestion (ajout/retrait) réservée au SUPER_ADMIN — le client
      décide qui intervient sur son chantier. Masquée pour l'Entreprise, qui a sa propre carte
      compacte (lecture seule, cliquable vers le chantier) dans la vue deux colonnes plus bas. -->
-<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise">
+<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise && !isClient">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-map-marker"></i>
@@ -864,7 +1120,7 @@
 <!-- Sous-traitants : entreprises STT1/STT2 rattachées à celle-ci sur ses chantiers. Lecture
      seule pour SUPER_ADMIN/Client/Contrôleur — l'Entreprise a sa propre carte compacte
      (cliquable vers le chantier) dans la vue deux colonnes plus bas. -->
-<div class="card mb-3" *ngIf="!isNew && !isEntreprise">
+<div class="card mb-3" *ngIf="!isNew && !isEntreprise && !isClient">
     <div class="card-head">
         <i class="pi pi-sitemap"></i>
         <h6 class="m-0">Sous-traitants</h6>
@@ -893,7 +1149,7 @@
 
 <!-- Salariés (raccourci) : table complète pour SUPER_ADMIN/Client/Contrôleur — l'Entreprise
      a sa propre carte compacte (vue deux colonnes) dans le même style que le reste de sa page. -->
-<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise">
+<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise && !isClient">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-users"></i>
@@ -951,7 +1207,7 @@
 <!-- Utilisateurs (comptes rattachés à cette entreprise) : table complète pour
      SUPER_ADMIN/Client/Contrôleur — l'Entreprise a sa propre carte compacte (vue deux
      colonnes), le formulaire de création reste identique (juste redisposé). -->
-<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise">
+<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise && !isClient">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-id-card"></i>
@@ -1049,7 +1305,7 @@
 <!-- Documents (ouverts par défaut en création : les documents obligatoires
      doivent être renseignés avant de pouvoir créer l'entreprise). Masquée pour l'Entreprise,
      qui a sa propre carte (vue deux colonnes) — voir #ligneDocumentEntreprise plus bas. -->
-<div class="card mb-3" *ngIf="!isEntreprise">
+<div class="card mb-3" *ngIf="!isEntreprise && !isClient">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-folder"></i>
@@ -1207,7 +1463,7 @@
 
 <!-- Historique des documents (repliée par défaut, chargée au premier dépli). Masquée pour
      l'Entreprise, qui a sa propre version compacte dans la vue deux colonnes plus bas. -->
-<div class="card mb-3" *ngIf="!isNew && !isEntreprise">
+<div class="card mb-3" *ngIf="!isNew && !isEntreprise && !isClient">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-history"></i>
@@ -1246,7 +1502,7 @@
 
 <!-- Relances : rappels envoyés (automatiques ou manuels) pour les documents de cette entreprise.
      C'est le Client (donneur d'ordre) qui relance, jamais l'entreprise elle-même — masqué en vue Entreprise. -->
-<div class="card mb-3" *ngIf="!isNew && !isEntreprise">
+<div class="card mb-3" *ngIf="!isNew && !isEntreprise && !isClient">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-send"></i>
@@ -1288,7 +1544,7 @@
 
 <!-- Envoyer un message : composeur inline. Masqué pour l'Entreprise (demande client) — le
      dialogue avec l'admin passe par un autre canal, pas cette rédaction libre. -->
-<div id="composeur-message" class="card mb-3" *ngIf="!isNew && !isEntreprise">
+<div id="composeur-message" class="card mb-3" *ngIf="!isNew && !isEntreprise && !isClient">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-envelope"></i>

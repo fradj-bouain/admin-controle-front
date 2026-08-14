@@ -34,6 +34,15 @@ export class DashboardComponent implements OnInit {
     // jamais que sa propre fiche, donc toujours "1/1"), et rien n'y montrait sa
     // conformité documentaire — le sujet qui l'intéresse le plus au quotidien.
     estEntreprise = false;
+    // Un compte Client a lui aussi son propre dashboard (voir chargerDashboardClient) :
+    // le dashboard standard montre des listings/graphiques (parc, types de contrat) qui
+    // ne le concernent pas — un maître d'ouvrage veut une vue d'ensemble rassurante de
+    // SES chantiers, des entreprises qui y interviennent et des contrôles effectués.
+    // Tout ce qui est chargé ici passe par les endpoints déjà scopés côté backend
+    // (voir ChantierService.listerIdsAccessiblesPourClient) : un compte "responsable
+    // de chantier" ne voit ici que ses chantiers assignés, un compte "accès total" voit
+    // tout le périmètre du client — sans logique de filtrage supplémentaire ici.
+    estClient = false;
 
     statChantiers: EtatEntite | null = null;
     statEntreprises: EtatEntite | null = null;
@@ -64,6 +73,16 @@ export class DashboardComponent implements OnInit {
     mesChantiersActifs: Array<{ nom: string; nomClient: string }> = [];
     activiteRecente: Array<{ date: string; texte: string }> = [];
 
+    // --- Dashboard Client (voir chargerDashboardClient) ---
+    nomClient = '';
+    banniereClientOk = true;
+    banniereClientTexte = '';
+    nbEntreprisesIntervenantes = 0;
+    nbSalariesSurChantiers = 0;
+    mesChantiersClient: Array<{ id: string; nom: string; ville?: string; statut: string }> = [];
+    entreprisesSurMesChantiers: Array<{ id: string; raisonSociale: string; chantierActuel?: string | null; rangActuel?: string | null }> = [];
+    derniersControlesClient: Array<{ chantierNom: string; date: string; termine: boolean }> = [];
+
     constructor(
         private chantierService: ChantierService,
         private clientService: ClientService,
@@ -84,6 +103,7 @@ export class DashboardComponent implements OnInit {
 
         this.estControleur = this.auth.hasRole('CONTROLEUR');
         this.estEntreprise = this.auth.hasRole('ENTREPRISE');
+        this.estClient = this.auth.hasRole('CLIENT');
 
         const style = getComputedStyle(document.documentElement);
         const texteSecondaire = style.getPropertyValue('--text-color-secondary') || '#6b7280';
@@ -103,6 +123,8 @@ export class DashboardComponent implements OnInit {
             this.chargerDashboardControleur();
         } else if (this.estEntreprise) {
             this.chargerDashboardEntreprise();
+        } else if (this.estClient) {
+            this.chargerDashboardClient();
         } else {
             this.chargerDashboardStandard();
         }
@@ -260,6 +282,65 @@ export class DashboardComponent implements OnInit {
                     date: h.createdAt,
                     texte: `${(h.details?.['typeDocumentLibelle'] as string) ?? 'Document'} — ${libellesAction[h.action] ?? h.action}`
                 }));
+
+                this.chargement = false;
+            },
+            error: () => (this.chargement = false)
+        });
+    }
+
+    /**
+     * Dashboard Client : une vue d'ensemble rassurante plutôt qu'un registre à
+     * dépouiller — l'inverse du dashboard standard (parc/graphiques) qui s'adresse à
+     * un opérateur interne. Chantiers/entreprises/salariés/contrôles proviennent tous
+     * d'endpoints déjà scopés côté backend (voir estClient ci-dessus) : aucun filtrage
+     * de périmètre n'est refait ici, qu'il s'agisse d'un compte "accès total" ou
+     * "responsable de chantier".
+     */
+    private chargerDashboardClient(): void {
+        forkJoin({
+            clients: this.clientService.lister(),
+            chantiers: this.chantierService.lister(),
+            entreprises: this.entrepriseService.lister(),
+            salaries: this.salarieService.lister(),
+            controles: this.controleService.lister()
+        }).subscribe({
+            next: ({ clients, chantiers, entreprises, salaries, controles }) => {
+                this.nomClient = clients[0]?.raisonSociale ?? '';
+
+                this.statChantiers = this.calculerEtat(chantiers, (c) => c.statut === 'ACTIF');
+                this.nbEntreprisesIntervenantes = entreprises.length;
+                this.nbSalariesSurChantiers = salaries.length;
+                this.statControles = this.calculerEtat(controles, (c) => c.termine);
+
+                const aujourdHui = new Date();
+                const nbControlesEnRetard = controles.filter(
+                    (c) => !c.termine && new Date(c.dateControle) < aujourdHui
+                ).length;
+                this.banniereClientOk = nbControlesEnRetard === 0;
+                this.banniereClientTexte = this.banniereClientOk
+                    ? 'Tous vos chantiers actifs ont un contrôle à jour — rien ne nécessite votre attention.'
+                    : `${nbControlesEnRetard} contrôle(s) auraient dû être réalisés — contactez votre organisme de contrôle si besoin.`;
+
+                this.mesChantiersClient = chantiers
+                    .filter((c) => c.statut === 'ACTIF')
+                    .map((c) => ({ id: c.id, nom: c.nom, ville: c.ville, statut: c.statut }));
+
+                this.entreprisesSurMesChantiers = entreprises.slice(0, 6).map((e) => ({
+                    id: e.id, raisonSociale: e.raisonSociale, chantierActuel: e.chantierActuel, rangActuel: e.rangActuel
+                }));
+
+                const chantierNomParId: Record<string, string> = {};
+                chantiers.forEach((c) => (chantierNomParId[c.id] = c.nom));
+                this.derniersControlesClient = controles
+                    .slice()
+                    .sort((a, b) => new Date(b.dateControle).getTime() - new Date(a.dateControle).getTime())
+                    .slice(0, 5)
+                    .map((c) => ({
+                        chantierNom: chantierNomParId[c.chantierId] ?? '—',
+                        date: c.dateControle,
+                        termine: c.termine
+                    }));
 
                 this.chargement = false;
             },

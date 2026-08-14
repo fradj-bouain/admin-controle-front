@@ -39,10 +39,13 @@
                 <td>{{ utilisateur.identiteCalculee }}</td>
                 <td>{{ utilisateur.email }}</td>
                 <td *ngIf="estClient">
-                    <span *ngIf="utilisateur.nbChantiersAssignes > 0" class="inline-flex align-items-center gap-2 text-green-700 text-sm font-medium">
+                    <span *ngIf="utilisateur.accesTousChantiers" class="inline-flex align-items-center gap-2 text-blue-700 text-sm font-medium" pTooltip="Ce compte voit tous les chantiers du client.">
+                        <i class="pi pi-verified text-xs"></i> Accès total
+                    </span>
+                    <span *ngIf="!utilisateur.accesTousChantiers && utilisateur.nbChantiersAssignes > 0" class="inline-flex align-items-center gap-2 text-green-700 text-sm font-medium">
                         <i class="pi pi-circle-fill text-xs"></i> {{ utilisateur.nbChantiersAssignes }} chantier(s) assigné(s)
                     </span>
-                    <span *ngIf="!utilisateur.nbChantiersAssignes" class="inline-flex align-items-center gap-2 text-orange-600 text-sm font-medium" pTooltip="Cet utilisateur n'a été assigné à aucun chantier : il ne voit rien tant qu'il n'est pas assigné depuis une fiche chantier.">
+                    <span *ngIf="!utilisateur.accesTousChantiers && !utilisateur.nbChantiersAssignes" class="inline-flex align-items-center gap-2 text-orange-600 text-sm font-medium" pTooltip="Cet utilisateur n'a été assigné à aucun chantier : il ne voit rien tant qu'il n'est pas assigné depuis une fiche chantier.">
                         <i class="pi pi-exclamation-triangle text-xs"></i> Aucun accès — à assigner
                     </span>
                 </td>

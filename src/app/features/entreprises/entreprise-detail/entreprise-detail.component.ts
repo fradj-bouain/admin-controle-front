@@ -8,14 +8,15 @@ import { EntrepriseService } from '../services/entreprise.service';
 import { AffectationEntrepriseChantierService } from '../services/affectation-entreprise-chantier.service';
 import { Chantier } from 'src/app/features/chantiers/models/chantier.model';
 import { ChantierService } from 'src/app/features/chantiers/services/chantier.service';
-import { CorpsDeMetier, Pays, Utilisateur } from 'src/app/features/configuration/models/configuration.model';
+import { CorpsDeMetier, Pays, TypeContratSalarie, Utilisateur } from 'src/app/features/configuration/models/configuration.model';
 import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
 import { DocumentEtat, DocumentItem, HistoriqueModification, TypeDocument } from 'src/app/features/documents/models/document.model';
 import { DocumentService } from 'src/app/features/documents/services/document.service';
 import { TypeDocumentService } from 'src/app/features/documents/services/type-document.service';
 import { DocumentEtatService } from 'src/app/features/documents/services/document-etat.service';
-import { Salarie } from 'src/app/features/salaries/models/salarie.model';
+import { Salarie, StatutAcces } from 'src/app/features/salaries/models/salarie.model';
 import { SalarieService } from 'src/app/features/salaries/services/salarie.service';
+import { AffectationSalarieChantierService } from 'src/app/features/salaries/services/affectation-salarie-chantier.service';
 import { UtilisateurService } from 'src/app/features/configuration/services/utilisateur.service';
 import { MessagePlanifie, SendMessageRequest } from 'src/app/features/messagerie/models/message.model';
 import { MessageService as MessagerieMessageService } from 'src/app/features/messagerie/services/message.service';
@@ -125,6 +126,15 @@ export class EntrepriseDetailComponent implements OnInit {
     salaries: Array<Salarie & { identiteCalculee: string }> = [];
     afficherSalaries = false;
 
+    // --- Vue Client (lecture seule) : salariés DE CETTE ENTREPRISE affectés à MES
+    // chantiers, avec leur statut d'accès par chantier — voir retour client, un simple
+    // décompte ne suffit pas, il doit savoir QUI travaille sur son chantier. Nécessite
+    // les affectations (statutAcces n'existe que là, pas sur Salarie) : un aller par
+    // chantier en commun (voir chargerSalariesClient), déjà scopés côté backend.
+    typesContrat: TypeContratSalarie[] = [];
+    salariesSurMesChantiersClient: Array<{ salarieId: string; nom: string; contrat: string; chantierNom: string; statutAcces: StatutAcces }> = [];
+    chargementSalariesClient = false;
+
     // --- Utilisateurs (comptes rattachés à cette entreprise) ---
     utilisateurs: Utilisateur[] = [];
     afficherUtilisateurs = false;
@@ -187,6 +197,7 @@ export class EntrepriseDetailComponent implements OnInit {
         private typeDocumentService: TypeDocumentService,
         private documentEtatService: DocumentEtatService,
         private salarieService: SalarieService,
+        private affectationSalarieService: AffectationSalarieChantierService,
         private utilisateurService: UtilisateurService,
         private messagerieService: MessagerieMessageService,
         private confirmation: ConfirmationService,
@@ -261,9 +272,32 @@ export class EntrepriseDetailComponent implements OnInit {
         return this.auth.hasRole('ENTREPRISE');
     }
 
+    get isClient(): boolean {
+        return this.auth.hasRole('CLIENT');
+    }
+
+    // --- Vue Client (lecture seule) : cette entreprise vue par un compte Client. Les
+    // affectations viennent de la même source que la vue Entreprise (chargerMesAffectations,
+    // GET /entreprises/{id}/chantiers) mais sont désormais filtrées côté backend au périmètre
+    // du client appelant (voir EntrepriseController.listerChantiers) — pas de filtrage
+    // supplémentaire à faire ici, mesAffectations = déjà "mes chantiers en commun". ---
+
+    get roleClient(): string {
+        const roles = [...new Set(this.mesAffectations.map((a) => a.role))];
+        if (roles.length === 0) {
+            return '—';
+        }
+        return roles.length === 1 ? roles[0] : 'Plusieurs rôles';
+    }
+
+    libelleContrat(id?: string): string {
+        return this.typesContrat.find((t) => t.id === id)?.libelle ?? '—';
+    }
+
     ngOnInit(): void {
         this.referenceDataService.listerPays().subscribe((pays) => (this.pays = pays));
         this.referenceDataService.listerCorpsDeMetier().subscribe((c) => (this.corpsDeMetiers = c));
+        this.referenceDataService.listerTypeContratSalarie().subscribe((types) => (this.typesContrat = types));
         this.chantierService.lister().subscribe((chantiers) => {
             this.chantiers = chantiers;
             this.recalculerChantiersDisponibles();
@@ -290,7 +324,51 @@ export class EntrepriseDetailComponent implements OnInit {
                 this.chargerDocuments();
                 this.chargerSalaries(id);
                 this.chargerUtilisateurs(id);
+                if (this.isClient) {
+                    this.chargerSalariesClient(id);
+                }
             }
+        });
+    }
+
+    /** Statut d'accès par chantier (voir salariesSurMesChantiersClient) : introuvable sur
+        GET /salaries (qui ne renvoie qu'un "chantier actuel" en texte), donc un aller par
+        chantier en commun sur GET /chantiers/{id}/salaries — déjà scopé Client côté
+        backend (voir AffectationSalarieChantierController), pas de filtrage à refaire ici
+        au-delà de "cette entreprise" (l'endpoint renvoie tous les salariés du chantier). */
+    private chargerSalariesClient(entrepriseId: string) {
+        this.chargementSalariesClient = true;
+        this.affectationService.listerParEntreprise(entrepriseId).subscribe({
+            next: (affectationsEntreprise) => {
+                const chantierIds = [...new Set(affectationsEntreprise.map((a) => a.chantierId))];
+                if (chantierIds.length === 0) {
+                    this.salariesSurMesChantiersClient = [];
+                    this.chargementSalariesClient = false;
+                    return;
+                }
+                forkJoin(chantierIds.map((id) => this.affectationSalarieService.lister(id))).subscribe({
+                    next: (listesParChantier) => {
+                        const lignes: Array<{ salarieId: string; nom: string; contrat: string; chantierNom: string; statutAcces: StatutAcces }> = [];
+                        listesParChantier.forEach((liste, i) => {
+                            const chantierId = chantierIds[i];
+                            liste.filter((a) => a.entrepriseId === entrepriseId).forEach((a) => {
+                                const salarie = this.salaries.find((s) => s.id === a.salarieId);
+                                lignes.push({
+                                    salarieId: a.salarieId,
+                                    nom: salarie ? `${salarie.prenom} ${salarie.nom}` : '—',
+                                    contrat: this.libelleContrat(salarie?.typeContratId),
+                                    chantierNom: this.nomChantier(chantierId),
+                                    statutAcces: a.statutAcces
+                                });
+                            });
+                        });
+                        this.salariesSurMesChantiersClient = lignes;
+                        this.chargementSalariesClient = false;
+                    },
+                    error: () => (this.chargementSalariesClient = false)
+                });
+            },
+            error: () => (this.chargementSalariesClient = false)
         });
     }
 

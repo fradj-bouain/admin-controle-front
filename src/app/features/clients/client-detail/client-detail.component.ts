@@ -80,6 +80,39 @@ export class ClientDetailComponent implements OnInit {
         return this.auth.hasRole('ENTREPRISE');
     }
 
+    get isClient(): boolean {
+        return this.auth.hasRole('CLIENT');
+    }
+
+    // Compte connecté, pour retrouver son propre statut d'accès dans "Mon équipe" (voir
+    // moiAccesTousChantiers) et lui afficher "(vous)" dans la liste.
+    get monCompte(): Utilisateur | undefined {
+        return this.utilisateurs.find((u) => u.id === this.auth.userId);
+    }
+
+    get moiAccesTousChantiers(): boolean {
+        return !!this.monCompte?.accesTousChantiers;
+    }
+
+    // Les 5 premiers suffisent pour cette carte teaser — "Gérer mon équipe" mène à la
+    // liste complète (voir MonEquipeComponent), pas de pagination à dupliquer ici.
+    get equipeApercu(): Utilisateur[] {
+        return this.utilisateurs.slice(0, 5);
+    }
+
+    get chantiersApercu(): Chantier[] {
+        return this.chantiers.slice(0, 5);
+    }
+
+    initialesUtilisateur(u: Utilisateur): string {
+        const p = (u.prenom || '').trim();
+        const n = (u.nom || '').trim();
+        if (!p && !n) {
+            return '?';
+        }
+        return ((p[0] ?? '') + (n[0] ?? '')).toUpperCase() || '?';
+    }
+
     nomPays(id?: string): string {
         return this.pays.find((p) => p.id === id)?.nom ?? '—';
     }
@@ -201,7 +234,12 @@ export class ClientDetailComponent implements OnInit {
             username: compte.username!,
             password: compte.password!,
             roles: ['CLIENT'],
-            clientId
+            clientId,
+            // Ce compte est créé en même temps que la fiche Client : c'est son compte
+            // fondateur, il voit donc tous les chantiers du client par défaut. Les
+            // comptes ajoutés ensuite via "Mon équipe" restent "responsable de chantier"
+            // (voir MonEquipeComponent, qui ne propose volontairement pas ce réglage).
+            accesTousChantiers: true
         }).subscribe({
             next: () => {
                 this.message.add({ severity: 'success', summary: 'Succès', detail: 'Client et compte utilisateur créés' });

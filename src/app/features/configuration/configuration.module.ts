@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { TabViewModule } from 'primeng/tabview';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TooltipModule } from 'primeng/tooltip';
+import { CheckboxModule } from 'primeng/checkbox';
 
 import { SharedModule } from '../../shared/shared.module';
 import { ConfigurationRoutingModule } from './configuration-routing.module';
@@ -29,6 +30,6 @@ import { UtilisateurFormPageComponent } from './utilisateur-form-page/utilisateu
         ActionCorrectiveFormDialogComponent,
         UtilisateurFormPageComponent
     ],
-    imports: [SharedModule, ConfigurationRoutingModule, FormsModule, TabViewModule, MultiSelectModule, RouterModule, TooltipModule]
+    imports: [SharedModule, ConfigurationRoutingModule, FormsModule, TabViewModule, MultiSelectModule, RouterModule, TooltipModule, CheckboxModule]
 })
 export class ConfigurationModule { }

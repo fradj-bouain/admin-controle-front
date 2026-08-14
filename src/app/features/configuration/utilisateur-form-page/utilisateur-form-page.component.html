@@ -70,6 +70,16 @@
             ></p-dropdown>
             <small class="p-error" *ngIf="form.controls.clientId.invalid && form.controls.clientId.touched">Ce champ est requis.</small>
         </div>
+        <div class="field-checkbox" *ngIf="form.value.roles?.includes('CLIENT')">
+            <p-checkbox id="accesTousChantiers" formControlName="accesTousChantiers" [binary]="true"></p-checkbox>
+            <label for="accesTousChantiers" class="ml-2">
+                Accès à tous les chantiers du client
+                <small class="block text-color-secondary">
+                    Sinon, ce compte ne verra que les chantiers qui lui seront explicitement assignés
+                    ("responsable de chantier").
+                </small>
+            </label>
+        </div>
         <div class="field" *ngIf="form.value.roles?.includes('CONTROLEUR')">
             <label for="controleTiersId">Organisme de contrôle de rattachement *</label>
             <p-dropdown

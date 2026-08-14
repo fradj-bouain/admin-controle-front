@@ -15,7 +15,8 @@ export class AppMenuComponent implements OnInit {
     ngOnInit() {
         const estSuperAdmin = this.auth.hasRole('SUPER_ADMIN');
         const estEntreprise = this.auth.hasRole('ENTREPRISE');
-        const gereSaPropreEquipe = this.auth.hasRole('CLIENT') || estEntreprise;
+        const estClient = this.auth.hasRole('CLIENT');
+        const gereSaPropreEquipe = estClient || estEntreprise;
 
         this.model = [
             {
@@ -23,7 +24,16 @@ export class AppMenuComponent implements OnInit {
                 icon: 'pi pi-fw pi-home',
                 routerLink: ['/']
             },
-            {
+            // Un compte Client n'a par construction accès qu'à SA propre fiche (voir
+            // ClientController.lister) : passer par le listing (une seule ligne à cliquer)
+            // n'a aucun sens pour lui. Lien direct vers sa fiche, libellé adapté ("Ma
+            // fiche" plutôt que "Clients" au pluriel) — comportement inchangé pour tous
+            // les autres rôles, qui gèrent un vrai registre.
+            estClient ? {
+                label: 'menu.maFiche',
+                icon: 'pi pi-fw pi-building',
+                routerLink: ['/clients', this.auth.clientId]
+            } : {
                 label: 'menu.clients',
                 icon: 'pi pi-fw pi-building',
                 routerLink: ['/clients']
@@ -33,28 +43,34 @@ export class AppMenuComponent implements OnInit {
                 icon: 'pi pi-fw pi-map',
                 routerLink: ['/chantiers']
             },
-            {
+            // Entreprises/Salariés/Contrôles/Documents : registres complets, masqués pour
+            // le Client — tout ce qui le concerne (entreprises sur ses chantiers, salariés
+            // qui y interviennent, conformité documentaire, contrôles) est désormais
+            // consultable depuis la fiche Chantier elle-même (voir ChantierDetailComponent,
+            // vue Client) et ses raccourcis vers les fiches Entreprise/Salarié, plutôt que
+            // dupliqué dans des listings globaux qui ne le concernent pas.
+            ...(!estClient ? [{
                 label: 'menu.entreprises',
                 icon: 'pi pi-fw pi-briefcase',
                 routerLink: ['/entreprises']
-            },
-            {
+            }] : []),
+            ...(!estClient ? [{
                 label: 'menu.salaries',
                 icon: 'pi pi-fw pi-users',
                 routerLink: ['/salaries']
-            },
-            // Contrôles/Rapports : réservé au SUPER_ADMIN et au Client (donneur d'ordre) —
-            // masqué pour l'Entreprise, qui n'a pas à consulter ses propres contrôles.
-            ...(!estEntreprise ? [{
+            }] : []),
+            // Contrôles/Rapports : masqué pour l'Entreprise (n'a pas à consulter ses propres
+            // contrôles) ET pour le Client (consultables depuis la fiche Chantier).
+            ...(!estEntreprise && !estClient ? [{
                 label: 'menu.controles',
                 icon: 'pi pi-fw pi-verified',
                 routerLink: ['/controles']
             }] : []),
-            {
+            ...(!estClient ? [{
                 label: 'menu.documents',
                 icon: 'pi pi-fw pi-file',
                 routerLink: ['/documents']
-            },
+            }] : []),
             // Mon équipe : auto-gestion des comptes utilisateurs rattachés à sa propre
             // session (Client ou Entreprise) — n'existe pas pour Contrôleur.
             ...(gereSaPropreEquipe ? [{

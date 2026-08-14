@@ -2,6 +2,7 @@
     "menu": {
         "dashboard": "Tableau de bord",
         "clients": "Clients",
+        "maFiche": "Ma fiche",
         "chantiers": "Chantiers",
         "entreprises": "Entreprises",
         "salaries": "Salariés",

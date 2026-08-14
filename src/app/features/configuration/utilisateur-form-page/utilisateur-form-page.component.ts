@@ -32,7 +32,12 @@ export class UtilisateurFormPageComponent implements OnInit {
         roles: [[] as string[], Validators.required],
         entrepriseId: [''],
         clientId: [''],
-        controleTiersId: ['']
+        controleTiersId: [''],
+        // Uniquement pertinent pour un rôle CLIENT (voir template) : true = "accès
+        // total" à tous les chantiers du client, false = "responsable de chantier"
+        // cantonné aux chantiers qui lui seront assignés. Décision réservée au
+        // SUPER_ADMIN, jamais proposée en auto-gestion (Mon équipe).
+        accesTousChantiers: [false]
     });
 
     constructor(
@@ -93,7 +98,8 @@ export class UtilisateurFormPageComponent implements OnInit {
             roles: value.roles!,
             entrepriseId: value.entrepriseId || undefined,
             clientId: value.clientId || undefined,
-            controleTiersId: value.controleTiersId || undefined
+            controleTiersId: value.controleTiersId || undefined,
+            accesTousChantiers: (value.roles ?? []).includes('CLIENT') ? !!value.accesTousChantiers : undefined
         }).subscribe({
             next: () => this.router.navigate(['/configuration']),
             error: () => {

@@ -90,6 +90,10 @@ export interface Utilisateur {
     // "voit tout par défaut") — voir l'indicateur affiché sur "Mon équipe" / la liste
     // des utilisateurs, et ScopeAuthorizationService côté backend.
     nbChantiersAssignes?: number;
+    // Uniquement pertinent pour un compte CLIENT : true = voit tous les chantiers du
+    // client (et tout ce qui en dépend), false = "responsable de chantier" cantonné à
+    // nbChantiersAssignes. Modifiable uniquement par un SUPER_ADMIN.
+    accesTousChantiers?: boolean;
 }
 
 export interface CreateUtilisateurRequest {
@@ -103,6 +107,9 @@ export interface CreateUtilisateurRequest {
     entrepriseId?: string;
     clientId?: string;
     controleTiersId?: string;
+    // Ignoré par le backend hors création par un SUPER_ADMIN (voir UtilisateurController) :
+    // un compte Client ne peut jamais s'auto-attribuer l'accès total via Mon équipe.
+    accesTousChantiers?: boolean;
 }
 
 export interface ModifierUtilisateurRequest {
@@ -112,4 +119,6 @@ export interface ModifierUtilisateurRequest {
     username: string;
     // Vide/absent = mot de passe inchangé (voir UtilisateurService.modifier côté backend).
     password?: string;
+    // Idem CreateUtilisateurRequest : ignoré hors édition par un SUPER_ADMIN.
+    accesTousChantiers?: boolean;
 }

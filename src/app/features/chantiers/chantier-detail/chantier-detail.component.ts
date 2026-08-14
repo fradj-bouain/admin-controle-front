@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService as PrimeMessageService } from 'primeng/api';
+import { forkJoin, of } from 'rxjs';
 import { Chantier, RecurrenceControles } from '../models/chantier.model';
 import { ChantierService } from '../services/chantier.service';
 import { ChantierUtilisateurService } from '../services/chantier-utilisateur.service';
@@ -16,14 +17,19 @@ import { AffectationSalarieChantierService } from 'src/app/features/salaries/ser
 import { AffectationEntrepriseChantier, Entreprise, RoleEntreprise } from 'src/app/features/entreprises/models/entreprise.model';
 import { EntrepriseService } from 'src/app/features/entreprises/services/entreprise.service';
 import { AffectationEntrepriseChantierService } from 'src/app/features/entreprises/services/affectation-entreprise-chantier.service';
-import { Controle } from 'src/app/features/controles/models/controle.model';
+import { Controle, RapportControle } from 'src/app/features/controles/models/controle.model';
 import { ControleService } from 'src/app/features/controles/services/controle.service';
+import { DocumentItem, TypeDocument } from 'src/app/features/documents/models/document.model';
+import { DocumentService } from 'src/app/features/documents/services/document.service';
+import { TypeDocumentService } from 'src/app/features/documents/services/type-document.service';
+import { Message } from 'src/app/features/messagerie/models/message.model';
+import { MessageService } from 'src/app/features/messagerie/services/message.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
 
 @Component({
     selector: 'app-chantier-detail',
     templateUrl: './chantier-detail.component.html',
-    providers: [MessageService, ConfirmationService]
+    providers: [PrimeMessageService, ConfirmationService]
 })
 export class ChantierDetailComponent implements OnInit {
 
@@ -115,6 +121,21 @@ export class ChantierDetailComponent implements OnInit {
         affectationEntrepriseChantierId: ['', Validators.required]
     });
 
+    // --- Vue Client (lecture seule) : conformité documentaire agrégée sur toutes les
+    // entreprises et tous les salariés affectés à CE chantier. Aucun endpoint backend
+    // ne renvoie ça en un seul appel (même limite que EntrepriseDetail/SalarieDetail/
+    // Dashboard) — recalculé ici en répétant, par entité, le même calcul que ces pages.
+    chargementDocumentsClient = false;
+    typesDocument: TypeDocument[] = [];
+    statDocumentsClient: { fournis: number; total: number; pourcentage: number } | null = null;
+    documentsATraiterClient: Array<{ libelle: string; sousTitre: string; severite: 'warn' | 'danger'; entrepriseId?: string; salarieId?: string }> = [];
+    // Messages envoyés avec ce chantier en référence (voir Message.chantierId côté
+    // backend) — les messages automatiques (relances, notifications) le renseignent
+    // toujours ; un message rédigé à la main peut ne pas l'être selon comment il a été
+    // envoyé, cette liste n'est donc pas garantie exhaustive.
+    messagesChantierClient: Message[] = [];
+    rapportsChantierClient: RapportControle[] = [];
+
     constructor(
         private fb: FormBuilder,
         private route: ActivatedRoute,
@@ -129,8 +150,11 @@ export class ChantierDetailComponent implements OnInit {
         private affectationEntrepriseService: AffectationEntrepriseChantierService,
         private affectationSalarieService: AffectationSalarieChantierService,
         private controleService: ControleService,
+        private documentService: DocumentService,
+        private typeDocumentService: TypeDocumentService,
+        private messagerieService: MessageService,
         private confirmation: ConfirmationService,
-        private message: MessageService,
+        private message: PrimeMessageService,
         public auth: AuthService
     ) {
         this.affecterEntrepriseForm.controls.role.valueChanges.subscribe((role) => {
@@ -156,6 +180,10 @@ export class ChantierDetailComponent implements OnInit {
 
     get isControleur(): boolean {
         return this.auth.hasRole('CONTROLEUR');
+    }
+
+    get isClient(): boolean {
+        return this.auth.hasRole('CLIENT');
     }
 
     // --- Vue Entreprise (lecture seule) : indicateurs propres à SA situation sur ce
@@ -188,6 +216,81 @@ export class ChantierDetailComponent implements OnInit {
         ce rôle) ne résoudrait jamais le nom d'un sous-traitant. */
     nomEntrepriseAffectation(a: AffectationEntrepriseChantier): string {
         return a.raisonSocialeEntreprise ?? this.nomEntreprise(a.entrepriseId);
+    }
+
+    // --- Vue Client (lecture seule) : ce chantier tel que le voit un compte Client
+    // (accès total ou responsable de chantier — déjà scopé côté backend, voir
+    // ChantierService.listerIdsAccessiblesPourClient ; aucun filtrage de périmètre à
+    // refaire ici). Remplace les blocs de gestion (Responsable/Contrôles/Utilisateurs/
+    // Entreprises affectées/Salariés affectés) par une vue de consultation pratique. ---
+
+    get entreprisesActivesClient(): Array<AffectationEntrepriseChantier & { nomEntrepriseCalculee: string }> {
+        return this.affectationsEntreprise.filter((a) => a.statut === 'ACTIF');
+    }
+
+    get statControlesClient(): { termines: number; total: number } {
+        return { termines: this.controles.filter((c) => c.termine).length, total: this.controles.length };
+    }
+
+    /** Répartition des salariés affectés par entreprise — le "graphique" de la vue
+        Client (barres horizontales), triée par effectif décroissant. */
+    get salariesParEntrepriseClient(): Array<{ entrepriseId: string; nom: string; total: number }> {
+        const counts = new Map<string, number>();
+        this.affectationsSalarie.forEach((a) => {
+            const id = a.entrepriseId ?? '';
+            counts.set(id, (counts.get(id) ?? 0) + 1);
+        });
+        return [...counts.entries()]
+            .map(([entrepriseId, total]) => ({ entrepriseId, nom: this.nomEntreprise(entrepriseId), total }))
+            .sort((a, b) => b.total - a.total);
+    }
+
+    get maxSalariesParEntrepriseClient(): number {
+        return Math.max(1, ...this.salariesParEntrepriseClient.map((s) => s.total));
+    }
+
+    private readonly palierBarChart = ['#3B6FA0', '#B5691C', '#2F8558', '#B9862B', '#7A470F'];
+    couleurBarChart(index: number): string {
+        return this.palierBarChart[index % this.palierBarChart.length];
+    }
+
+    /** Liste nominative des salariés affectés à ce chantier — le client doit pouvoir
+        savoir QUI travaille sur son chantier, pas seulement combien (voir retour client :
+        le graphique par entreprise ci-dessus ne suffit pas). Triée par entreprise puis nom. */
+    get salariesSurChantierClient(): Array<AffectationSalarieChantier & { nomSalarieCalculee: string; contratCalculee: string; nomEntrepriseCalculee: string }> {
+        return this.affectationsSalarie
+            .map((a) => ({ ...a, nomEntrepriseCalculee: this.nomEntreprise(a.entrepriseId ?? '') }))
+            .sort((a, b) => a.nomEntrepriseCalculee.localeCompare(b.nomEntrepriseCalculee) || a.nomSalarieCalculee.localeCompare(b.nomSalarieCalculee));
+    }
+
+    /** Comptes Client de mon équipe visibles sur CE chantier : soit "accès total" (ils
+        n'apparaissent jamais dans chantier_utilisateur, voir Utilisateur.accesTousChantiers,
+        donc à inclure explicitement), soit explicitement assignés ici. */
+    get equipeClientSurCeChantier(): Array<{ utilisateur: Utilisateur; accesTousChantiers: boolean }> {
+        if (!this.chantier) {
+            return [];
+        }
+        const clientId = this.chantier.clientId;
+        return this.utilisateurs
+            .filter((u) => u.clientId === clientId)
+            .filter((u) => u.accesTousChantiers || this.chantierUtilisateurIds.includes(u.id))
+            .map((u) => ({ utilisateur: u, accesTousChantiers: !!u.accesTousChantiers }));
+    }
+
+    initialesUtilisateur(u: Utilisateur): string {
+        const p = (u.prenom || '').trim();
+        const n = (u.nom || '').trim();
+        return ((p[0] ?? '') + (n[0] ?? '')).toUpperCase() || '?';
+    }
+
+    /** Rapport envoyé pour ce contrôle, s'il existe — un contrôle terminé n'a pas
+        forcément de rapport encore rédigé/envoyé. */
+    rapportDuControle(controleId: string): RapportControle | undefined {
+        return this.rapportsChantierClient.find((r) => r.controleId === controleId && !!r.dateEnvoi);
+    }
+
+    nomControleTiers(id?: string): string {
+        return this.controleTiersListe.find((t) => t.id === id)?.nom ?? '—';
     }
 
     nomPays(id?: string): string {
@@ -248,6 +351,11 @@ export class ChantierDetailComponent implements OnInit {
                 this.chargerUtilisateurs(id);
                 this.chargerAffectationsEntreprise(id);
                 this.chargerAffectationsSalarie(id);
+                if (this.isClient) {
+                    this.chargerDocumentsClient(id);
+                    this.chargerMessagesClient(id);
+                    this.chargerRapportsClient(id);
+                }
             } else {
                 const preselectionne = this.route.snapshot.queryParamMap.get('clientId');
                 if (preselectionne) {
@@ -617,6 +725,171 @@ export class ChantierDetailComponent implements OnInit {
 
     private toIsoDate(date: Date): string {
         return date.toISOString().substring(0, 10);
+    }
+
+    // --- Vue Client : conformité documentaire agrégée sur ce chantier ---
+
+    private chargerDocumentsClient(chantierId: string) {
+        this.chargementDocumentsClient = true;
+        forkJoin({
+            types: this.typeDocumentService.lister(),
+            affEnt: this.affectationEntrepriseService.lister(chantierId),
+            affSal: this.affectationSalarieService.lister(chantierId)
+        }).subscribe({
+            next: ({ types, affEnt, affSal }) => {
+                this.typesDocument = types;
+                const entrepriseIds = [...new Set(affEnt.filter((a) => a.statut === 'ACTIF').map((a) => a.entrepriseId))];
+                const salarieIds = [...new Set(affSal.map((a) => a.salarieId))];
+
+                forkJoin({
+                    docsEnt: entrepriseIds.length
+                        ? forkJoin(entrepriseIds.map((id) => this.documentService.listerParEntreprise(id)))
+                        : of([] as DocumentItem[][]),
+                    docsSal: salarieIds.length
+                        ? forkJoin(salarieIds.map((id) => this.documentService.listerParSalarie(id)))
+                        : of([] as DocumentItem[][])
+                }).subscribe({
+                    next: ({ docsEnt, docsSal }) => {
+                        this.calculerConformiteClient(entrepriseIds, docsEnt, salarieIds, docsSal);
+                        this.chargementDocumentsClient = false;
+                    },
+                    error: () => (this.chargementDocumentsClient = false)
+                });
+            },
+            error: () => (this.chargementDocumentsClient = false)
+        });
+    }
+
+    /** Même calcul que EntrepriseDetail.recalculerTypesPourEntreprise / SalarieDetail.
+        recalculerTypesPourSalarie / Dashboard.chargerDashboardEntreprise, appliqué à
+        chaque entreprise et chaque salarié de ce chantier puis fusionné : documents
+        obligatoires manquants d'abord (plus urgent), puis ceux qui expirent sous 30 jours. */
+    private calculerConformiteClient(
+        entrepriseIds: string[], docsEnt: DocumentItem[][],
+        salarieIds: string[], docsSal: DocumentItem[][]
+    ) {
+        let totalObligatoires = 0;
+        let totalFournis = 0;
+        const manquants: Array<{ libelle: string; sousTitre: string; severite: 'danger'; entrepriseId?: string; salarieId?: string }> = [];
+        const expirants: Array<{ libelle: string; sousTitre: string; severite: 'warn'; entrepriseId?: string; salarieId?: string }> = [];
+
+        entrepriseIds.forEach((entrepriseId, i) => {
+            const entreprise = this.entreprises.find((e) => e.id === entrepriseId);
+            if (!entreprise) {
+                return;
+            }
+            const documentsByType: Record<string, DocumentItem> = {};
+            (docsEnt[i] ?? []).forEach((d) => (documentsByType[d.typeDocumentId] = d));
+            const typesPourEntreprise = this.typesDocument.filter((t) => {
+                if (t.cible !== 'ENTREPRISE') {
+                    return false;
+                }
+                if (t.corpsDeMetierId && t.corpsDeMetierId !== entreprise.corpsDeMetierId) {
+                    return false;
+                }
+                if (t.paysId && t.paysId !== entreprise.paysId) {
+                    return false;
+                }
+                return true;
+            });
+            const obligatoires = typesPourEntreprise.filter((t) => t.obligatoire);
+            totalObligatoires += obligatoires.length;
+            obligatoires.forEach((t) => {
+                const doc = documentsByType[t.id];
+                if (!doc) {
+                    manquants.push({ libelle: `${t.libelle} — ${entreprise.raisonSociale}`, sousTitre: 'Document manquant', severite: 'danger', entrepriseId });
+                    return;
+                }
+                totalFournis++;
+                const jours = doc.statutValidation === 'VALIDE' ? this.joursAvantExpiration(doc.dateExpiration) : null;
+                if (jours !== null && jours >= 0 && jours <= 30) {
+                    expirants.push({
+                        libelle: `${t.libelle} — ${entreprise.raisonSociale}`,
+                        sousTitre: jours === 0 ? "Expire aujourd'hui" : `Expire dans ${jours} jour(s)`,
+                        severite: 'warn',
+                        entrepriseId
+                    });
+                }
+            });
+        });
+
+        salarieIds.forEach((salarieId, i) => {
+            const salarie = this.salaries.find((s) => s.id === salarieId);
+            if (!salarie) {
+                return;
+            }
+            const nomSalarie = `${salarie.prenom} ${salarie.nom}`;
+            const documentsByType: Record<string, DocumentItem> = {};
+            (docsSal[i] ?? []).forEach((d) => (documentsByType[d.typeDocumentId] = d));
+            const zone = this.zoneDuPays(salarie.nationalitePaysId);
+            const typesPourSalarie = this.typesDocument.filter((t) => {
+                if (t.cible !== 'SALARIE') {
+                    return false;
+                }
+                if (t.paysId && t.paysId !== salarie.nationalitePaysId) {
+                    return false;
+                }
+                if (t.zoneRequise && t.zoneRequise !== zone) {
+                    return false;
+                }
+                return true;
+            });
+            const obligatoires = typesPourSalarie.filter((t) => t.obligatoire);
+            totalObligatoires += obligatoires.length;
+            obligatoires.forEach((t) => {
+                const doc = documentsByType[t.id];
+                if (!doc) {
+                    manquants.push({ libelle: `${t.libelle} — ${nomSalarie}`, sousTitre: 'Document manquant', severite: 'danger', salarieId });
+                    return;
+                }
+                totalFournis++;
+                const jours = doc.statutValidation === 'VALIDE' ? this.joursAvantExpiration(doc.dateExpiration) : null;
+                if (jours !== null && jours >= 0 && jours <= 30) {
+                    expirants.push({
+                        libelle: `${t.libelle} — ${nomSalarie}`,
+                        sousTitre: jours === 0 ? "Expire aujourd'hui" : `Expire dans ${jours} jour(s)`,
+                        severite: 'warn',
+                        salarieId
+                    });
+                }
+            });
+        });
+
+        this.documentsATraiterClient = [...manquants, ...expirants].slice(0, 6);
+        this.statDocumentsClient = {
+            fournis: totalFournis, total: totalObligatoires,
+            pourcentage: totalObligatoires === 0 ? 100 : Math.round((totalFournis / totalObligatoires) * 100)
+        };
+    }
+
+    private joursAvantExpiration(dateExpiration?: string | null): number | null {
+        if (!dateExpiration) {
+            return null;
+        }
+        const aujourdHui = new Date();
+        aujourdHui.setHours(0, 0, 0, 0);
+        const expiration = new Date(dateExpiration);
+        expiration.setHours(0, 0, 0, 0);
+        return Math.round((expiration.getTime() - aujourdHui.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    private zoneDuPays(paysId?: string): string | undefined {
+        return paysId ? this.pays.find((p) => p.id === paysId)?.zone : undefined;
+    }
+
+    // --- Vue Client : messages et rapports liés à ce chantier ---
+
+    private chargerMessagesClient(chantierId: string) {
+        this.messagerieService.boiteReception().subscribe((messages) => {
+            this.messagesChantierClient = messages
+                .filter((m) => m.chantierId === chantierId)
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .slice(0, 5);
+        });
+    }
+
+    private chargerRapportsClient(chantierId: string) {
+        this.controleService.listerRapports(chantierId).subscribe((rapports) => (this.rapportsChantierClient = rapports));
     }
 
     retour() {

@@ -2,6 +2,7 @@
     "menu": {
         "dashboard": "Dashboard",
         "clients": "Clients",
+        "maFiche": "My company",
         "chantiers": "Sites",
         "entreprises": "Companies",
         "salaries": "Workers",

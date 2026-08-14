@@ -1534,7 +1534,20 @@ a { color: var(--brand-accent-ink); }
 }
 .status-pill.success { background: var(--brand-success-tint); color: var(--brand-success); }
 .status-pill.danger { background: var(--brand-danger-tint); color: var(--brand-danger); }
+.status-pill.info { background: var(--brand-info-tint); color: var(--brand-info); }
+.status-pill.info i { font-size: 0.7rem; }
 .status-pill-dot { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+/* Les tints pâles ci-dessus (success/danger/info) sont pensés pour un fond blanc (.card,
+   header de fiche Salarié/Entreprise) — plaqués tels quels sur le bandeau sombre de la
+   carte d'identité (fiche Client, vue Client), ils délavaient mal et ne correspondaient
+   plus au prototype validé (badges "verre teinté" sur fond sombre : mêmes rgb que les
+   tokens --brand-success/--brand-danger/--brand-info mais en transparence + texte
+   éclairci). Scopé à .id-card--client pour ne pas altérer la vue Entreprise existante,
+   qui utilise le même balisage .id-card mais n'a jamais eu cette remarque. */
+.id-card--client .id-card-mark { background: rgba(181, 105, 28, 0.25); color: #e8b788; box-shadow: none; }
+.id-card--client .status-pill.success { background: rgba(47, 133, 88, 0.22); color: #a9e0bf; }
+.id-card--client .status-pill.danger { background: rgba(194, 69, 61, 0.24); color: #f0aca6; }
+.id-card--client .status-pill.info { background: rgba(59, 111, 160, 0.28); color: #a9c8e8; }
 
 .icon-btn-soft {
     width: 2.35rem;
@@ -1624,9 +1637,12 @@ a { color: var(--brand-accent-ink); }
     font-size: 1.15rem;
     box-shadow: 0 6px 16px rgba(181, 105, 28, 0.4);
 }
-.id-card-name-row { position: relative; z-index: 1; min-width: 0; }
+.id-card-name-row { position: relative; z-index: 1; min-width: 0; flex: 1 1 auto; }
 .id-card-name { display: block; color: #fff; font-family: 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 700; font-size: 1.3rem; letter-spacing: -0.01em; }
 .id-card-sub { display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.6); font-size: 0.82rem; margin-top: 0.25rem; }
+/* Badge "Accès total" / "Responsable de chantier" (vue Client) : plaqué à droite du
+   bandeau, jamais compressé par le nom de la société. */
+.id-card-band-end { position: relative; z-index: 1; margin-left: auto; flex-shrink: 0; }
 .id-card-body { padding: 1.5rem 1.85rem 1.7rem; }
 
 .id-kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem 1.3rem; }
@@ -1673,6 +1689,143 @@ a { color: var(--brand-accent-ink); }
     margin-top: 1.25rem;
 }
 .id-footnote i { color: var(--brand-accent-ink); flex-shrink: 0; }
+/* Variante "notice" teintée accent : utilisée quand la remarque ne porte pas sur ce que
+   l'utilisateur NE voit PAS (grise, discrète) mais sur ce que les données affichées AU-DESSUS
+   NE SONT PAS (modifiables) — une teinte neutre s'y confondait avec les valeurs de la fiche
+   juste en dessous (retour Client). Ici volontairement plus affirmée et sur fond distinct. */
+.id-footnote.accent {
+    color: var(--brand-accent-ink);
+    background: var(--brand-accent-tint);
+    border-color: transparent;
+    font-weight: 500;
+}
+.id-footnote.accent i { color: var(--brand-accent-ink); }
+
+/* ================================================================
+ * Aperçu d'équipe (fiche Client, vue Client) : liste courte avec avatar-
+ * initiales, générique — pas préfixé, réutilisable ailleurs qu'ici si besoin.
+ * ================================================================ */
+.member-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--brand-border);
+}
+.member-row:last-of-type { border-bottom: none; padding-bottom: 0; }
+.member-avatar {
+    flex-shrink: 0;
+    width: 2.15rem;
+    height: 2.15rem;
+    border-radius: 50%;
+    background: var(--brand-accent-tint);
+    color: var(--brand-accent-ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+}
+.member-body { min-width: 0; flex: 1 1 auto; }
+.member-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.member-email {
+    display: block;
+    font-size: 0.73rem;
+    color: var(--ink-soft, #5C6270);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.member-end { flex-shrink: 0; }
+
+/* ================================================================
+ * En-tête sombre à indicateurs (fiche Chantier, vue Client) : même bandeau que
+ * .id-card-band mais avec les indicateurs intégrés dans le bandeau lui-même (au lieu
+ * d'un bandeau + une carte .card séparée comme .ent-hero-stats) — prototype validé
+ * par le client tel quel, réutilisable si un autre écran a besoin du même traitement.
+ * ================================================================ */
+.chantier-hero {
+    background: linear-gradient(120deg, var(--brand-sidebar) 0%, #22262f 100%);
+    border-radius: 16px;
+    padding: 1.6rem 1.85rem 1.5rem;
+    margin-bottom: 1.25rem;
+    position: relative;
+    overflow: hidden;
+    color: #fff;
+}
+.chantier-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(135deg, rgba(181, 105, 28, 0.1) 0 1px, transparent 1px 26px);
+    pointer-events: none;
+}
+.chantier-hero-inner { position: relative; z-index: 1; }
+.chantier-hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
+.chantier-hero-title-row { display: flex; align-items: center; gap: 0.9rem; }
+.chantier-hero-title { font-family: 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 700; font-size: 1.4rem; letter-spacing: -0.01em; margin: 0; color: #fff; }
+/* Pastille-initiales (fiche Entreprise, vue Client) : même bandeau .chantier-hero mais
+   avec une identité visuelle (2 lettres) à la place d'une icône générique. */
+.chantier-hero-mark {
+    flex-shrink: 0;
+    width: 2.9rem;
+    height: 2.9rem;
+    border-radius: 10px;
+    background: rgba(181, 105, 28, 0.25);
+    color: #e8b788;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 800;
+    font-size: 1.05rem;
+}
+.chantier-hero-sub { display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.6); font-size: 0.84rem; margin-top: 0.3rem; flex-wrap: wrap; }
+.chantier-hero-sub a { color: rgba(255, 255, 255, 0.85); text-decoration: none; border-bottom: 1px dotted rgba(255, 255, 255, 0.4); cursor: pointer; }
+/* Les tints pâles success/danger (voir plus haut) sont pensés pour un fond blanc — même
+   correction que .id-card--client, appliquée ici pour ce second bandeau sombre. */
+.chantier-hero .status-pill.success { background: rgba(47, 133, 88, 0.22); color: #a9e0bf; }
+.chantier-hero .status-pill.danger { background: rgba(194, 69, 61, 0.24); color: #f0aca6; }
+
+.chantier-hero-stats { margin-top: 1.4rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.85rem; }
+@media (max-width: 900px) { .chantier-hero-stats { grid-template-columns: repeat(2, 1fr); } }
+.chantier-hstat { display: flex; align-items: center; gap: 0.8rem; padding: 0.85rem 1rem; border-radius: 12px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.08); }
+.chantier-hstat-icon { flex-shrink: 0; width: 2.75rem; height: 2.75rem; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: rgba(181, 105, 28, 0.22); color: #e8b788; }
+.chantier-hstat-icon.blue { background: rgba(59, 111, 160, 0.24); color: #a9c8e8; }
+.chantier-hstat-icon i { font-size: 1.1rem; }
+.chantier-hstat-ring { flex-shrink: 0; width: 2.75rem; height: 2.75rem; position: relative; }
+.chantier-hstat-ring svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+.chantier-hstat-ring-track { fill: none; stroke: rgba(255, 255, 255, 0.15); stroke-width: 3; }
+.chantier-hstat-ring-value { fill: none; stroke-width: 3; stroke-linecap: round; }
+.chantier-hstat-ring-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 0.72rem; color: #fff; }
+.chantier-hstat-body { min-width: 0; flex: 1 1 auto; }
+.chantier-hstat-value { display: block; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 1.1rem; line-height: 1.2; color: #fff; }
+.chantier-hstat-value small { opacity: 0.55; font-weight: 600; }
+.chantier-hstat-label { display: block; font-size: 0.72rem; color: rgba(255, 255, 255, 0.55); margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- Barres horizontales (répartition salariés/entreprise) ---------- */
+.bar-chart { display: flex; flex-direction: column; gap: 0.65rem; }
+.bar-row { display: flex; align-items: center; gap: 0.75rem; }
+.bar-label { width: 9.5rem; flex-shrink: 0; font-size: 0.78rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { flex: 1 1 auto; height: 0.55rem; border-radius: 999px; background: var(--brand-surface-alt); overflow: hidden; }
+.bar-fill { display: block; height: 100%; border-radius: 999px; }
+.bar-count { width: 1.6rem; flex-shrink: 0; text-align: right; font-size: 0.78rem; font-weight: 700; }
+
+/* ---------- Messages courts (teaser, fiche Chantier vue Client) ---------- */
+.msg-row { padding: 0.65rem 0; border-bottom: 1px solid var(--brand-border); }
+.msg-row:last-of-type { border-bottom: none; padding-bottom: 0; }
+.msg-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.msg-from { font-weight: 600; font-size: 0.83rem; }
+.msg-date { font-size: 0.72rem; color: var(--ink-faint, #9098A6); flex-shrink: 0; }
+.msg-subject { font-size: 0.79rem; color: var(--ink-soft, #5C6270); margin-top: 0.15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ================================================================
  * Tableau de bord — bloc « Aide & support » (vue Entreprise). Le reste du

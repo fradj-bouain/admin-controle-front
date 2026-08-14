@@ -2,6 +2,7 @@
     "menu": {
         "dashboard": "Cruscotto",
         "clients": "Clienti",
+        "maFiche": "La mia scheda",
         "chantiers": "Cantieri",
         "entreprises": "Aziende",
         "salaries": "Dipendenti",
