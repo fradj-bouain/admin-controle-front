@@ -26,7 +26,7 @@
     </div>
     <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? chantiers).length }} résultat(s)</p>
 
-    <p-table #dt [value]="chantiers" [loading]="loading" [paginator]="true" [rows]="10" dataKey="id" [globalFilterFields]="['nom','nomClientCalcule','ville']">
+    <p-table #dt [value]="chantiers" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" dataKey="id" [globalFilterFields]="['nom','nomClientCalcule','ville']">
         <ng-template pTemplate="header">
             <tr>
                 <th>{{ 'chantier.nom' | translate }}</th>

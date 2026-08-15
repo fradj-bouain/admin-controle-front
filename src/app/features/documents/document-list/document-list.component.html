@@ -45,7 +45,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtDocuments [value]="documents" dataKey="id" [loading]="loadingDocuments" [paginator]="true" [rows]="10" [first]="tableFirst">
+            <p-table #dtDocuments [value]="documents" dataKey="id" [loading]="loadingDocuments" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [first]="tableFirst">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Type</th>
@@ -110,7 +110,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtTypes [value]="types" dataKey="id" [loading]="loadingTypes" [paginator]="true" [rows]="10">
+            <p-table #dtTypes [value]="types" dataKey="id" [loading]="loadingTypes" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Libellé</th>
@@ -176,7 +176,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtEtats [value]="etats" dataKey="id" [loading]="loadingEtats" [paginator]="true" [rows]="10">
+            <p-table #dtEtats [value]="etats" dataKey="id" [loading]="loadingEtats" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Nom de l'état</th>

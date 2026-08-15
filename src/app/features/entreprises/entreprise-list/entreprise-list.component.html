@@ -26,7 +26,7 @@
     </div>
     <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? entreprises).length }} résultat(s)</p>
 
-    <p-table #dt [value]="entreprises" [loading]="loading" [paginator]="true" [rows]="10" dataKey="id" [globalFilterFields]="['raisonSociale','siret','telephone','email','ville','rangActuel']">
+    <p-table #dt [value]="entreprises" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" dataKey="id" [globalFilterFields]="['raisonSociale','siret','telephone','email','ville','rangActuel']">
         <ng-template pTemplate="header">
             <tr>
                 <th>Raison sociale</th>
@@ -34,7 +34,7 @@
                 <th>Téléphone</th>
                 <th>Ville</th>
                 <th>Rang</th>
-                <th>Chantier actuel</th>
+                <th *ngIf="!estClient">Chantier actuel</th>
                 <th>Statut</th>
                 <th style="width: 4rem"></th>
             </tr>
@@ -44,7 +44,7 @@
                 <th><p-columnFilter type="text" field="telephone" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="ville" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="rangActuel" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                <th></th>
+                <th *ngIf="!estClient"></th>
                 <th>
                     <p-columnFilter field="actif" matchMode="equals" [showMenu]="false">
                         <ng-template pTemplate="filter" let-value let-filter="filterCallback">
@@ -70,7 +70,7 @@
                     <p-tag *ngIf="entreprise.rangActuel" severity="info" [value]="entreprise.rangActuel"></p-tag>
                     <span *ngIf="!entreprise.rangActuel" class="text-500">—</span>
                 </td>
-                <td>
+                <td *ngIf="!estClient">
                     <p-tag *ngIf="entreprise.chantierActuel" severity="info" [value]="entreprise.chantierActuel">
                         <ng-template pTemplate="icon"><i class="pi pi-map-marker mr-1"></i></ng-template>
                     </p-tag>

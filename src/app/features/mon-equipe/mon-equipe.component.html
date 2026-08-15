@@ -11,7 +11,7 @@
         </ng-template>
     </p-toolbar>
 
-    <p-table [value]="utilisateurs" dataKey="id" [paginator]="true" [rows]="10">
+    <p-table [value]="utilisateurs" dataKey="id" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
         <ng-template pTemplate="header">
             <tr>
                 <th>Utilisateur</th>
@@ -52,6 +52,15 @@
                 <td><p-tag [severity]="utilisateur.actif ? 'success' : 'danger'" [value]="utilisateur.actif | etatLabel"></p-tag></td>
                 <td>
                     <div class="flex align-items-center gap-1 flex-nowrap">
+                        <button
+                            *ngIf="estClient && moiAccesTousChantiers"
+                            pButton
+                            type="button"
+                            icon="pi pi-eye"
+                            class="p-button-text p-button-rounded"
+                            pTooltip="Voir le détail"
+                            (click)="ouvrirDetail(utilisateur)"
+                        ></button>
                         <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" (click)="ouvrirEdition(utilisateur)"></button>
                         <button
                             pButton
@@ -105,4 +114,61 @@
             <button pButton type="submit" label="Enregistrer" icon="pi pi-check" [loading]="saving"></button>
         </div>
     </form>
+</p-dialog>
+
+<!-- Détail équipe : sur quels chantiers ce compte intervient, depuis quand et où —
+     un simple décompte sur le listing ne répond pas à "sur quel chantier exactement ?". -->
+<p-dialog header="Détail" [(visible)]="dialogDetailVisible" [modal]="true" [style]="{ width: '480px' }" *ngIf="utilisateurDetail as u">
+    <div class="flex align-items-center gap-3 mb-4">
+        <div class="member-avatar" style="width: 3rem; height: 3rem; font-size: 1rem;">{{ initialesUtilisateur(u) }}</div>
+        <div class="min-w-0">
+            <div class="font-semibold text-lg white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ u.prenom }} {{ u.nom }}</div>
+            <div class="text-500 text-sm white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ u.email }}</div>
+        </div>
+    </div>
+
+    <div class="flex align-items-center gap-2 mb-4">
+        <p-tag [severity]="u.actif ? 'success' : 'danger'" [value]="u.actif | etatLabel"></p-tag>
+        <p-tag *ngIf="u.accesTousChantiers" severity="info" value="Accès total"></p-tag>
+        <p-tag *ngIf="!u.accesTousChantiers" severity="warning" [value]="chantiersDetail.length + ' chantier(s) assigné(s)'"></p-tag>
+    </div>
+
+    <div *ngIf="u.accesTousChantiers" class="id-footnote accent">
+        <i class="pi pi-verified"></i>
+        Ce compte voit tous vos chantiers, sans assignation individuelle nécessaire.
+    </div>
+
+    <ng-container *ngIf="!u.accesTousChantiers">
+        <div class="flex align-items-center justify-content-between mb-2">
+            <span class="text-sm font-semibold text-color-secondary" style="text-transform: uppercase; letter-spacing: 0.03em; font-size: 0.72rem;">Chantiers</span>
+            <a
+                class="card-head-action"
+                style="font-size:0.78rem; font-weight:600; color:var(--brand-accent-ink); cursor:pointer;"
+                [routerLink]="['/chantiers']"
+                (click)="dialogDetailVisible = false"
+            >Voir tout ({{ chantiersDetail.length }})</a>
+        </div>
+        <app-card-skeleton *ngIf="chargementDetail" [lignes]="3"></app-card-skeleton>
+        <div class="ent-compact-list" *ngIf="!chargementDetail && chantiersDetailApercu.length > 0">
+            <button
+                type="button"
+                class="ent-compact-row"
+                *ngFor="let c of chantiersDetailApercu"
+                [routerLink]="['/chantiers', c.chantierId]"
+                (click)="dialogDetailVisible = false"
+            >
+                <span class="ent-compact-row-icon"><i class="pi pi-map-marker"></i></span>
+                <span class="ent-compact-row-body">
+                    <span class="ent-compact-row-title">{{ c.nom }}</span>
+                    <span class="ent-compact-row-sub">{{ c.ville || '—' }} · Depuis le {{ c.depuisLe | date: 'dd/MM/yyyy' }}</span>
+                </span>
+                <span class="ent-compact-row-end">
+                    <p-tag [severity]="c.statut === 'ACTIF' ? 'success' : 'danger'" [value]="c.statut | etatLabel"></p-tag>
+                </span>
+            </button>
+        </div>
+        <p class="text-500 text-sm m-0" *ngIf="!chargementDetail && chantiersDetailApercu.length === 0">
+            Aucun chantier assigné pour l'instant — ce compte ne voit encore rien.
+        </p>
+    </ng-container>
 </p-dialog>

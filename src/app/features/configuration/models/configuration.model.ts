@@ -96,6 +96,16 @@ export interface Utilisateur {
     accesTousChantiers?: boolean;
 }
 
+// Détail "équipe" (vue Client "accès total") : un chantier auquel ce compte a été
+// explicitement assigné, avec quand (depuisLe) et où (ville) — voir GET /utilisateurs/{id}/chantiers.
+export interface UtilisateurChantier {
+    chantierId: string;
+    nom: string;
+    ville?: string;
+    statut: string;
+    depuisLe: string;
+}
+
 export interface CreateUtilisateurRequest {
     username: string;
     password: string;

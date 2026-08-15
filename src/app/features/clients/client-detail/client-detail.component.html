@@ -188,7 +188,11 @@
                         <i class="pi pi-map-marker"></i>
                         <h6 class="m-0">Mes chantiers</h6>
                     </div>
-                    <a class="card-head-action" style="font-size:0.78rem; font-weight:600; color:var(--brand-accent-ink); cursor:pointer;" [routerLink]="['/chantiers']">Tout voir</a>
+                    <a
+                        class="card-head-action"
+                        style="font-size:0.78rem; font-weight:600; color:var(--brand-accent-ink); cursor:pointer;"
+                        [routerLink]="['/chantiers']"
+                    >Voir tout ({{ chantiers.length }})</a>
                 </div>
                 <div class="ent-compact-list" *ngIf="chantiersApercu.length > 0">
                     <button type="button" class="ent-compact-row" [routerLink]="['/chantiers', c.id]" *ngFor="let c of chantiersApercu">
@@ -203,15 +207,6 @@
                 <p class="text-500 text-sm m-0" *ngIf="chantiersApercu.length === 0">
                     Aucun chantier {{ moiAccesTousChantiers ? 'pour ce client' : 'ne vous a été assigné' }} pour l'instant.
                 </p>
-                <button
-                    pButton
-                    type="button"
-                    icon="pi pi-map-marker"
-                    [label]="'Voir tous mes chantiers (' + chantiers.length + ')'"
-                    class="p-button-outlined w-full mt-3"
-                    *ngIf="chantiers.length > 0"
-                    [routerLink]="['/chantiers']"
-                ></button>
             </div>
 
         </div>
@@ -220,9 +215,16 @@
 
             <!-- Mon équipe -->
             <div class="card">
-                <div class="card-head">
-                    <i class="pi pi-users"></i>
-                    <h6 class="m-0">Mon équipe</h6>
+                <div class="card-head justify-content-between">
+                    <div class="flex align-items-center gap-2">
+                        <i class="pi pi-users"></i>
+                        <h6 class="m-0">Mon équipe</h6>
+                    </div>
+                    <a
+                        class="card-head-action"
+                        style="font-size:0.78rem; font-weight:600; color:var(--brand-accent-ink); cursor:pointer;"
+                        [routerLink]="['/mon-equipe']"
+                    >Gérer ({{ utilisateurs.length }})</a>
                 </div>
 
                 <div class="member-list" *ngIf="equipeApercu.length > 0">
@@ -240,15 +242,6 @@
                     </div>
                 </div>
                 <p class="text-500 text-sm m-0" *ngIf="equipeApercu.length === 0">Aucun membre pour l'instant.</p>
-
-                <button
-                    pButton
-                    type="button"
-                    icon="pi pi-users"
-                    [label]="utilisateurs.length > 5 ? 'Gérer mon équipe (' + utilisateurs.length + ')' : 'Gérer mon équipe'"
-                    class="w-full mt-3"
-                    [routerLink]="['/mon-equipe']"
-                ></button>
             </div>
 
         </div>

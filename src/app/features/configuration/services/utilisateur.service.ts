@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { CreateUtilisateurRequest, ModifierUtilisateurRequest, Utilisateur } from '../models/configuration.model';
+import { CreateUtilisateurRequest, ModifierUtilisateurRequest, Utilisateur, UtilisateurChantier } from '../models/configuration.model';
 
 @Injectable({ providedIn: 'root' })
 export class UtilisateurService {
@@ -33,5 +33,9 @@ export class UtilisateurService {
 
     supprimer(id: string): Observable<void> {
         return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    }
+
+    listerChantiers(id: string): Observable<UtilisateurChantier[]> {
+        return this.http.get<UtilisateurChantier[]>(`${this.baseUrl}/${id}/chantiers`);
     }
 }

@@ -30,6 +30,14 @@ export class EntrepriseListComponent implements OnInit {
         return this.auth.hasRole('SUPER_ADMIN');
     }
 
+    // "Chantier actuel" n'a de sens que pour un usage transverse (SUPER_ADMIN/ENTREPRISE) :
+    // côté Client, cette liste est déjà limitée aux entreprises de SES chantiers, et le
+    // chantier "actuel" retourné par le backend n'est pas garanti être l'un d'eux (une
+    // entreprise peut intervenir ailleurs en parallèle) — donc pas pertinent à afficher ici.
+    get estClient(): boolean {
+        return this.auth.hasRole('CLIENT');
+    }
+
     ngOnInit(): void {
         this.charger();
     }

@@ -10,7 +10,7 @@
 
     <p-tabView [(activeIndex)]="activeTabIndex">
         <p-tabPanel header="Boîte de réception">
-            <p-table #dtReception [value]="reception" dataKey="id" [loading]="loadingReception" [paginator]="true" [rows]="10">
+            <p-table #dtReception [value]="reception" dataKey="id" [loading]="loadingReception" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
                 <ng-template pTemplate="header">
                     <tr>
                         <th></th>
@@ -45,7 +45,7 @@
         </p-tabPanel>
 
         <p-tabPanel header="Envoyés">
-            <p-table #dtEnvoyes [value]="envoyes" dataKey="id" [loading]="loadingEnvoyes" [paginator]="true" [rows]="10">
+            <p-table #dtEnvoyes [value]="envoyes" dataKey="id" [loading]="loadingEnvoyes" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Destinataire</th>

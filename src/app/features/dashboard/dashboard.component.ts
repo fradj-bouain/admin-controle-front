@@ -4,6 +4,7 @@ import { ChantierService } from '../chantiers/services/chantier.service';
 import { ClientService } from '../clients/services/client.service';
 import { EntrepriseService } from '../entreprises/services/entreprise.service';
 import { SalarieService } from '../salaries/services/salarie.service';
+import { AffectationSalarieChantierService } from '../salaries/services/affectation-salarie-chantier.service';
 import { ReferenceDataService } from '../configuration/services/reference-data.service';
 import { ControleService } from '../controles/services/controle.service';
 import { DocumentEnAttente, DocumentItem } from '../documents/models/document.model';
@@ -78,7 +79,19 @@ export class DashboardComponent implements OnInit {
     banniereClientOk = true;
     banniereClientTexte = '';
     nbEntreprisesIntervenantes = 0;
+    nbEntreprisesPrincipales = 0;
+    nbEntreprisesSousTraitantes = 0;
+    // Phrase d'échéance plutôt qu'une fraction sèche — voir statControles ci-dessous
+    // pour le compte X/Y, cette ligne répond à "et maintenant, c'est pour quand ?".
+    prochainControleTexte = '';
+    prochainControleOk = true;
+    // Personnes distinctes (voir GET /salaries, déjà dédupliqué côté backend) — peut être
+    // inférieur au nombre de postes ci-dessous si une même personne intervient sur
+    // plusieurs de vos chantiers (retour client : "1" seul semblait faux/trop bas alors
+    // qu'il s'agissait d'une seule personne déployée sur 2 chantiers, pas un bug).
     nbSalariesSurChantiers = 0;
+    nbPostesSalariesClient = 0;
+    statutAccesSalariesClient: { accorde: number; enAttente: number; refuse: number } = { accorde: 0, enAttente: 0, refuse: 0 };
     mesChantiersClient: Array<{ id: string; nom: string; ville?: string; statut: string }> = [];
     entreprisesSurMesChantiers: Array<{ id: string; raisonSociale: string; chantierActuel?: string | null; rangActuel?: string | null }> = [];
     derniersControlesClient: Array<{ chantierNom: string; date: string; termine: boolean }> = [];
@@ -88,6 +101,7 @@ export class DashboardComponent implements OnInit {
         private clientService: ClientService,
         private entrepriseService: EntrepriseService,
         private salarieService: SalarieService,
+        private affectationSalarieService: AffectationSalarieChantierService,
         private referenceDataService: ReferenceDataService,
         private controleService: ControleService,
         private documentService: DocumentService,
@@ -310,14 +324,37 @@ export class DashboardComponent implements OnInit {
 
                 this.statChantiers = this.calculerEtat(chantiers, (c) => c.statut === 'ACTIF');
                 this.nbEntreprisesIntervenantes = entreprises.length;
+                // rangActuel peut cumuler plusieurs rôles ("PRINCIPALE, STT1") si l'entreprise
+                // intervient à des rangs différents selon le chantier — comptée comme
+                // "principale" dès qu'elle l'est au moins une fois, sinon sous-traitante.
+                this.nbEntreprisesPrincipales = entreprises.filter((e) => (e.rangActuel ?? '').includes('PRINCIPALE')).length;
+                this.nbEntreprisesSousTraitantes = this.nbEntreprisesIntervenantes - this.nbEntreprisesPrincipales;
                 this.nbSalariesSurChantiers = salaries.length;
                 this.statControles = this.calculerEtat(controles, (c) => c.termine);
+                this.chargerRepartitionSalariesClient(chantiers.map((c) => c.id));
 
                 const aujourdHui = new Date();
                 const nbControlesEnRetard = controles.filter(
                     (c) => !c.termine && new Date(c.dateControle) < aujourdHui
                 ).length;
                 this.banniereClientOk = nbControlesEnRetard === 0;
+
+                const prochainControle = controles
+                    .filter((c) => !c.termine && new Date(c.dateControle) >= aujourdHui)
+                    .sort((a, b) => new Date(a.dateControle).getTime() - new Date(b.dateControle).getTime())[0];
+                const chantierNomParIdPourControle: Record<string, string> = {};
+                chantiers.forEach((c) => (chantierNomParIdPourControle[c.id] = c.nom));
+                if (nbControlesEnRetard > 0) {
+                    this.prochainControleOk = false;
+                    this.prochainControleTexte = `${nbControlesEnRetard} contrôle(s) en retard`;
+                } else if (prochainControle) {
+                    const jours = Math.round((new Date(prochainControle.dateControle).getTime() - aujourdHui.getTime()) / 86400000);
+                    this.prochainControleOk = true;
+                    this.prochainControleTexte = `Prochain contrôle dans ${jours} jour(s) — ${chantierNomParIdPourControle[prochainControle.chantierId] ?? ''}`;
+                } else {
+                    this.prochainControleOk = true;
+                    this.prochainControleTexte = 'Aucun contrôle à venir programmé';
+                }
                 this.banniereClientTexte = this.banniereClientOk
                     ? 'Tous vos chantiers actifs ont un contrôle à jour — rien ne nécessite votre attention.'
                     : `${nbControlesEnRetard} contrôle(s) auraient dû être réalisés — contactez votre organisme de contrôle si besoin.`;
@@ -345,6 +382,30 @@ export class DashboardComponent implements OnInit {
                 this.chargement = false;
             },
             error: () => (this.chargement = false)
+        });
+    }
+
+    /** Postes occupés (une affectation par chantier, PAS dédupliqué comme salaries.length
+        ci-dessus) et statut d'accès — sert à clarifier "1 personne" quand elle est en
+        réalité déployée sur plusieurs chantiers, plutôt qu'un chiffre brut ambigu. Aucun
+        endpoint ne renvoie ça en un seul appel : un aller par chantier accessible, déjà
+        scopé côté backend (voir AffectationSalarieChantierController). */
+    private chargerRepartitionSalariesClient(chantierIds: string[]): void {
+        if (chantierIds.length === 0) {
+            this.nbPostesSalariesClient = 0;
+            this.statutAccesSalariesClient = { accorde: 0, enAttente: 0, refuse: 0 };
+            return;
+        }
+        forkJoin(chantierIds.map((id) => this.affectationSalarieService.lister(id))).subscribe({
+            next: (listesParChantier) => {
+                const affectations = listesParChantier.flat();
+                this.nbPostesSalariesClient = affectations.length;
+                this.statutAccesSalariesClient = {
+                    accorde: affectations.filter((a) => a.statutAcces === 'ACCORDE').length,
+                    enAttente: affectations.filter((a) => a.statutAcces === 'EN_ATTENTE').length,
+                    refuse: affectations.filter((a) => a.statutAcces === 'REFUSE').length
+                };
+            }
         });
     }
 

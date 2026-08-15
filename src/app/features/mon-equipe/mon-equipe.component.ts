@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { AuthService } from 'src/app/core/auth/auth.service';
-import { Utilisateur } from '../configuration/models/configuration.model';
+import { Utilisateur, UtilisateurChantier } from '../configuration/models/configuration.model';
 import { UtilisateurService } from '../configuration/services/utilisateur.service';
 
 /**
@@ -26,6 +26,13 @@ export class MonEquipeComponent implements OnInit {
     // Non-null = la popup édite ce compte plutôt que d'en créer un nouveau (même
     // formulaire réutilisé, voir ouvrirCreation/ouvrirEdition/submit).
     utilisateurEnEdition: Utilisateur | null = null;
+
+    // --- Détail équipe (voir retour client : le compte "accès total" veut savoir, pour
+    // chaque collègue, sur quels chantiers il/elle intervient — pas juste un décompte). ---
+    dialogDetailVisible = false;
+    utilisateurDetail: Utilisateur | null = null;
+    chantiersDetail: UtilisateurChantier[] = [];
+    chargementDetail = false;
 
     form = this.fb.group({
         nom: ['', Validators.required],
@@ -52,6 +59,26 @@ export class MonEquipeComponent implements OnInit {
     // Entreprise, où elle n'a pas de sens.
     get estClient(): boolean {
         return this.auth.hasRole('CLIENT');
+    }
+
+    // Le détail "équipe" (voir ouvrirDetail) n'a de sens — et n'est autorisé côté backend,
+    // voir UtilisateurController.listerChantiers — que pour le compte "accès total" : un
+    // "responsable de chantier" n'a pas à auditer le reste de l'équipe.
+    get moiAccesTousChantiers(): boolean {
+        return !!this.utilisateurs.find((u) => u.id === this.auth.userId)?.accesTousChantiers;
+    }
+
+    // Aperçu limité à 7 lignes (voir retour client, cohérent avec les autres fiches) —
+    // "Voir tout" → /chantiers, déjà scopé par le backend au périmètre exact du compte
+    // "accès total" qui consulte ce détail.
+    get chantiersDetailApercu(): UtilisateurChantier[] {
+        return this.chantiersDetail.slice(0, 7);
+    }
+
+    initialesUtilisateur(u: Utilisateur): string {
+        const p = (u.prenom || '').trim();
+        const n = (u.nom || '').trim();
+        return ((p[0] ?? '') + (n[0] ?? '')).toUpperCase() || '?';
     }
 
     charger() {
@@ -83,6 +110,26 @@ export class MonEquipeComponent implements OnInit {
         this.form.controls.password.clearValidators();
         this.form.controls.password.updateValueAndValidity();
         this.dialogVisible = true;
+    }
+
+    ouvrirDetail(utilisateur: Utilisateur) {
+        this.utilisateurDetail = utilisateur;
+        this.chantiersDetail = [];
+        this.dialogDetailVisible = true;
+        // "Accès total" ne repose sur aucune assignation chantier_utilisateur (voir
+        // Utilisateur.accesTousChantiers) : inutile d'appeler l'API, la liste serait
+        // toujours vide alors que ce compte voit bien tous les chantiers.
+        if (utilisateur.accesTousChantiers) {
+            return;
+        }
+        this.chargementDetail = true;
+        this.utilisateurService.listerChantiers(utilisateur.id).subscribe({
+            next: (chantiers) => {
+                this.chantiersDetail = chantiers;
+                this.chargementDetail = false;
+            },
+            error: () => (this.chargementDetail = false)
+        });
     }
 
     submit() {

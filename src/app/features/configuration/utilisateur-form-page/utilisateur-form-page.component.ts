@@ -18,6 +18,13 @@ import { ReferenceDataService } from '../services/reference-data.service';
 export class UtilisateurFormPageComponent implements OnInit {
 
     saving = false;
+    loading = false;
+    // Pas de GET /utilisateurs/{id} côté backend (seul un listing existe) : en édition,
+    // l'utilisateur visé est retrouvé dans la liste complète déjà appelée par
+    // ailleurs (Configuration) — un aller-retour de plus, mais pas de nouvel endpoint
+    // pour un cas d'usage aussi ponctuel.
+    isNew = true;
+    utilisateurId: string | null = null;
     roles = ['SUPER_ADMIN', 'CLIENT', 'ENTREPRISE', 'CONTROLEUR'];
     clients: Client[] = [];
     entreprises: Entreprise[] = [];
@@ -56,16 +63,59 @@ export class UtilisateurFormPageComponent implements OnInit {
         this.entrepriseService.lister().subscribe((entreprises) => (this.entreprises = entreprises));
         this.referenceDataService.listerControleTiers().subscribe((controleTiersListe) => (this.controleTiersListe = controleTiersListe));
 
-        const clientId = this.route.snapshot.queryParamMap.get('clientId');
-        if (clientId) {
-            this.form.patchValue({ clientId, roles: ['CLIENT'] });
-        }
-
         this.form.controls.roles.valueChanges.subscribe((roles) => {
             this.majValidateurConditionnel(this.form.controls.entrepriseId, (roles ?? []).includes('ENTREPRISE'));
             this.majValidateurConditionnel(this.form.controls.clientId, (roles ?? []).includes('CLIENT'));
             this.majValidateurConditionnel(this.form.controls.controleTiersId, (roles ?? []).includes('CONTROLEUR'));
         });
+
+        const id = this.route.snapshot.paramMap.get('id');
+        this.utilisateurId = id;
+        this.isNew = !id;
+
+        if (id) {
+            // Édition : rôle et rattachement (client/entreprise/organisme) restent affichés
+            // pour le contexte mais non modifiables — UtilisateurService.modifier ne les
+            // prend pas en paramètre (changer le rôle d'un compte après coup a des
+            // implications non gérées ici : assignations chantier, historique, etc.).
+            this.form.controls.roles.disable();
+            this.form.controls.entrepriseId.disable();
+            this.form.controls.clientId.disable();
+            this.form.controls.controleTiersId.disable();
+            this.form.controls.password.clearValidators();
+            this.form.controls.password.updateValueAndValidity();
+
+            this.loading = true;
+            this.utilisateurService.lister().subscribe({
+                next: (utilisateurs) => {
+                    const utilisateur = utilisateurs.find((u) => u.id === id);
+                    this.loading = false;
+                    if (!utilisateur) {
+                        this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Utilisateur introuvable' });
+                        this.router.navigate(['/configuration']);
+                        return;
+                    }
+                    this.form.patchValue({
+                        nom: utilisateur.nom,
+                        prenom: utilisateur.prenom,
+                        email: utilisateur.email,
+                        username: utilisateur.username,
+                        roles: utilisateur.roles,
+                        entrepriseId: utilisateur.entrepriseId ?? '',
+                        clientId: utilisateur.clientId ?? '',
+                        controleTiersId: utilisateur.controleTiersId ?? '',
+                        accesTousChantiers: !!utilisateur.accesTousChantiers
+                    });
+                },
+                error: () => (this.loading = false)
+            });
+            return;
+        }
+
+        const clientId = this.route.snapshot.queryParamMap.get('clientId');
+        if (clientId) {
+            this.form.patchValue({ clientId, roles: ['CLIENT'] });
+        }
     }
 
     private majValidateurConditionnel(control: AbstractControl, requis: boolean) {
@@ -89,6 +139,28 @@ export class UtilisateurFormPageComponent implements OnInit {
         }
         const value = this.form.getRawValue();
         this.saving = true;
+
+        if (!this.isNew && this.utilisateurId) {
+            this.utilisateurService.modifier(this.utilisateurId, {
+                nom: value.nom!,
+                prenom: value.prenom!,
+                email: value.email!,
+                username: value.username!,
+                password: value.password || undefined,
+                accesTousChantiers: (value.roles ?? []).includes('CLIENT') ? !!value.accesTousChantiers : undefined
+            }).subscribe({
+                next: () => {
+                    this.message.add({ severity: 'success', summary: 'Succès', detail: 'Utilisateur modifié' });
+                    this.router.navigate(['/configuration']);
+                },
+                error: () => {
+                    this.saving = false;
+                    this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Modification impossible' });
+                }
+            });
+            return;
+        }
+
         this.utilisateurService.creer({
             nom: value.nom!,
             prenom: value.prenom!,

@@ -5,7 +5,8 @@ import { UtilisateurFormPageComponent } from './utilisateur-form-page/utilisateu
 
 const routes: Routes = [
     { path: '', component: ConfigurationComponent },
-    { path: 'utilisateurs/nouveau', component: UtilisateurFormPageComponent }
+    { path: 'utilisateurs/nouveau', component: UtilisateurFormPageComponent },
+    { path: 'utilisateurs/:id', component: UtilisateurFormPageComponent }
 ];
 
 @NgModule({

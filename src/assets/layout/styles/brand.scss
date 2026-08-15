@@ -1214,6 +1214,69 @@ a { color: var(--brand-accent-ink); }
     text-overflow: ellipsis;
 }
 
+/* ================================================================
+ * Cartes statistiques détaillées (tableau de bord Client) : remplacent, pour ce
+ * rôle, les pastilles .ent-stat trop étroites pour porter du contexte — un chiffre
+ * brut seul ("1 salarié") peut sembler faux/inquiétant alors qu'il est juste
+ * incomplet (ex : une même personne déployée sur 2 chantiers). Chaque carte
+ * associe donc systématiquement le chiffre à ce qu'il signifie (jauge segmentée,
+ * légende, ou phrase d'échéance) plutôt qu'à un simple libellé. Générique, pas
+ * préfixé "ent-" : réutilisable au-delà du dashboard si besoin.
+ * ================================================================ */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1.5rem; }
+@media (max-width: 1000px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+.stat-card {
+    background: var(--surface-card, #fff);
+    border: 1px solid var(--brand-border);
+    border-radius: 14px;
+    box-shadow: var(--card-shadow);
+    padding: 1.1rem 1.2rem 1.25rem;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    transition: border-color .12s, transform .12s;
+}
+.stat-card:hover { border-color: var(--brand-accent); transform: translateY(-1px); }
+.stat-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
+.stat-label { font-size: 0.74rem; font-weight: 600; color: var(--ink-soft, #5C6270); text-transform: uppercase; letter-spacing: 0.03em; }
+.stat-value-row { display: flex; align-items: baseline; gap: 0.3rem; margin-top: 0.3rem; }
+.stat-value { font-family: 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 800; font-size: 1.65rem; line-height: 1; }
+.stat-value-suffix { font-size: 0.85rem; color: var(--ink-faint, #9098A6); font-weight: 600; }
+.stat-icon { flex-shrink: 0; width: 2.2rem; height: 2.2rem; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+.stat-icon.tint-accent { background: var(--brand-accent-tint); color: var(--brand-accent-ink); }
+.stat-icon.tint-info { background: var(--brand-info-tint); color: var(--brand-info); }
+.stat-icon.tint-success { background: var(--brand-success-tint); color: var(--brand-success); }
+.stat-icon.tint-warning { background: var(--brand-warning-tint); color: var(--brand-warning); }
+
+.stat-bar { display: flex; height: 0.45rem; border-radius: 999px; overflow: hidden; margin-top: 0.85rem; background: var(--brand-surface-alt); }
+.stat-bar-seg.success { background: var(--brand-success); }
+.stat-bar-seg.warning { background: var(--brand-warning); }
+.stat-bar-seg.danger { background: var(--brand-danger); }
+.stat-bar-seg.info { background: var(--brand-info); }
+.stat-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem; margin-top: 0.55rem; }
+.stat-legend-item { display: flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; color: var(--ink-soft, #5C6270); }
+.stat-legend-dot { width: 0.45rem; height: 0.45rem; border-radius: 50%; flex-shrink: 0; }
+.stat-legend-dot.success { background: var(--brand-success); }
+.stat-legend-dot.warning { background: var(--brand-warning); }
+.stat-legend-dot.danger { background: var(--brand-danger); }
+.stat-legend-dot.info { background: var(--brand-info); }
+.stat-caption { display: block; font-size: 0.72rem; color: var(--ink-faint, #9098A6); margin-top: 0.5rem; }
+
+.stat-next { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.7rem; padding: 0.45rem 0.6rem; border-radius: 8px; font-size: 0.72rem; font-weight: 600; }
+.stat-next.ok { background: var(--brand-success-tint); color: var(--brand-success); }
+.stat-next.warn { background: var(--brand-warning-tint); color: var(--brand-warning); }
+.stat-next i { font-size: 0.72rem; flex-shrink: 0; }
+
+/* ---------- Période de chantier : mini-frise plutôt qu'une simple ligne "A → B" ---------- */
+.periode-timeline { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem; }
+.periode-point { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.periode-point i { font-size: 0.68rem; color: var(--brand-accent-ink); flex-shrink: 0; }
+.periode-point.ongoing i { color: var(--brand-success); }
+.periode-line { flex: 1 1 auto; min-width: 1rem; height: 0; border-top: 2px dotted var(--brand-border); }
+.periode-duration { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.55rem; font-size: 0.76rem; color: var(--ink-soft, #5C6270); }
+.periode-duration i { font-size: 0.7rem; color: var(--brand-accent-ink); }
+
 /* ---------- Mise en page deux colonnes ---------- */
 .ent-layout {
     display: grid;

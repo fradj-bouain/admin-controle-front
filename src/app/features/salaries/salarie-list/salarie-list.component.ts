@@ -45,6 +45,13 @@ export class SalarieListComponent implements OnInit {
         return this.auth.hasRole('ENTREPRISE');
     }
 
+    // Voir entreprise-list.component.ts : même raison, "Chantier actuel" n'est pas
+    // fiable pour un Client (le backend calcule cette valeur sur le périmètre global,
+    // pas limité aux chantiers de ce client).
+    get estClient(): boolean {
+        return this.auth.hasRole('CLIENT');
+    }
+
     ngOnInit(): void {
         this.charger();
     }

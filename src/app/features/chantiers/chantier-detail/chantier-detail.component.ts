@@ -128,7 +128,17 @@ export class ChantierDetailComponent implements OnInit {
     chargementDocumentsClient = false;
     typesDocument: TypeDocument[] = [];
     statDocumentsClient: { fournis: number; total: number; pourcentage: number } | null = null;
-    documentsATraiterClient: Array<{ libelle: string; sousTitre: string; severite: 'warn' | 'danger'; entrepriseId?: string; salarieId?: string }> = [];
+    documentsATraiterClient: Array<{
+        typeLibelle: string; cible: 'ENTREPRISE' | 'SALARIE'; entiteNom: string; raison: string;
+        severite: 'warn' | 'danger'; entrepriseId?: string; salarieId?: string
+    }> = [];
+    // Contrairement aux autres blocs (Entreprises/Salariés/Contrôles), ce bloc agrège
+    // plusieurs entités (toutes les entreprises ET tous les salariés du chantier) : il
+    // n'existe aucune page de registre équivalente vers laquelle renvoyer un "Voir tout"
+    // (GET /documents exige un salarié OU une entreprise précis, jamais "tout mon
+    // périmètre"). Dépassé 7, on déplie donc sur place plutôt que de renvoyer vers une
+    // page qui ne montrerait qu'une partie de l'information.
+    afficherTousDocumentsClient = false;
     // Messages envoyés avec ce chantier en référence (voir Message.chantierId côté
     // backend) — les messages automatiques (relances, notifications) le renseignent
     // toujours ; un message rédigé à la main peut ne pas l'être selon comment il a été
@@ -228,8 +238,25 @@ export class ChantierDetailComponent implements OnInit {
         return this.affectationsEntreprise.filter((a) => a.statut === 'ACTIF');
     }
 
+    // Aperçu limité à 7 lignes (voir retour client) : le détail complet reste à un clic,
+    // via "Voir tout" → /entreprises, déjà scopé par le backend au périmètre exact de ce
+    // compte (accès total = toutes les entreprises du client, responsable = uniquement
+    // celles de ses chantiers assignés) — aucun paramètre de filtrage à ajouter ici.
+    get entreprisesActivesClientApercu(): Array<AffectationEntrepriseChantier & { nomEntrepriseCalculee: string }> {
+        return this.entreprisesActivesClient.slice(0, 7);
+    }
+
     get statControlesClient(): { termines: number; total: number } {
         return { termines: this.controles.filter((c) => c.termine).length, total: this.controles.length };
+    }
+
+    // Aperçu limité à 7 lignes — "Voir tout" → /controles, déjà scopé par le backend.
+    get controlesClientApercu(): Controle[] {
+        return this.controles.slice(0, 7);
+    }
+
+    get documentsATraiterClientApercu(): typeof this.documentsATraiterClient {
+        return this.afficherTousDocumentsClient ? this.documentsATraiterClient : this.documentsATraiterClient.slice(0, 7);
     }
 
     /** Répartition des salariés affectés par entreprise — le "graphique" de la vue
@@ -261,6 +288,13 @@ export class ChantierDetailComponent implements OnInit {
         return this.affectationsSalarie
             .map((a) => ({ ...a, nomEntrepriseCalculee: this.nomEntreprise(a.entrepriseId ?? '') }))
             .sort((a, b) => a.nomEntrepriseCalculee.localeCompare(b.nomEntrepriseCalculee) || a.nomSalarieCalculee.localeCompare(b.nomSalarieCalculee));
+    }
+
+    // Aperçu limité à 7 lignes — "Voir tout" → /salaries, déjà scopé par le backend
+    // (accès total = tous les salariés du client, responsable = uniquement ceux affectés
+    // à ses chantiers assignés).
+    get salariesSurChantierClientApercu(): Array<AffectationSalarieChantier & { nomSalarieCalculee: string; contratCalculee: string; nomEntrepriseCalculee: string }> {
+        return this.salariesSurChantierClient.slice(0, 7);
     }
 
     /** Comptes Client de mon équipe visibles sur CE chantier : soit "accès total" (ils
@@ -307,6 +341,33 @@ export class ChantierDetailComponent implements OnInit {
         }
         const q = [this.chantier.adresse, this.chantier.ville].filter(Boolean).join(', ');
         return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
+    }
+
+    /** Phrase de durée sous la période (vue Client) : "01/03/2026 → en cours" seul ne
+        donne aucune idée du RYTHME du chantier — cette ligne répond à "depuis quand" /
+        "pour combien de temps encore" en une phrase, plutôt que de laisser le client
+        calculer la soustraction lui-même. */
+    get dureeChantierTexte(): string {
+        if (!this.chantier?.dateDebut) {
+            return '';
+        }
+        const debut = new Date(this.chantier.dateDebut);
+        if (this.chantier.dateFinPrevue) {
+            const fin = new Date(this.chantier.dateFinPrevue);
+            const jours = Math.round((fin.getTime() - debut.getTime()) / 86400000);
+            if (jours <= 0) {
+                return '';
+            }
+            const mois = Math.round(jours / 30);
+            return mois >= 1 ? `Durée prévue : environ ${mois} mois` : `Durée prévue : ${jours} jour(s)`;
+        }
+        const aujourdHui = new Date();
+        const joursEcoules = Math.round((aujourdHui.getTime() - debut.getTime()) / 86400000);
+        if (joursEcoules < 0) {
+            return 'Démarrage à venir';
+        }
+        const mois = Math.floor(joursEcoules / 30);
+        return mois >= 1 ? `En cours depuis ${mois} mois` : `En cours depuis ${joursEcoules} jour(s)`;
     }
 
     /** Comptes Client rattachés au client de CE chantier — seuls candidats pertinents
@@ -781,8 +842,12 @@ export class ChantierDetailComponent implements OnInit {
     ) {
         let totalObligatoires = 0;
         let totalFournis = 0;
-        const manquants: Array<{ libelle: string; sousTitre: string; severite: 'danger'; entrepriseId?: string; salarieId?: string }> = [];
-        const expirants: Array<{ libelle: string; sousTitre: string; severite: 'warn'; entrepriseId?: string; salarieId?: string }> = [];
+        type LigneATraiter = {
+            typeLibelle: string; cible: 'ENTREPRISE' | 'SALARIE'; entiteNom: string; raison: string;
+            entrepriseId?: string; salarieId?: string;
+        };
+        const manquants: Array<LigneATraiter & { severite: 'danger' }> = [];
+        const expirants: Array<LigneATraiter & { severite: 'warn' }> = [];
 
         entrepriseIds.forEach((entrepriseId, i) => {
             const entreprise = this.entreprises.find((e) => e.id === entrepriseId);
@@ -808,17 +873,19 @@ export class ChantierDetailComponent implements OnInit {
             obligatoires.forEach((t) => {
                 const doc = documentsByType[t.id];
                 if (!doc) {
-                    manquants.push({ libelle: `${t.libelle} — ${entreprise.raisonSociale}`, sousTitre: 'Document manquant', severite: 'danger', entrepriseId });
+                    manquants.push({
+                        typeLibelle: t.libelle, cible: 'ENTREPRISE', entiteNom: entreprise.raisonSociale,
+                        raison: 'Document manquant', severite: 'danger', entrepriseId
+                    });
                     return;
                 }
                 totalFournis++;
                 const jours = doc.statutValidation === 'VALIDE' ? this.joursAvantExpiration(doc.dateExpiration) : null;
                 if (jours !== null && jours >= 0 && jours <= 30) {
                     expirants.push({
-                        libelle: `${t.libelle} — ${entreprise.raisonSociale}`,
-                        sousTitre: jours === 0 ? "Expire aujourd'hui" : `Expire dans ${jours} jour(s)`,
-                        severite: 'warn',
-                        entrepriseId
+                        typeLibelle: t.libelle, cible: 'ENTREPRISE', entiteNom: entreprise.raisonSociale,
+                        raison: jours === 0 ? "Expire aujourd'hui" : `Expire dans ${jours} jour(s)`,
+                        severite: 'warn', entrepriseId
                     });
                 }
             });
@@ -829,7 +896,10 @@ export class ChantierDetailComponent implements OnInit {
             if (!salarie) {
                 return;
             }
-            const nomSalarie = `${salarie.prenom} ${salarie.nom}`;
+            // Nom de l'entreprise embarqué (entre parenthèses) : plusieurs entreprises
+            // peuvent intervenir sur ce chantier, "quel salarié" doit rester non ambigu
+            // sans devoir cliquer pour le découvrir (voir retour client).
+            const nomSalarie = `${salarie.prenom} ${salarie.nom} (${this.nomEntreprise(salarie.entrepriseEmployeurId)})`;
             const documentsByType: Record<string, DocumentItem> = {};
             (docsSal[i] ?? []).forEach((d) => (documentsByType[d.typeDocumentId] = d));
             const zone = this.zoneDuPays(salarie.nationalitePaysId);
@@ -850,23 +920,25 @@ export class ChantierDetailComponent implements OnInit {
             obligatoires.forEach((t) => {
                 const doc = documentsByType[t.id];
                 if (!doc) {
-                    manquants.push({ libelle: `${t.libelle} — ${nomSalarie}`, sousTitre: 'Document manquant', severite: 'danger', salarieId });
+                    manquants.push({
+                        typeLibelle: t.libelle, cible: 'SALARIE', entiteNom: nomSalarie,
+                        raison: 'Document manquant', severite: 'danger', salarieId
+                    });
                     return;
                 }
                 totalFournis++;
                 const jours = doc.statutValidation === 'VALIDE' ? this.joursAvantExpiration(doc.dateExpiration) : null;
                 if (jours !== null && jours >= 0 && jours <= 30) {
                     expirants.push({
-                        libelle: `${t.libelle} — ${nomSalarie}`,
-                        sousTitre: jours === 0 ? "Expire aujourd'hui" : `Expire dans ${jours} jour(s)`,
-                        severite: 'warn',
-                        salarieId
+                        typeLibelle: t.libelle, cible: 'SALARIE', entiteNom: nomSalarie,
+                        raison: jours === 0 ? "Expire aujourd'hui" : `Expire dans ${jours} jour(s)`,
+                        severite: 'warn', salarieId
                     });
                 }
             });
         });
 
-        this.documentsATraiterClient = [...manquants, ...expirants].slice(0, 6);
+        this.documentsATraiterClient = [...manquants, ...expirants];
         this.statDocumentsClient = {
             fournis: totalFournis, total: totalObligatoires,
             pourcentage: totalObligatoires === 0 ? 100 : Math.round((totalFournis / totalObligatoires) * 100)

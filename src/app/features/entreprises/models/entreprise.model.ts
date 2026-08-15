@@ -44,6 +44,8 @@ export interface CreateEntrepriseRequest {
     telephone2?: string;
     telephone3?: string;
     email?: string;
+    email2?: string;
+    email3?: string;
     siren?: string;
     rcsRci?: string;
     tvaIntra?: string;

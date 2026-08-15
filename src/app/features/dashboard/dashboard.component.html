@@ -85,7 +85,7 @@
         color="yellow"
     ></app-stat-tile>
 
-    <p-table [value]="documentsEnAttente" dataKey="documentId" class="mt-4" [paginator]="true" [rows]="5" *ngIf="documentsEnAttente.length > 0">
+    <p-table [value]="documentsEnAttente" dataKey="documentId" class="mt-4" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" *ngIf="documentsEnAttente.length > 0">
         <ng-template pTemplate="header">
             <tr>
                 <th>Document</th>
@@ -296,35 +296,91 @@
         {{ banniereClientTexte }}
     </div>
 
-    <div class="ent-hero-stats">
-        <button type="button" class="ent-stat" [routerLink]="['/chantiers']">
-            <span class="ent-stat-icon tint-accent"><i class="pi pi-map-marker"></i></span>
-            <span class="ent-stat-body">
-                <span class="ent-stat-value tabular-nums">{{ statChantiers?.actifs ?? 0 }}</span>
-                <span class="ent-stat-label">Chantiers actifs</span>
+    <div class="stat-grid">
+
+        <!-- Chantiers : décompte actifs/inactifs plutôt qu'un chiffre seul dès que
+             l'un des deux existe (sinon la jauge n'a rien à montrer). -->
+        <button type="button" class="stat-card" [routerLink]="['/chantiers']">
+            <div class="stat-top">
+                <div>
+                    <div class="stat-label">Chantiers</div>
+                    <div class="stat-value-row"><span class="stat-value tabular-nums">{{ statChantiers?.actifs ?? 0 }}</span><span class="stat-value-suffix">actif(s)</span></div>
+                </div>
+                <span class="stat-icon tint-accent"><i class="pi pi-map-marker"></i></span>
+            </div>
+            <ng-container *ngIf="(statChantiers?.inactifs ?? 0) > 0">
+                <div class="stat-bar">
+                    <span class="stat-bar-seg success" [style.width.%]="(statChantiers!.actifs / statChantiers!.total) * 100"></span>
+                    <span class="stat-bar-seg danger" [style.width.%]="(statChantiers!.inactifs / statChantiers!.total) * 100"></span>
+                </div>
+                <div class="stat-legend">
+                    <span class="stat-legend-item"><span class="stat-legend-dot success"></span>{{ statChantiers?.actifs }} actif(s)</span>
+                    <span class="stat-legend-item"><span class="stat-legend-dot danger"></span>{{ statChantiers?.inactifs }} inactif(s)</span>
+                </div>
+            </ng-container>
+            <span class="stat-caption" *ngIf="(statChantiers?.inactifs ?? 0) === 0">Tous vos chantiers sont actifs.</span>
+        </button>
+
+        <!-- Entreprises : répartition Principale / sous-traitant plutôt qu'un total brut. -->
+        <button type="button" class="stat-card" [routerLink]="['/entreprises']">
+            <div class="stat-top">
+                <div>
+                    <div class="stat-label">Entreprises</div>
+                    <div class="stat-value-row"><span class="stat-value tabular-nums">{{ nbEntreprisesIntervenantes }}</span><span class="stat-value-suffix">intervenante(s)</span></div>
+                </div>
+                <span class="stat-icon tint-info"><i class="pi pi-briefcase"></i></span>
+            </div>
+            <div class="stat-bar" *ngIf="nbEntreprisesIntervenantes > 0">
+                <span class="stat-bar-seg info" [style.width.%]="(nbEntreprisesPrincipales / nbEntreprisesIntervenantes) * 100"></span>
+                <span class="stat-bar-seg warning" [style.width.%]="(nbEntreprisesSousTraitantes / nbEntreprisesIntervenantes) * 100"></span>
+            </div>
+            <div class="stat-legend">
+                <span class="stat-legend-item"><span class="stat-legend-dot info"></span>{{ nbEntreprisesPrincipales }} principale(s)</span>
+                <span class="stat-legend-item"><span class="stat-legend-dot warning"></span>{{ nbEntreprisesSousTraitantes }} sous-traitant(s)</span>
+            </div>
+        </button>
+
+        <!-- Salariés : décompte de PERSONNES distinctes + accès par chantier — une même
+             personne déployée sur 2 chantiers ne doit pas donner l'impression d'être
+             "juste 1", d'où la précision du nombre de postes occupés. -->
+        <button type="button" class="stat-card" [routerLink]="['/salaries']">
+            <div class="stat-top">
+                <div>
+                    <div class="stat-label">Salariés</div>
+                    <div class="stat-value-row"><span class="stat-value tabular-nums">{{ nbSalariesSurChantiers }}</span><span class="stat-value-suffix">personne(s)</span></div>
+                </div>
+                <span class="stat-icon tint-success"><i class="pi pi-users"></i></span>
+            </div>
+            <div class="stat-bar" *ngIf="nbPostesSalariesClient > 0">
+                <span class="stat-bar-seg success" [style.width.%]="(statutAccesSalariesClient.accorde / nbPostesSalariesClient) * 100"></span>
+                <span class="stat-bar-seg warning" [style.width.%]="(statutAccesSalariesClient.enAttente / nbPostesSalariesClient) * 100"></span>
+                <span class="stat-bar-seg danger" [style.width.%]="(statutAccesSalariesClient.refuse / nbPostesSalariesClient) * 100"></span>
+            </div>
+            <div class="stat-legend">
+                <span class="stat-legend-item"><span class="stat-legend-dot success"></span>{{ statutAccesSalariesClient.accorde }} accordé</span>
+                <span class="stat-legend-item"><span class="stat-legend-dot warning"></span>{{ statutAccesSalariesClient.enAttente }} en attente</span>
+                <span class="stat-legend-item" *ngIf="statutAccesSalariesClient.refuse > 0"><span class="stat-legend-dot danger"></span>{{ statutAccesSalariesClient.refuse }} refusé</span>
+            </div>
+            <span class="stat-caption" *ngIf="nbPostesSalariesClient > nbSalariesSurChantiers">
+                Sur {{ nbPostesSalariesClient }} poste(s) occupé(s) — au moins une personne intervient sur plusieurs de vos chantiers.
             </span>
         </button>
-        <button type="button" class="ent-stat" [routerLink]="['/entreprises']">
-            <span class="ent-stat-icon tint-info"><i class="pi pi-briefcase"></i></span>
-            <span class="ent-stat-body">
-                <span class="ent-stat-value tabular-nums">{{ nbEntreprisesIntervenantes }}</span>
-                <span class="ent-stat-label">Entreprises intervenantes</span>
-            </span>
+
+        <!-- Contrôles : la question "c'est pour quand ?" plutôt qu'une fraction sèche. -->
+        <button type="button" class="stat-card" [routerLink]="['/controles']">
+            <div class="stat-top">
+                <div>
+                    <div class="stat-label">Contrôles</div>
+                    <div class="stat-value-row"><span class="stat-value tabular-nums">{{ statControles?.actifs ?? 0 }}</span><span class="stat-value-suffix">/ {{ statControles?.total ?? 0 }} terminés</span></div>
+                </div>
+                <span class="stat-icon tint-warning"><i class="pi pi-verified"></i></span>
+            </div>
+            <div class="stat-next" [ngClass]="prochainControleOk ? 'ok' : 'warn'">
+                <i class="pi" [class.pi-check-circle]="prochainControleOk" [class.pi-exclamation-triangle]="!prochainControleOk"></i>
+                {{ prochainControleTexte }}
+            </div>
         </button>
-        <button type="button" class="ent-stat" [routerLink]="['/salaries']">
-            <span class="ent-stat-icon tint-success"><i class="pi pi-users"></i></span>
-            <span class="ent-stat-body">
-                <span class="ent-stat-value tabular-nums">{{ nbSalariesSurChantiers }}</span>
-                <span class="ent-stat-label">Salariés sur mes chantiers</span>
-            </span>
-        </button>
-        <button type="button" class="ent-stat" [routerLink]="['/controles']">
-            <span class="ent-stat-icon tint-warning"><i class="pi pi-verified"></i></span>
-            <span class="ent-stat-body">
-                <span class="ent-stat-value tabular-nums">{{ statControles?.actifs ?? 0 }}<small>/{{ statControles?.total ?? 0 }}</small></span>
-                <span class="ent-stat-label">Contrôles terminés</span>
-            </span>
-        </button>
+
     </div>
 </div>
 

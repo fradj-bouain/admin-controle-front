@@ -94,14 +94,15 @@ export class ClientDetailComponent implements OnInit {
         return !!this.monCompte?.accesTousChantiers;
     }
 
-    // Les 5 premiers suffisent pour cette carte teaser — "Gérer mon équipe" mène à la
-    // liste complète (voir MonEquipeComponent), pas de pagination à dupliquer ici.
+    // Aperçu limité à 7 lignes (voir retour client, cohérent avec les autres fiches) —
+    // "Gérer mon équipe"/"Voir tout" mène à la liste complète, pas de pagination à
+    // dupliquer ici.
     get equipeApercu(): Utilisateur[] {
-        return this.utilisateurs.slice(0, 5);
+        return this.utilisateurs.slice(0, 7);
     }
 
     get chantiersApercu(): Chantier[] {
-        return this.chantiers.slice(0, 5);
+        return this.chantiers.slice(0, 7);
     }
 
     initialesUtilisateur(u: Utilisateur): string {

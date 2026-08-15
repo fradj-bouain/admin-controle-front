@@ -43,6 +43,10 @@ export class EntrepriseDetailComponent implements OnInit {
     pays: Pays[] = [];
     corpsDeMetiers: CorpsDeMetier[] = [];
 
+    // --- Vue Entreprise : édition de ses propres coordonnées (pas les informations
+    // légales, verrouillées côté backend — voir EntrepriseController.modifier). ---
+    editerCoordonnees = false;
+
     coordonneesForm = this.fb.group({
         raisonSociale: ['', Validators.required],
         corpsDeMetierId: ['', Validators.required],
@@ -55,6 +59,8 @@ export class EntrepriseDetailComponent implements OnInit {
         telephone2: [''],
         telephone3: [''],
         email: ['', Validators.email],
+        email2: ['', Validators.email],
+        email3: ['', Validators.email],
         siren: ['', Validators.required],
         siret: ['', Validators.required],
         rcsRci: ['', Validators.required],
@@ -222,13 +228,21 @@ export class EntrepriseDetailComponent implements OnInit {
         return this.auth.hasRole('SUPER_ADMIN');
     }
 
-    // --- Affichage lecture seule (Entreprise/Client/Contrôleur — seul le SUPER_ADMIN édite) ---
+    // --- Affichage lecture seule (Client/Contrôleur, et Entreprise pour ses informations
+    // légales — l'Entreprise peut éditer ses propres coordonnées, voir editerCoordonnees) ---
     nomPays(id?: string): string {
         return this.pays.find((p) => p.id === id)?.nom ?? '—';
     }
 
     nomCorpsDeMetier(id?: string): string {
         return this.corpsDeMetiers.find((c) => c.id === id)?.libelle ?? '—';
+    }
+
+    annulerEditionCoordonnees() {
+        if (this.entreprise) {
+            this.coordonneesForm.patchValue(this.entreprise);
+        }
+        this.editerCoordonnees = false;
     }
 
     // --- Vue Entreprise (prototype validé) : indicateurs + navigation vers la source ---
@@ -288,6 +302,18 @@ export class EntrepriseDetailComponent implements OnInit {
             return '—';
         }
         return roles.length === 1 ? roles[0] : 'Plusieurs rôles';
+    }
+
+    // Aperçus limités à 7 lignes (voir retour client) : le détail complet reste à un clic
+    // via "Voir tout" → /chantiers ou /salaries, déjà scopés par le backend au périmètre
+    // exact de ce compte (accès total ou responsable de chantier) — mesAffectations reste
+    // inchangée et non tronquée pour la vue Entreprise (roleClient, sous-traitants, etc.).
+    get mesAffectationsClientApercu(): Array<AffectationEntrepriseChantier & { nomChantierCalculee: string }> {
+        return this.mesAffectations.slice(0, 7);
+    }
+
+    get salariesSurMesChantiersClientApercu(): Array<{ salarieId: string; nom: string; contrat: string; chantierNom: string; statutAcces: StatutAcces }> {
+        return this.salariesSurMesChantiersClient.slice(0, 7);
     }
 
     libelleContrat(id?: string): string {
@@ -422,6 +448,8 @@ export class EntrepriseDetailComponent implements OnInit {
             telephone2: value.telephone2 ?? undefined,
             telephone3: value.telephone3 ?? undefined,
             email: value.email ?? undefined,
+            email2: value.email2 ?? undefined,
+            email3: value.email3 ?? undefined,
             siren: value.siren ?? undefined,
             siret: value.siret ?? undefined,
             rcsRci: value.rcsRci ?? undefined,
@@ -455,6 +483,8 @@ export class EntrepriseDetailComponent implements OnInit {
                 next: (entreprise) => {
                     this.saving = false;
                     this.entreprise = entreprise;
+                    this.coordonneesForm.patchValue(entreprise);
+                    this.editerCoordonnees = false;
                     this.message.add({ severity: 'success', summary: 'Succès', detail: 'Entreprise modifiée' });
                 },
                 error: () => {

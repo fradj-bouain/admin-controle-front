@@ -3,10 +3,12 @@
 <div class="card" style="max-width: 720px;">
     <div class="flex align-items-center gap-3 mb-4">
         <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="annuler()"></button>
-        <h5 class="m-0">Nouvel utilisateur</h5>
+        <h5 class="m-0">{{ isNew ? 'Nouvel utilisateur' : 'Modifier l\'utilisateur' }}</h5>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
+    <app-card-skeleton *ngIf="loading" [lignes]="6"></app-card-skeleton>
+
+    <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="submit()" class="p-fluid">
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
                 <label for="nom">Nom *</label>
@@ -31,16 +33,18 @@
             <small class="p-error" *ngIf="form.controls.username.invalid && form.controls.username.touched">Ce champ est requis.</small>
         </div>
         <div class="field">
-            <label for="password">Mot de passe *</label>
+            <label for="password">Mot de passe{{ isNew ? ' *' : '' }}</label>
             <input id="password" type="password" pInputText formControlName="password" [class.ng-dirty]="form.controls.password.touched" />
             <small class="p-error" *ngIf="form.controls.password.invalid && form.controls.password.touched">Ce champ est requis.</small>
+            <small class="text-500" *ngIf="!isNew">Laisser vide pour ne pas changer le mot de passe.</small>
         </div>
         <div class="field">
             <label for="roles">Rôles *</label>
             <p-multiSelect id="roles" [options]="roles" formControlName="roles" placeholder="Sélectionner des rôles" [class.ng-dirty]="form.controls.roles.touched"></p-multiSelect>
             <small class="p-error" *ngIf="form.controls.roles.invalid && form.controls.roles.touched">Sélectionnez au moins un rôle.</small>
+            <small class="text-500" *ngIf="!isNew">Le rôle ne peut pas être changé après la création.</small>
         </div>
-        <div class="field" *ngIf="form.value.roles?.includes('ENTREPRISE')">
+        <div class="field" *ngIf="form.controls.roles.value?.includes('ENTREPRISE')">
             <label for="entrepriseId">Entreprise de rattachement *</label>
             <p-dropdown
                 id="entrepriseId"
@@ -55,7 +59,7 @@
             ></p-dropdown>
             <small class="p-error" *ngIf="form.controls.entrepriseId.invalid && form.controls.entrepriseId.touched">Ce champ est requis.</small>
         </div>
-        <div class="field" *ngIf="form.value.roles?.includes('CLIENT')">
+        <div class="field" *ngIf="form.controls.roles.value?.includes('CLIENT')">
             <label for="clientId">Client de rattachement *</label>
             <p-dropdown
                 id="clientId"
@@ -70,7 +74,7 @@
             ></p-dropdown>
             <small class="p-error" *ngIf="form.controls.clientId.invalid && form.controls.clientId.touched">Ce champ est requis.</small>
         </div>
-        <div class="field-checkbox" *ngIf="form.value.roles?.includes('CLIENT')">
+        <div class="field-checkbox" *ngIf="form.controls.roles.value?.includes('CLIENT')">
             <p-checkbox id="accesTousChantiers" formControlName="accesTousChantiers" [binary]="true"></p-checkbox>
             <label for="accesTousChantiers" class="ml-2">
                 Accès à tous les chantiers du client
@@ -80,7 +84,7 @@
                 </small>
             </label>
         </div>
-        <div class="field" *ngIf="form.value.roles?.includes('CONTROLEUR')">
+        <div class="field" *ngIf="form.controls.roles.value?.includes('CONTROLEUR')">
             <label for="controleTiersId">Organisme de contrôle de rattachement *</label>
             <p-dropdown
                 id="controleTiersId"
@@ -98,7 +102,7 @@
 
         <div class="flex justify-content-end gap-2 mt-4">
             <button pButton type="button" label="Annuler" class="p-button-text" (click)="annuler()"></button>
-            <button pButton type="submit" label="Enregistrer" icon="pi pi-check" [loading]="saving"></button>
+            <button pButton type="submit" [label]="isNew ? 'Ajouter' : 'Enregistrer'" icon="pi pi-check" [loading]="saving"></button>
         </div>
     </form>
 </div>

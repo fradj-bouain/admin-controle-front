@@ -9,7 +9,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" routerLink="/configuration/utilisateurs/nouveau"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtUtilisateurs [value]="utilisateurs" dataKey="id" [loading]="loadingUtilisateurs" [paginator]="true" [rows]="10">
+            <p-table #dtUtilisateurs [value]="utilisateurs" dataKey="id" [loading]="loadingUtilisateurs" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Utilisateur</th>
@@ -66,6 +66,14 @@
                                 <button
                                     pButton
                                     type="button"
+                                    icon="pi pi-pencil"
+                                    class="p-button-text p-button-rounded"
+                                    pTooltip="Modifier"
+                                    [routerLink]="['/configuration/utilisateurs', utilisateur.id]"
+                                ></button>
+                                <button
+                                    pButton
+                                    type="button"
                                     [icon]="utilisateur.actif ? 'pi pi-ban' : 'pi pi-check'"
                                     class="p-button-text p-button-rounded"
                                     [pTooltip]="utilisateur.actif ? 'Désactiver' : 'Activer'"
@@ -87,7 +95,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationPays()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtPays [value]="pays" dataKey="id" [loading]="loadingPays" [paginator]="true" [rows]="10">
+            <p-table #dtPays [value]="pays" dataKey="id" [loading]="loadingPays" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Code ISO</th>
@@ -137,7 +145,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationCorps()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtCorps [value]="corpsDeMetier" dataKey="id" [loading]="loadingCorpsDeMetier" [paginator]="true" [rows]="10">
+            <p-table #dtCorps [value]="corpsDeMetier" dataKey="id" [loading]="loadingCorpsDeMetier" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Libellé</th>
@@ -175,7 +183,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationTypeSalarie()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtTypeSalarie [value]="typesSalarie" dataKey="id" [loading]="loadingTypesSalarie" [paginator]="true" [rows]="10">
+            <p-table #dtTypeSalarie [value]="typesSalarie" dataKey="id" [loading]="loadingTypesSalarie" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Code</th>
@@ -216,7 +224,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationTypeContratSalarie()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtTypeContrat [value]="typesContratSalarie" dataKey="id" [loading]="loadingTypesContratSalarie" [paginator]="true" [rows]="10">
+            <p-table #dtTypeContrat [value]="typesContratSalarie" dataKey="id" [loading]="loadingTypesContratSalarie" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Code</th>
@@ -257,7 +265,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationSalarieFonction()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtFonctions [value]="salarieFonctions" dataKey="id" [loading]="loadingSalarieFonctions" [paginator]="true" [rows]="10">
+            <p-table #dtFonctions [value]="salarieFonctions" dataKey="id" [loading]="loadingSalarieFonctions" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Libellé</th>
@@ -295,7 +303,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationControleTiers()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtControleTiers [value]="controleTiers" dataKey="id" [loading]="loadingControleTiers" [paginator]="true" [rows]="10">
+            <p-table #dtControleTiers [value]="controleTiers" dataKey="id" [loading]="loadingControleTiers" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Nom</th>
@@ -333,7 +341,7 @@
                     <button pButton type="button" icon="pi pi-plus" label="Ajouter" (click)="ouvrirCreationActionCorrective()"></button>
                 </ng-template>
             </p-toolbar>
-            <p-table #dtActionsCorrectives [value]="actionsCorrectives" dataKey="id" [loading]="loadingActionsCorrectives" [paginator]="true" [rows]="10">
+            <p-table #dtActionsCorrectives [value]="actionsCorrectives" dataKey="id" [loading]="loadingActionsCorrectives" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Nom</th>

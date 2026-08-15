@@ -161,6 +161,18 @@ export class SalarieDetailComponent implements OnInit {
         return this.auth.hasRole('ENTREPRISE');
     }
 
+    get isClient(): boolean {
+        return this.auth.hasRole('CLIENT');
+    }
+
+    // --- Vue Client (lecture seule) : ce salarié vu par un compte Client. mesAffectations
+    // vient de la même source que la vue Entreprise (chargerMesAffectations, GET
+    // /salaries/{id}/chantiers) mais désormais scopée côté backend au périmètre du client
+    // appelant (voir SalarieController.listerChantiers) — pas de filtrage supplémentaire ici.
+    get mesAffectationsClientApercu(): Array<AffectationSalarieChantier & { nomChantierCalculee: string }> {
+        return this.mesAffectations.slice(0, 7);
+    }
+
     // --- Vue Entreprise (même design que la fiche entreprise, voir .ent-* dans brand.scss) ---
     nomFonction(id?: string): string {
         return this.fonctions.find((f) => f.id === id)?.libelle ?? '—';

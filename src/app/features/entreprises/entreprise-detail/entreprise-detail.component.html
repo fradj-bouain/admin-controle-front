@@ -76,14 +76,27 @@
 <div class="ent-layout mb-3" *ngIf="isEntreprise && !isNew">
     <div class="ent-col">
 
-        <!-- Coordonnées (compact, lecture seule) -->
+        <!-- Coordonnées : lecture seule par défaut, éditable par l'Entreprise elle-même
+             (pas les informations légales, verrouillées par le backend). -->
         <div class="card">
-            <div class="card-head">
-                <i class="pi pi-building"></i>
-                <h6 class="m-0">Coordonnées</h6>
+            <div class="card-head justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-building"></i>
+                    <h6 class="m-0">Coordonnées</h6>
+                </div>
+                <button
+                    *ngIf="!editerCoordonnees && !loading"
+                    pButton
+                    type="button"
+                    icon="pi pi-pencil"
+                    label="Modifier"
+                    class="p-button-text p-button-sm"
+                    (click)="editerCoordonnees = true"
+                ></button>
             </div>
             <app-card-skeleton *ngIf="loading" [lignes]="6"></app-card-skeleton>
-            <ng-container *ngIf="!loading">
+
+            <ng-container *ngIf="!loading && !editerCoordonnees">
                 <div class="ent-kv-grid">
                     <div class="ent-kv">
                         <div class="ent-kv-label">Téléphone</div>
@@ -121,10 +134,6 @@
                     </summary>
                     <div class="ent-legal-body">
                         <div class="ent-kv">
-                            <div class="ent-kv-label">Corps de métier</div>
-                            <div class="ent-kv-value">{{ nomCorpsDeMetier(entreprise?.corpsDeMetierId) }}</div>
-                        </div>
-                        <div class="ent-kv">
                             <div class="ent-kv-label">Siret</div>
                             <div class="ent-kv-value">{{ entreprise?.siret || '—' }}</div>
                         </div>
@@ -136,10 +145,140 @@
                             <div class="ent-kv-label">RCS / RCI</div>
                             <div class="ent-kv-value">{{ entreprise?.rcsRci || '—' }}</div>
                         </div>
+                        <div class="ent-kv">
+                            <div class="ent-kv-label">N° de TVA Intra</div>
+                            <div class="ent-kv-value">{{ entreprise?.tvaIntra || '—' }}</div>
+                        </div>
                         <p class="ent-legal-note">Gérées par l'administrateur — contactez-le pour toute correction.</p>
                     </div>
                 </details>
             </ng-container>
+
+            <!-- Formulaire d'édition : uniquement les coordonnées (pas Siret/Siren/RCS-RCI/
+                 TVA intra) — le backend fige de toute façon ces champs légaux côté serveur
+                 pour un appelant scopé Entreprise, ce formulaire ne fait que ne pas les proposer. -->
+            <form *ngIf="!loading && editerCoordonnees" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
+                <div class="field">
+                    <label for="entRaisonSociale">Nom *</label>
+                    <input id="entRaisonSociale" type="text" pInputText formControlName="raisonSociale" [class.ng-dirty]="coordonneesForm.controls.raisonSociale.touched" />
+                    <small class="p-error" *ngIf="coordonneesForm.controls.raisonSociale.invalid && coordonneesForm.controls.raisonSociale.touched">Ce champ est requis.</small>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-4">
+                        <label for="entTelephone">Tel *</label>
+                        <input id="entTelephone" type="text" pInputText formControlName="telephone" [class.ng-dirty]="coordonneesForm.controls.telephone.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.telephone.invalid && coordonneesForm.controls.telephone.touched">Ce champ est requis.</small>
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="entTelephone2">Tel 2</label>
+                        <input id="entTelephone2" type="text" pInputText formControlName="telephone2" />
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="entTelephone3">Tel 3</label>
+                        <input id="entTelephone3" type="text" pInputText formControlName="telephone3" />
+                    </div>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-4">
+                        <label for="entEmail">Email</label>
+                        <input id="entEmail" type="email" pInputText formControlName="email" [class.ng-dirty]="coordonneesForm.controls.email.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.email.invalid && coordonneesForm.controls.email.touched">Adresse email invalide.</small>
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="entEmail2">Email 2</label>
+                        <input id="entEmail2" type="email" pInputText formControlName="email2" [class.ng-dirty]="coordonneesForm.controls.email2.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.email2.invalid && coordonneesForm.controls.email2.touched">Adresse email invalide.</small>
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="entEmail3">Email 3</label>
+                        <input id="entEmail3" type="email" pInputText formControlName="email3" [class.ng-dirty]="coordonneesForm.controls.email3.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.email3.invalid && coordonneesForm.controls.email3.touched">Adresse email invalide.</small>
+                    </div>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-4">
+                        <label for="entAdresse">Adresse *</label>
+                        <input id="entAdresse" type="text" pInputText formControlName="adresse" [class.ng-dirty]="coordonneesForm.controls.adresse.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.adresse.invalid && coordonneesForm.controls.adresse.touched">Ce champ est requis.</small>
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="entAdresse2">Adresse complément n°1</label>
+                        <input id="entAdresse2" type="text" pInputText formControlName="adresse2" />
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="entAdresse3">Adresse complément n°2</label>
+                        <input id="entAdresse3" type="text" pInputText formControlName="adresse3" />
+                    </div>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-6">
+                        <label for="entVille">Ville *</label>
+                        <input id="entVille" type="text" pInputText formControlName="ville" [class.ng-dirty]="coordonneesForm.controls.ville.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.ville.invalid && coordonneesForm.controls.ville.touched">Ce champ est requis.</small>
+                    </div>
+                    <div class="field col-12 md:col-6">
+                        <label for="entPaysId">Pays *</label>
+                        <p-dropdown
+                            id="entPaysId"
+                            [options]="pays"
+                            formControlName="paysId"
+                            optionLabel="nom"
+                            optionValue="id"
+                            [filter]="true"
+                            filterBy="nom"
+                            placeholder="Sélectionner un pays"
+                            [class.ng-dirty]="coordonneesForm.controls.paysId.touched"
+                        ></p-dropdown>
+                        <small class="p-error" *ngIf="coordonneesForm.controls.paysId.invalid && coordonneesForm.controls.paysId.touched">Ce champ est requis.</small>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="entCorpsDeMetierId">Corps de métier *</label>
+                    <p-dropdown
+                        id="entCorpsDeMetierId"
+                        [options]="corpsDeMetiers"
+                        formControlName="corpsDeMetierId"
+                        optionLabel="libelle"
+                        optionValue="id"
+                        [filter]="true"
+                        filterBy="libelle"
+                        placeholder="Sélectionner un corps de métier"
+                        [class.ng-dirty]="coordonneesForm.controls.corpsDeMetierId.touched"
+                    ></p-dropdown>
+                    <small class="p-error" *ngIf="coordonneesForm.controls.corpsDeMetierId.invalid && coordonneesForm.controls.corpsDeMetierId.touched">Ce champ est requis.</small>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-6">
+                        <label for="entNumCotisant">N° de cotisant URSSAF / CCSS / CAR</label>
+                        <input id="entNumCotisant" type="text" pInputText formControlName="numCotisant" />
+                    </div>
+                    <div class="field col-12 md:col-6">
+                        <label for="entResponsableSignataireAgrement">Responsable signataire agrément</label>
+                        <input id="entResponsableSignataireAgrement" type="text" pInputText formControlName="responsableSignataireAgrement" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="entCommentaire">Commentaire / Info</label>
+                    <textarea id="entCommentaire" pInputTextarea formControlName="commentaire" rows="3"></textarea>
+                </div>
+
+                <p class="ent-legal-note mb-3">
+                    <i class="pi pi-lock"></i>
+                    Siret, Siren, RCS/RCI et TVA intra sont gérés par l'administrateur — contactez-le pour toute correction.
+                </p>
+
+                <div class="flex justify-content-end gap-2">
+                    <button pButton type="button" label="Annuler" class="p-button-text" (click)="annulerEditionCoordonnees()"></button>
+                    <button pButton type="submit" label="Enregistrer" icon="pi pi-check" [loading]="saving"></button>
+                </div>
+            </form>
         </div>
 
         <!-- Affectations : cliquables vers le chantier -->
@@ -531,15 +670,22 @@
 
         <!-- Chantiers en commun -->
         <div class="card">
-            <div class="card-head">
-                <i class="pi pi-map-marker"></i>
-                <h6 class="m-0">Chantiers en commun</h6>
+            <div class="card-head justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-map-marker"></i>
+                    <h6 class="m-0">Chantiers en commun</h6>
+                </div>
+                <a
+                    class="card-head-action"
+                    style="font-size:0.78rem; font-weight:600; color:var(--brand-accent-ink); cursor:pointer;"
+                    [routerLink]="['/chantiers']"
+                >Voir tout ({{ mesAffectations.length }})</a>
             </div>
-            <div class="ent-compact-list" *ngIf="mesAffectations.length > 0">
+            <div class="ent-compact-list" *ngIf="mesAffectationsClientApercu.length > 0">
                 <button
                     type="button"
                     class="ent-compact-row"
-                    *ngFor="let affectation of mesAffectations"
+                    *ngFor="let affectation of mesAffectationsClientApercu"
                     [routerLink]="['/chantiers', affectation.chantierId]"
                     [pTooltip]="'Ouvrir le chantier ' + affectation.nomChantierCalculee"
                 >
@@ -553,22 +699,29 @@
                     </span>
                 </button>
             </div>
-            <p class="text-500 text-sm m-0" *ngIf="mesAffectations.length === 0">Aucun chantier en commun pour l'instant.</p>
+            <p class="text-500 text-sm m-0" *ngIf="mesAffectationsClientApercu.length === 0">Aucun chantier en commun pour l'instant.</p>
         </div>
 
         <!-- Salariés sur ce chantier : liste nominative, statut d'accès par chantier -->
         <div class="card">
-            <div class="card-head">
-                <i class="pi pi-users"></i>
-                <h6 class="m-0">Salariés sur ce chantier ({{ salariesSurMesChantiersClient.length }})</h6>
+            <div class="card-head justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-users"></i>
+                    <h6 class="m-0">Salariés sur ce chantier ({{ salariesSurMesChantiersClient.length }})</h6>
+                </div>
+                <a
+                    class="card-head-action"
+                    style="font-size:0.78rem; font-weight:600; color:var(--brand-accent-ink); cursor:pointer;"
+                    [routerLink]="['/salaries']"
+                >Voir tout ({{ salariesSurMesChantiersClient.length }})</a>
             </div>
             <app-card-skeleton *ngIf="chargementSalariesClient" [lignes]="3"></app-card-skeleton>
             <ng-container *ngIf="!chargementSalariesClient">
-                <div class="ent-compact-list" *ngIf="salariesSurMesChantiersClient.length > 0">
+                <div class="ent-compact-list" *ngIf="salariesSurMesChantiersClientApercu.length > 0">
                     <button
                         type="button"
                         class="ent-compact-row"
-                        *ngFor="let s of salariesSurMesChantiersClient"
+                        *ngFor="let s of salariesSurMesChantiersClientApercu"
                         [routerLink]="['/salaries', s.salarieId]"
                         [pTooltip]="'Ouvrir la fiche de ' + s.nom"
                     >
@@ -585,7 +738,7 @@
                         </span>
                     </button>
                 </div>
-                <p class="text-500 text-sm m-0" *ngIf="salariesSurMesChantiersClient.length === 0">Aucun salarié de cette entreprise affecté à vos chantiers pour l'instant.</p>
+                <p class="text-500 text-sm m-0" *ngIf="salariesSurMesChantiersClientApercu.length === 0">Aucun salarié de cette entreprise affecté à vos chantiers pour l'instant.</p>
             </ng-container>
         </div>
 
@@ -593,11 +746,22 @@
 
     <div class="ent-col">
 
-        <!-- Documents : lecture seule, aucun dépôt/validation pour ce rôle -->
+        <!-- Documents : lecture seule, aucun dépôt/validation pour ce rôle. "Voir tout" pointe
+             directement vers cette entreprise (deep-link supporté par DocumentListComponent
+             via type/entiteId) — une seule entité ici, pas besoin d'agréger comme sur la
+             fiche Chantier. -->
         <div class="card">
-            <div class="card-head">
-                <i class="pi pi-folder"></i>
-                <h6 class="m-0">Documents</h6>
+            <div class="card-head justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-folder"></i>
+                    <h6 class="m-0">Documents</h6>
+                </div>
+                <a
+                    class="card-head-action"
+                    style="font-size:0.78rem; font-weight:600; color:var(--brand-accent-ink); cursor:pointer;"
+                    [routerLink]="['/documents']"
+                    [queryParams]="{ type: 'ENTREPRISE', entiteId: entrepriseId }"
+                >Voir tout</a>
             </div>
 
             <div class="ent-doc-progress" *ngIf="nbObligatoiresTotal > 0">
@@ -1477,7 +1641,7 @@
         <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="basculerHistorique()"></button>
     </div>
 
-    <p-table [value]="historique" dataKey="id" *ngIf="afficherHistorique" [paginator]="true" [rows]="10">
+    <p-table [value]="historique" dataKey="id" *ngIf="afficherHistorique" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
         <ng-template pTemplate="header">
             <tr>
                 <th>Date</th>
@@ -1516,7 +1680,7 @@
         <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="basculerRelances()"></button>
     </div>
 
-    <p-table [value]="relances" dataKey="id" *ngIf="afficherRelances" [paginator]="true" [rows]="10">
+    <p-table [value]="relances" dataKey="id" *ngIf="afficherRelances" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
         <ng-template pTemplate="header">
             <tr>
                 <th>Date d'envoi</th>

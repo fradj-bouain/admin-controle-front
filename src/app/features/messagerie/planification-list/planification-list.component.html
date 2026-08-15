@@ -11,7 +11,7 @@
         </ng-template>
     </p-toolbar>
 
-    <p-table #dt [value]="messages" dataKey="id" [loading]="loading" [paginator]="true" [rows]="10">
+    <p-table #dt [value]="messages" dataKey="id" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
         <ng-template pTemplate="header">
             <tr>
                 <th>Destinataires</th>

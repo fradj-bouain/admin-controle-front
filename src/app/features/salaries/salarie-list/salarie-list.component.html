@@ -26,14 +26,14 @@
     </div>
     <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? salaries).length }} résultat(s)</p>
 
-    <p-table #dt [value]="salaries" [loading]="loading" [paginator]="true" [rows]="10" dataKey="id" [globalFilterFields]="['nom','prenom','nomEntrepriseCalculee','libelleFonctionCalculee','chantierActuel']">
+    <p-table #dt [value]="salaries" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" dataKey="id" [globalFilterFields]="['nom','prenom','nomEntrepriseCalculee','libelleFonctionCalculee','chantierActuel']">
         <ng-template pTemplate="header">
             <tr>
                 <th>Nom</th>
                 <th>Prénom</th>
                 <th>Entreprise employeur</th>
                 <th>Fonction</th>
-                <th>Chantier actuel</th>
+                <th *ngIf="!estClient">Chantier actuel</th>
                 <th>Statut</th>
                 <th style="width: 6rem"></th>
             </tr>
@@ -42,7 +42,7 @@
                 <th><p-columnFilter type="text" field="prenom" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="nomEntrepriseCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="libelleFonctionCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                <th><p-columnFilter type="text" field="chantierActuel" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th *ngIf="!estClient"><p-columnFilter type="text" field="chantierActuel" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th>
                     <p-columnFilter field="statut" matchMode="equals" [showMenu]="false">
                         <ng-template pTemplate="filter" let-value let-filter="filterCallback">
@@ -64,7 +64,7 @@
                 <td>{{ salarie.prenom }}</td>
                 <td>{{ nomEntreprise(salarie.entrepriseEmployeurId) }}</td>
                 <td>{{ salarie.libelleFonctionCalculee }}</td>
-                <td>
+                <td *ngIf="!estClient">
                     <p-tag *ngIf="salarie.chantierActuel" severity="info" [value]="salarie.chantierActuel">
                         <ng-template pTemplate="icon"><i class="pi pi-map-marker mr-1"></i></ng-template>
                     </p-tag>
