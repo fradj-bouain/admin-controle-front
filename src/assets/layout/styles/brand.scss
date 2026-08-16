@@ -1346,6 +1346,40 @@ a { color: var(--brand-accent-ink); }
 .detail-strip-label { font-size: 0.7rem; font-weight: 700; color: var(--ink-soft, #5C6270); text-transform: uppercase; letter-spacing: 0.03em; }
 .detail-strip-value { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 1.05rem; margin-top: 0.15rem; }
 
+/* ================================================================
+ * Composeur de message en panneau latéral (fiche Salarié, voir prototype validé) —
+ * remplace le bloc "Envoyer un message" jusqu'ici posé en bas de page. Générique,
+ * pas de préfixe de page : réutilisable pour la fiche Entreprise si besoin.
+ * p-sidebar n'a aucun padding par défaut sur header/content/footer (vérifié dans
+ * les styles du composant) — on le pose nous-mêmes plutôt que de lutter contre
+ * un padding existant.
+ * ================================================================ */
+.composeur-sidebar { box-shadow: -24px 0 48px -16px rgba(20, 23, 29, .35); }
+.composeur-sidebar .p-sidebar-header,
+.composeur-sidebar .p-sidebar-content,
+.composeur-sidebar .p-sidebar-footer { padding: 0; }
+.composeur-sidebar .p-sidebar-content { padding: 1.5rem 1.75rem 1rem; }
+.composeur-sidebar .p-sidebar-footer { padding: 1rem 1.75rem; border-top: 1px solid var(--brand-border); }
+
+.composeur-head { background: linear-gradient(120deg, var(--brand-sidebar) 0%, #22262f 100%); color: #fff; padding: 1.5rem 1.75rem 1.25rem; width: 100%; position: relative; }
+.composeur-close { position: absolute; top: 1.1rem; right: 1.3rem; width: 2rem; height: 2rem; border-radius: 50%; border: none; background: rgba(255, 255, 255, .1); color: rgba(255, 255, 255, .85); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.composeur-close:hover { background: rgba(255, 255, 255, .18); color: #fff; }
+.composeur-head-top { display: flex; align-items: center; gap: .85rem; padding-right: 2.5rem; }
+.composeur-icon { width: 2.9rem; height: 2.9rem; border-radius: 10px; background: rgba(181, 105, 28, .28); color: #f0d3a8; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; }
+.composeur-eyebrow { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: rgba(255, 255, 255, .5); }
+.composeur-title { font-family: 'Archivo', sans-serif; font-size: 1.25rem; font-weight: 700; letter-spacing: -.01em; color: #fff; margin-top: .15rem; }
+.composeur-sub { display: flex; align-items: center; gap: .4rem; font-size: .82rem; color: rgba(255, 255, 255, .6); margin-top: .3rem; flex-wrap: wrap; }
+
+.composeur-doc-banner { display: flex; align-items: center; gap: .65rem; padding: .8rem .9rem; border-radius: 10px; background: var(--brand-accent-tint); color: var(--brand-accent-ink); font-size: .8rem; font-weight: 600; margin-bottom: 1.25rem; }
+.composeur-doc-banner i { flex-shrink: 0; }
+.composeur-doc-banner .clear { margin-left: auto; flex-shrink: 0; background: none; border: none; padding: 0; color: var(--brand-accent-ink); opacity: .6; cursor: pointer; }
+.composeur-doc-banner .clear:hover { opacity: 1; }
+
+.composeur-tag-hint { font-size: .72rem; color: var(--ink-faint, #9098A6); margin: .55rem 0 .4rem; }
+.composeur-tag-chips { display: flex; gap: .4rem; flex-wrap: wrap; }
+.composeur-tag-chip { font-family: 'Archivo', sans-serif; font-size: .72rem; font-weight: 700; padding: .32rem .6rem; border-radius: 999px; background: var(--brand-surface-alt); border: 1px solid var(--brand-border); color: var(--ink-soft, #5C6270); cursor: pointer; }
+.composeur-tag-chip:hover { border-color: var(--brand-accent); color: var(--brand-accent-ink); background: var(--brand-accent-tint); }
+
 /* ---------- Période de chantier : mini-frise plutôt qu'une simple ligne "A → B" ---------- */
 .periode-timeline { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem; }
 .periode-point { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; color: var(--ink); white-space: nowrap; }

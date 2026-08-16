@@ -27,6 +27,15 @@ interface LigneDocument {
     fichier: File | null;
 }
 
+// Sous-ensemble de l'API Quill utilisé par insererBalise — le p-editor n'expose pas de
+// typage officiel pour l'instance capturée via (onInit).
+interface QuillEditorInstance {
+    getSelection(focus?: boolean): { index: number } | null;
+    getLength(): number;
+    insertText(index: number, text: string, source?: string): void;
+    setSelection(index: number, length: number, source?: string): void;
+}
+
 @Component({
     selector: 'app-entreprise-detail',
     templateUrl: './entreprise-detail.component.html',
@@ -166,7 +175,7 @@ export class EntrepriseDetailComponent implements OnInit {
     afficherRelances = false;
     private relancesChargees = false;
 
-    // --- Envoyer un message (composeur inline, même modèle que Messagerie > Nouveau message) ---
+    // --- Envoyer un message (panneau latéral, voir prototype validé sur la fiche Salarié) ---
     afficherComposeur = false;
     envoiMessageEnCours = false;
     // Renseigné uniquement quand le composeur a été ouvert via "Demander" sur une
@@ -182,6 +191,13 @@ export class EntrepriseDetailComponent implements OnInit {
         contenu: [this.modeleParDefaut(), Validators.required],
         copieAdmin: [false]
     });
+    // Instance Quill sous-jacente au p-editor (captée via (onInit)) — nécessaire pour
+    // insérer une balise au curseur plutôt que de forcer l'utilisateur à la retaper.
+    private quillEditor: QuillEditorInstance | null = null;
+
+    get libelleDocumentDemande(): string {
+        return this.typesPourEntreprise.find((t) => t.id === this.documentDemandeEnCours)?.libelle ?? '';
+    }
 
     // --- Compte utilisateur créé en même temps que l'entreprise (gain de temps
     // legacy : plus besoin d'un aller-retour par Configuration > Utilisateurs) ---
@@ -836,9 +852,28 @@ export class EntrepriseDetailComponent implements OnInit {
         });
         this.documentDemandeEnCours = type.id;
         this.afficherComposeur = true;
-        // Le formulaire de message est plus bas sur la page (après Historique et
-        // Relances) : sans ce défilement, cliquer "Demander" semble ne rien faire.
-        setTimeout(() => document.getElementById('composeur-message')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    }
+
+    // Capture l'instance Quill du p-editor pour permettre l'insertion des balises
+    // au curseur (voir insererBalise) — le composant n'expose pas d'API dédiée.
+    onEditorInit(event: { editor: QuillEditorInstance }) {
+        this.quillEditor = event.editor;
+    }
+
+    insererBalise(balise: string) {
+        if (!this.quillEditor) {
+            return;
+        }
+        const selection = this.quillEditor.getSelection(true);
+        const index = selection ? selection.index : this.quillEditor.getLength();
+        this.quillEditor.insertText(index, balise, 'user');
+        this.quillEditor.setSelection(index + balise.length, 0, 'user');
+    }
+
+    // Appelé sur (onHide) du panneau — couvre toutes les façons de le fermer (bouton
+    // Annuler, croix, Échap, clic en dehors), pas seulement le bouton Annuler.
+    fermerComposeur() {
+        this.documentDemandeEnCours = null;
     }
 
     private modeleDemandeDocuments(listeDocumentsHtml: string): string {

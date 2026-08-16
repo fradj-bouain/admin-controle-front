@@ -8,6 +8,14 @@
             <h5 class="m-0">Entreprise {{ entreprise ? '(' + entreprise.raisonSociale + ')' : '' }}</h5>
         </div>
         <div class="flex align-items-center gap-2" *ngIf="entreprise">
+            <button
+                *ngIf="!isEntreprise && !isNew"
+                type="button"
+                class="icon-btn-soft"
+                pTooltip="Nouveau message"
+                tooltipPosition="bottom"
+                (click)="afficherComposeur = true; documentDemandeEnCours = null"
+            ><i class="pi pi-envelope"></i></button>
             <p-tag [severity]="entreprise.actif ? 'success' : 'danger'" [value]="entreprise.actif | etatLabel"></p-tag>
         </div>
     </div>
@@ -90,6 +98,7 @@
                 </div>
             </div>
             <div class="chantier-hero-actions">
+                <button pButton type="button" icon="pi pi-envelope" label="Nouveau message" class="p-button-text" (click)="afficherComposeur = true; documentDemandeEnCours = null"></button>
                 <button
                     pButton
                     type="button"
@@ -1816,25 +1825,45 @@
     </p-table>
 </div>
 
-<!-- Envoyer un message : composeur inline. Masqué pour l'Entreprise (demande client) — le
-     dialogue avec l'admin passe par un autre canal, pas cette rédaction libre. -->
-<div id="composeur-message" class="card mb-3" *ngIf="!isNew && !isEntreprise && !isClient">
-    <div class="card-head justify-content-between">
-        <div class="flex align-items-center gap-2">
-            <i class="pi pi-envelope"></i>
-            <h6 class="m-0">Envoyer un message</h6>
+<!-- Envoyer un message : panneau latéral (voir prototype validé sur la fiche Salarié).
+     Masqué pour l'Entreprise (demande client) — le dialogue avec l'admin passe par un
+     autre canal, pas cette rédaction libre. -->
+<p-sidebar
+    *ngIf="!isNew && !isEntreprise && !isClient"
+    [(visible)]="afficherComposeur"
+    position="right"
+    [style]="{ width: '46vw', minWidth: '640px', maxWidth: '820px' }"
+    styleClass="composeur-sidebar"
+    [showCloseIcon]="false"
+    (onHide)="fermerComposeur()"
+>
+    <ng-template pTemplate="header">
+        <div class="composeur-head">
+            <button type="button" class="composeur-close" pTooltip="Fermer" tooltipPosition="left" (click)="afficherComposeur = false">
+                <i class="pi pi-times"></i>
+            </button>
+            <div class="composeur-head-top">
+                <div class="composeur-icon"><i class="pi pi-envelope"></i></div>
+                <div>
+                    <div class="composeur-eyebrow">Nouveau message</div>
+                    <div class="composeur-title">{{ entreprise?.raisonSociale || 'Entreprise' }}</div>
+                    <div class="composeur-sub" *ngIf="entreprise?.email">
+                        <span>{{ entreprise?.email }}</span>
+                    </div>
+                </div>
+            </div>
         </div>
-        <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherComposeur" (click)="afficherComposeur = false"></button>
-    </div>
+    </ng-template>
 
-    <div *ngIf="!afficherComposeur" class="flex align-items-center justify-content-between">
-        <a class="cursor-pointer text-primary" (click)="afficherComposeur = true; documentDemandeEnCours = null">Rédiger un nouveau message</a>
-        <button pButton type="button" label="Nouveau message" class="p-button-outlined" (click)="afficherComposeur = true; documentDemandeEnCours = null"></button>
-    </div>
+    <form id="composeurFormEntreprise" [formGroup]="messageForm" (ngSubmit)="envoyerMessage()" class="p-fluid">
+        <div class="composeur-doc-banner" *ngIf="documentDemandeEnCours">
+            <i class="pi pi-paperclip"></i>
+            <span>Document demandé : {{ libelleDocumentDemande }}</span>
+            <button type="button" class="clear" pTooltip="Retirer" tooltipPosition="left" (click)="documentDemandeEnCours = null"><i class="pi pi-times"></i></button>
+        </div>
 
-    <form [formGroup]="messageForm" (ngSubmit)="envoyerMessage()" class="p-fluid" *ngIf="afficherComposeur">
         <div class="field-checkbox">
-            <p-checkbox formControlName="copieAdmin" [binary]="true" inputId="messageCopieAdmin"></p-checkbox>
+            <p-inputSwitch formControlName="copieAdmin" inputId="messageCopieAdmin"></p-inputSwitch>
             <label for="messageCopieAdmin" class="ml-2">Envoyer à ADMIN-CONTROL'BTP</label>
         </div>
 
@@ -1849,16 +1878,24 @@
         </div>
         <div class="field">
             <label for="messageContenu">Message *</label>
-            <p-editor formControlName="contenu" [style]="{ height: '420px' }" [class.ng-dirty]="messageForm.controls.contenu.touched"></p-editor>
+            <p-editor formControlName="contenu" [style]="{ height: '360px' }" [class.ng-dirty]="messageForm.controls.contenu.touched" (onInit)="onEditorInit($event)"></p-editor>
             <small class="p-error" *ngIf="messageForm.controls.contenu.invalid && messageForm.controls.contenu.touched">Ce champ est requis.</small>
-            <small class="text-500 block mt-1">Balises disponibles : [DATE], [ENTREPRISE_NOM]</small>
-        </div>
-        <div class="flex justify-content-end gap-2 mt-4">
-            <button pButton type="button" label="Annuler" class="p-button-text" (click)="afficherComposeur = false; documentDemandeEnCours = null"></button>
-            <button pButton type="submit" label="Envoyer" icon="pi pi-send" [loading]="envoiMessageEnCours"></button>
+
+            <div class="composeur-tag-hint">Balises disponibles — cliquez pour insérer au curseur</div>
+            <div class="composeur-tag-chips">
+                <button type="button" class="composeur-tag-chip" (click)="insererBalise('[DATE]')">[DATE]</button>
+                <button type="button" class="composeur-tag-chip" (click)="insererBalise('[ENTREPRISE_NOM]')">[ENTREPRISE_NOM]</button>
+            </div>
         </div>
     </form>
-</div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex justify-content-end gap-2">
+            <button pButton type="button" label="Annuler" class="p-button-text" (click)="afficherComposeur = false"></button>
+            <button pButton type="submit" form="composeurFormEntreprise" label="Envoyer" icon="pi pi-send" [loading]="envoiMessageEnCours"></button>
+        </div>
+    </ng-template>
+</p-sidebar>
 
 <app-refuser-document-dialog [(visible)]="dialogRefuserVisible" [etatsDisponibles]="etatsPourRefus" (confirme)="confirmerRefus($event)"></app-refuser-document-dialog>
 <app-valider-document-dialog [(visible)]="dialogValiderVisible" [dateDebutRequise]="typeDuDocumentAValider?.dateDebutValiditeRequise ?? true" [dateFinRequise]="typeDuDocumentAValider?.dateFinValiditeRequise ?? true" (confirme)="confirmerValidation($event)"></app-valider-document-dialog>
