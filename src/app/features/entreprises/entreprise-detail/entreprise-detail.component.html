@@ -10,12 +10,13 @@
         <div class="flex align-items-center gap-2" *ngIf="entreprise">
             <button
                 *ngIf="!isEntreprise && !isNew"
+                pButton
                 type="button"
-                class="icon-btn-soft"
-                pTooltip="Nouveau message"
-                tooltipPosition="bottom"
+                icon="pi pi-envelope"
+                label="Nouveau message"
+                class="p-button-outlined"
                 (click)="afficherComposeur = true; documentDemandeEnCours = null"
-            ><i class="pi pi-envelope"></i></button>
+            ></button>
             <p-tag [severity]="entreprise.actif ? 'success' : 'danger'" [value]="entreprise.actif | etatLabel"></p-tag>
         </div>
     </div>
@@ -98,7 +99,7 @@
                 </div>
             </div>
             <div class="chantier-hero-actions">
-                <button pButton type="button" icon="pi pi-envelope" label="Nouveau message" class="p-button-text" (click)="afficherComposeur = true; documentDemandeEnCours = null"></button>
+                <button pButton type="button" icon="pi pi-envelope" label="Nouveau message" class="p-button-text hero-btn-highlight" (click)="afficherComposeur = true; documentDemandeEnCours = null"></button>
                 <button
                     pButton
                     type="button"

@@ -13,12 +13,13 @@
             </span>
             <button
                 *ngIf="!isEntreprise && !isNew"
+                pButton
                 type="button"
-                class="icon-btn-soft"
-                pTooltip="Nouveau message"
-                tooltipPosition="bottom"
+                icon="pi pi-envelope"
+                label="Nouveau message"
+                class="p-button-outlined"
                 (click)="afficherComposeur = true; documentDemandeEnCours = null"
-            ><i class="pi pi-envelope"></i></button>
+            ></button>
             <button
                 type="button"
                 class="icon-btn-soft"
@@ -107,7 +108,7 @@
                 </div>
             </div>
             <div class="chantier-hero-actions">
-                <button pButton type="button" icon="pi pi-envelope" label="Nouveau message" class="p-button-text" (click)="afficherComposeur = true; documentDemandeEnCours = null"></button>
+                <button pButton type="button" icon="pi pi-envelope" label="Nouveau message" class="p-button-text hero-btn-highlight" (click)="afficherComposeur = true; documentDemandeEnCours = null"></button>
                 <button
                     pButton
                     type="button"

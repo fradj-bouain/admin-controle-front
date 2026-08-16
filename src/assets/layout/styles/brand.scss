@@ -1979,6 +1979,12 @@ a { color: var(--brand-accent-ink); }
 .chantier-hero-actions { display: flex; align-items: center; gap: 0.5rem; position: relative; z-index: 1; flex-shrink: 0; }
 .chantier-hero-actions .p-button.p-button-text { color: rgba(255, 255, 255, 0.85); background: transparent; border-color: transparent; }
 .chantier-hero-actions .p-button.p-button-text:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+/* Action mise en avant dans le bandeau sombre (ex: "Nouveau message") — un simple
+   .p-button-text (texte blanc transparent) se fond dans le fond sombre ; celle-ci
+   reprend le même habillage "verre teinté ambre" que .composeur-icon pour rester
+   lisible sans dominer visuellement le titre. */
+.chantier-hero-actions .p-button.hero-btn-highlight { color: #f0d3a8; background: rgba(181, 105, 28, 0.28); border-color: transparent; }
+.chantier-hero-actions .p-button.hero-btn-highlight:hover { color: #fff; background: rgba(181, 105, 28, 0.42); }
 
 .chantier-hero-stats { margin-top: 1.4rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.85rem; }
 @media (max-width: 900px) { .chantier-hero-stats { grid-template-columns: repeat(2, 1fr); } }
