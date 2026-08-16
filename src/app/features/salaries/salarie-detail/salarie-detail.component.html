@@ -1,7 +1,7 @@
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
-<div class="card mb-3" *ngIf="!isClient">
+<div class="card mb-3" *ngIf="!isClient && !isSuperAdmin">
     <div class="flex align-items-center justify-content-between">
         <div class="flex align-items-center gap-3">
             <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
@@ -18,14 +18,6 @@
                 tooltipPosition="bottom"
                 (click)="dialogBadgeVisible = true"
             ><i class="pi pi-id-card"></i></button>
-            <button
-                *ngIf="isSuperAdmin"
-                type="button"
-                class="icon-btn-soft danger"
-                [pTooltip]="salarie.statut === 'ACTIF' ? 'Désactiver' : 'Activer'"
-                tooltipPosition="bottom"
-                (click)="confirmerBasculeStatut()"
-            ><i [class]="salarie.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"></i></button>
         </div>
     </div>
 
@@ -71,6 +63,87 @@
 </div>
 
 <app-qrcode-dialog [(visible)]="dialogBadgeVisible" [salarie]="salarie"></app-qrcode-dialog>
+
+<!-- Vue SUPER_ADMIN : en-tête simple à la création, bandeau d'identité avec les chiffres
+     déjà calculés pour les cartes Documents/Chantier plus bas une fois enregistré — même
+     traitement que les fiches Client/Chantier/Entreprise. -->
+<div class="mb-3" *ngIf="isSuperAdmin && isNew">
+    <div class="flex align-items-center gap-3">
+        <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
+        <div>
+            <h5 class="m-0">Ajouter un salarié</h5>
+            <p class="text-500 text-sm m-0">Ces informations déterminent les documents obligatoires qui lui seront demandés.</p>
+        </div>
+    </div>
+</div>
+
+<div class="chantier-hero" *ngIf="isSuperAdmin && !isNew && salarie">
+    <div class="chantier-hero-inner">
+        <div class="chantier-hero-top">
+            <div class="chantier-hero-title-row">
+                <button type="button" class="id-card-back" pTooltip="Retour à la liste" tooltipPosition="bottom" (click)="retour()">
+                    <i class="pi pi-arrow-left"></i>
+                </button>
+                <div class="chantier-hero-mark">{{ salarieInitiales }}</div>
+                <div>
+                    <h1 class="chantier-hero-title">{{ salarie.prenom }} {{ salarie.nom }}</h1>
+                    <div class="chantier-hero-sub">
+                        <span class="status-pill" [class.success]="salarie.statut === 'ACTIF'" [class.danger]="salarie.statut !== 'ACTIF'">
+                            <span class="status-pill-dot"></span>{{ salarie.statut | etatLabel }}
+                        </span>
+                        <span>·</span>
+                        <span>{{ nomFonction(salarie.fonctionId) }}</span>
+                        <span>·</span>
+                        <span>{{ nomEntreprise(salarie.entrepriseEmployeurId) }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="chantier-hero-actions">
+                <button
+                    pButton
+                    type="button"
+                    [label]="salarie.statut === 'ACTIF' ? 'Désactiver' : 'Activer'"
+                    [icon]="salarie.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"
+                    class="p-button-text"
+                    (click)="confirmerBasculeStatut()"
+                ></button>
+            </div>
+        </div>
+
+        <div class="chantier-hero-stats">
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-ring">
+                    <svg viewBox="0 0 36 36">
+                        <circle class="chantier-hstat-ring-track" cx="18" cy="18" r="15.5"></circle>
+                        <circle class="chantier-hstat-ring-value" cx="18" cy="18" r="15.5"
+                            [attr.stroke]="pourcentageObligatoires === 100 ? '#a9e0bf' : '#f0d19f'"
+                            [attr.stroke-dasharray]="97.39"
+                            [attr.stroke-dashoffset]="ringDashoffset(pourcentageObligatoires)"></circle>
+                    </svg>
+                    <span class="chantier-hstat-ring-num">{{ pourcentageObligatoires }}%</span>
+                </span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value tabular-nums">{{ nbObligatoiresFournis }}<small>/{{ nbObligatoiresTotal }}</small></span>
+                    <span class="chantier-hstat-label">Documents obligatoires conformes</span>
+                </span>
+            </div>
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-icon blue"><i class="pi pi-map-marker"></i></span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value">{{ affectationEnCours?.nomChantierCalculee || 'Disponible' }}</span>
+                    <span class="chantier-hstat-label">Chantier actuel</span>
+                </span>
+            </div>
+            <div class="chantier-hstat" *ngIf="affectationEnCours">
+                <span class="chantier-hstat-icon"><i class="pi pi-verified"></i></span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value">{{ affectationEnCours!.statutAcces | etatLabel }}</span>
+                    <span class="chantier-hstat-label">Accès au chantier actuel</span>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ============================================================
      Vue Client (lecture seule) : ce salarié vu par un compte Client, mêmes composants
@@ -556,110 +629,190 @@
 
 <!-- Coordonnées : carte complète pour SUPER_ADMIN/Client/Contrôleur — l'Entreprise a sa
      propre carte (même formulaire, disposition compacte) dans la vue deux colonnes plus bas. -->
-<div class="card mb-3" *ngIf="!isEntreprise && !isClient">
-    <div class="card-head">
-        <i class="pi pi-user"></i>
-        <h6 class="m-0">Coordonnées</h6>
+<!-- Formulaire SUPER_ADMIN : une seule carte (le formulaire est court, 6 champs — pas
+     besoin de le répartir en plusieurs cartes comme Client/Entreprise), aperçu en direct +
+     rappels pratiques à la création (voir prototype validé). -->
+<div class="grid" *ngIf="!isEntreprise && !isClient">
+    <div class="col-12 lg:col-8">
+        <div class="card mb-3 h-full flex flex-column">
+            <div class="card-head">
+                <i class="pi pi-user"></i>
+                <h6 class="m-0">Coordonnées</h6>
+            </div>
+
+            <app-card-skeleton *ngIf="loading" [lignes]="6"></app-card-skeleton>
+
+            <form *ngIf="!loading" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid flex flex-column flex-1">
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-6">
+                        <label for="nom">Nom *</label>
+                        <input id="nom" type="text" pInputText formControlName="nom" [class.ng-dirty]="coordonneesForm.controls.nom.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.nom.invalid && coordonneesForm.controls.nom.touched">Ce champ est requis.</small>
+                    </div>
+                    <div class="field col-12 md:col-6">
+                        <label for="prenom">Prénom *</label>
+                        <input id="prenom" type="text" pInputText formControlName="prenom" [class.ng-dirty]="coordonneesForm.controls.prenom.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.prenom.invalid && coordonneesForm.controls.prenom.touched">Ce champ est requis.</small>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="nationalitePaysId">Nationalité <span class="text-400 font-normal">(optionnel)</span></label>
+                    <p-dropdown
+                        id="nationalitePaysId"
+                        [options]="pays"
+                        formControlName="nationalitePaysId"
+                        optionLabel="nom"
+                        optionValue="id"
+                        [filter]="true"
+                        filterBy="nom"
+                        placeholder="Sélectionner un pays"
+                    ></p-dropdown>
+                </div>
+
+                <div class="field">
+                    <label for="fonctionId">Fonction *</label>
+                    <p-dropdown
+                        id="fonctionId"
+                        [options]="fonctions"
+                        formControlName="fonctionId"
+                        optionLabel="libelle"
+                        optionValue="id"
+                        [filter]="true"
+                        filterBy="libelle"
+                        placeholder="-- Sélectionner une fonction --"
+                        [showClear]="true"
+                        [class.ng-dirty]="coordonneesForm.controls.fonctionId.touched"
+                    ></p-dropdown>
+                    <small class="p-error" *ngIf="coordonneesForm.controls.fonctionId.invalid && coordonneesForm.controls.fonctionId.touched">Ce champ est requis.</small>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-6">
+                        <label for="entrepriseEmployeurId">Entreprise *</label>
+                        <p-dropdown
+                            id="entrepriseEmployeurId"
+                            [options]="entreprises"
+                            formControlName="entrepriseEmployeurId"
+                            optionLabel="raisonSociale"
+                            optionValue="id"
+                            placeholder="-- Sélectionner une entreprise --"
+                            [filter]="true"
+                            filterBy="raisonSociale"
+                            [class.ng-dirty]="coordonneesForm.controls.entrepriseEmployeurId.touched"
+                        ></p-dropdown>
+                        <small class="p-error" *ngIf="coordonneesForm.controls.entrepriseEmployeurId.invalid && coordonneesForm.controls.entrepriseEmployeurId.touched">Ce champ est requis.</small>
+                    </div>
+                    <div class="field col-12 md:col-6">
+                        <label for="typeContratId">Types de contrat *</label>
+                        <p-dropdown
+                            id="typeContratId"
+                            [options]="typesContrat"
+                            formControlName="typeContratId"
+                            optionLabel="libelle"
+                            optionValue="id"
+                            [filter]="true"
+                            filterBy="libelle"
+                            placeholder="-- Sélectionner un type de contrat --"
+                            [showClear]="true"
+                            [class.ng-dirty]="coordonneesForm.controls.typeContratId.touched"
+                        ></p-dropdown>
+                        <small class="p-error" *ngIf="coordonneesForm.controls.typeContratId.invalid && coordonneesForm.controls.typeContratId.touched">Ce champ est requis.</small>
+                    </div>
+                </div>
+
+                <div class="flex justify-content-end gap-2 mt-4 mt-auto">
+                    <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
+                    <button *ngIf="isSuperAdmin || isEntreprise" pButton type="submit" [label]="isNew ? 'Ajouter ce salarié' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <app-card-skeleton *ngIf="loading" [lignes]="6"></app-card-skeleton>
-
-    <form *ngIf="!loading" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
-        <div class="formgrid grid">
-            <div class="field col-12 md:col-6">
-                <label for="nom">Nom *</label>
-                <input id="nom" type="text" pInputText formControlName="nom" [class.ng-dirty]="coordonneesForm.controls.nom.touched" />
-                <small class="p-error" *ngIf="coordonneesForm.controls.nom.invalid && coordonneesForm.controls.nom.touched">Ce champ est requis.</small>
+    <div class="col-12 lg:col-4" *ngIf="isNew && !loading">
+        <p class="text-500 text-xs font-bold uppercase mb-2" style="letter-spacing:.05em;">Aperçu de la fiche</p>
+        <div class="id-card mb-3">
+            <div class="id-card-band">
+                <div class="id-card-mark">{{ previewInitiales }}</div>
+                <div class="id-card-name-row">
+                    <span class="id-card-name">{{ (coordonneesForm.get('prenom')?.value || coordonneesForm.get('nom')?.value) ? (coordonneesForm.get('prenom')?.value + ' ' + coordonneesForm.get('nom')?.value) : 'Nouveau salarié' }}</span>
+                    <div class="id-card-sub">
+                        <span class="status-pill success"><span class="status-pill-dot"></span>Actif</span>
+                        <span *ngIf="coordonneesForm.get('fonctionId')?.value">· {{ nomFonction(coordonneesForm.get('fonctionId')?.value ?? undefined) }}</span>
+                    </div>
+                </div>
             </div>
-            <div class="field col-12 md:col-6">
-                <label for="prenom">Prénom *</label>
-                <input id="prenom" type="text" pInputText formControlName="prenom" [class.ng-dirty]="coordonneesForm.controls.prenom.touched" />
-                <small class="p-error" *ngIf="coordonneesForm.controls.prenom.invalid && coordonneesForm.controls.prenom.touched">Ce champ est requis.</small>
-            </div>
-        </div>
-
-        <div class="field">
-            <label for="nationalitePaysId">Nationalité</label>
-            <p-dropdown
-                id="nationalitePaysId"
-                [options]="pays"
-                formControlName="nationalitePaysId"
-                optionLabel="nom"
-                optionValue="id"
-                [filter]="true"
-                filterBy="nom"
-                placeholder="Sélectionner un pays"
-            ></p-dropdown>
-        </div>
-
-        <div class="field">
-            <label for="fonctionId">Fonction *</label>
-            <p-dropdown
-                id="fonctionId"
-                [options]="fonctions"
-                formControlName="fonctionId"
-                optionLabel="libelle"
-                optionValue="id"
-                [filter]="true"
-                filterBy="libelle"
-                placeholder="-- Sélectionner une fonction --"
-                [showClear]="true"
-                [class.ng-dirty]="coordonneesForm.controls.fonctionId.touched"
-            ></p-dropdown>
-            <small class="p-error" *ngIf="coordonneesForm.controls.fonctionId.invalid && coordonneesForm.controls.fonctionId.touched">Ce champ est requis.</small>
-        </div>
-
-        <div class="formgrid grid">
-            <div class="field col-12 md:col-6">
-                <label for="entrepriseEmployeurId">Entreprise *</label>
-                <p-dropdown
-                    id="entrepriseEmployeurId"
-                    [options]="entreprises"
-                    formControlName="entrepriseEmployeurId"
-                    optionLabel="raisonSociale"
-                    optionValue="id"
-                    placeholder="-- Sélectionner une entreprise --"
-                    [filter]="true"
-                    filterBy="raisonSociale"
-                    [class.ng-dirty]="coordonneesForm.controls.entrepriseEmployeurId.touched"
-                ></p-dropdown>
-                <small class="p-error" *ngIf="coordonneesForm.controls.entrepriseEmployeurId.invalid && coordonneesForm.controls.entrepriseEmployeurId.touched">Ce champ est requis.</small>
-            </div>
-            <div class="field col-12 md:col-6">
-                <label for="typeContratId">Types de contrat *</label>
-                <p-dropdown
-                    id="typeContratId"
-                    [options]="typesContrat"
-                    formControlName="typeContratId"
-                    optionLabel="libelle"
-                    optionValue="id"
-                    [filter]="true"
-                    filterBy="libelle"
-                    placeholder="-- Sélectionner un type de contrat --"
-                    [showClear]="true"
-                    [class.ng-dirty]="coordonneesForm.controls.typeContratId.touched"
-                ></p-dropdown>
-                <small class="p-error" *ngIf="coordonneesForm.controls.typeContratId.invalid && coordonneesForm.controls.typeContratId.touched">Ce champ est requis.</small>
+            <div class="id-card-body">
+                <div class="id-kv-grid">
+                    <div>
+                        <div class="id-kv-label">Entreprise</div>
+                        <div class="id-kv-value">{{ coordonneesForm.get('entrepriseEmployeurId')?.value ? nomEntreprise(coordonneesForm.get('entrepriseEmployeurId')?.value ?? '') : '—' }}</div>
+                    </div>
+                    <div>
+                        <div class="id-kv-label">Contrat</div>
+                        <div class="id-kv-value">{{ nomTypeContrat(coordonneesForm.get('typeContratId')?.value ?? undefined) }}</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="flex justify-content-end gap-2 mt-4">
-            <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
-            <button *ngIf="isSuperAdmin || isEntreprise" pButton type="submit" [label]="isNew ? 'Ajouter ce salarié' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
+        <div class="tip-card">
+            <h6><i class="pi pi-info-circle"></i>Bon à savoir</h6>
+            <ul>
+                <li>La fonction et la nationalité déterminent quels documents obligatoires (carte pro, titre de séjour...) lui seront demandés.</li>
+                <li>Le statut est « Actif » par défaut à la création.</li>
+                <li>L'affectation à un chantier se règle juste après l'enregistrement.</li>
+            </ul>
         </div>
-    </form>
+    </div>
+
+    <div class="col-12 lg:col-4" *ngIf="!isNew && !loading && salarie">
+        <div class="card h-full flex flex-column">
+            <div class="card-head">
+                <i class="pi pi-id-card"></i>
+                <h6 class="m-0">Badge du salarié</h6>
+            </div>
+            <div class="flex-1 flex flex-column justify-content-center">
+                <app-qrcode-dialog [inline]="true" [salarie]="salarie"></app-qrcode-dialog>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Informations relatives au chantier : carte complète pour SUPER_ADMIN/Client/Contrôleur —
-     l'Entreprise a sa propre carte compacte (liste cliquable + même formulaire d'ajout). -->
-<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise && !isClient">
+     l'Entreprise a sa propre carte compacte (liste cliquable + même formulaire d'ajout).
+     Absente à la création (rien à affecter tant que le salarié n'existe pas) plutôt que
+     montrée grisée, et formulaire "Ajouter" remonté au-dessus du tableau — voir prototype
+     validé (même correctif que sur les fiches Chantier/Entreprise). -->
+<div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isNew">
     <div class="card-head">
         <i class="pi pi-truck"></i>
         <h6 class="m-0">Informations relatives au chantier</h6>
     </div>
-    <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez le salarié pour activer cette section.</small>
 
-    <p-table [value]="mesAffectations" dataKey="id" *ngIf="mesAffectations.length > 0">
+    <form [formGroup]="affectationForm" (ngSubmit)="submitAffectation()" class="formgrid grid align-items-end mb-3">
+        <div class="field col-12 md:col-5">
+            <label for="chantierId">Chantier *</label>
+            <p-dropdown id="chantierId" [options]="chantiersDisponibles" formControlName="chantierId" optionLabel="nom" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Sélectionner un chantier --" styleClass="w-full" [class.ng-dirty]="affectationForm.controls.chantierId.touched"></p-dropdown>
+            <small class="p-error" *ngIf="affectationForm.controls.chantierId.invalid && affectationForm.controls.chantierId.touched">Ce champ est requis.</small>
+        </div>
+        <div class="field col-12 md:col-5">
+            <label for="affectationEntrepriseChantierId">Rôle de l'entreprise employeuse sur ce chantier *</label>
+            <p-dropdown id="affectationEntrepriseChantierId" [options]="affectationsEntrepriseDuChantier" formControlName="affectationEntrepriseChantierId" optionValue="id" placeholder="-- Sélectionner --" styleClass="w-full" [class.ng-dirty]="affectationForm.controls.affectationEntrepriseChantierId.touched">
+                <ng-template let-a pTemplate="item">{{ nomEntreprise(a?.entrepriseId) }} ({{ a?.role }})</ng-template>
+                <ng-template let-a pTemplate="selectedItem">{{ nomEntreprise(a?.entrepriseId) }} ({{ a?.role }})</ng-template>
+            </p-dropdown>
+            <small class="p-error" *ngIf="affectationForm.controls.affectationEntrepriseChantierId.invalid && affectationForm.controls.affectationEntrepriseChantierId.touched">Ce champ est requis.</small>
+            <small class="text-500" *ngIf="affectationForm.value.chantierId && affectationsEntrepriseDuChantier.length === 0">
+                L'entreprise employeuse de ce salarié n'est pas affectée à ce chantier.
+            </small>
+        </div>
+        <div class="field col-12 md:col-2">
+            <button *ngIf="isSuperAdmin || isEntreprise" pButton type="submit" label="Ajouter" class="w-full"></button>
+        </div>
+    </form>
+
+    <p-table [value]="mesAffectations" dataKey="id" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="400px" *ngIf="mesAffectations.length > 0">
         <ng-template pTemplate="header">
             <tr>
                 <th>Chantier</th>
@@ -708,28 +861,7 @@
             </tr>
         </ng-template>
     </p-table>
-
-    <form [formGroup]="affectationForm" (ngSubmit)="submitAffectation()" class="formgrid grid align-items-end mt-3">
-        <div class="field col-12 md:col-5">
-            <label for="chantierId">Chantier *</label>
-            <p-dropdown id="chantierId" [options]="chantiersDisponibles" formControlName="chantierId" optionLabel="nom" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Sélectionner un chantier --" styleClass="w-full" [class.ng-dirty]="affectationForm.controls.chantierId.touched"></p-dropdown>
-            <small class="p-error" *ngIf="affectationForm.controls.chantierId.invalid && affectationForm.controls.chantierId.touched">Ce champ est requis.</small>
-        </div>
-        <div class="field col-12 md:col-5">
-            <label for="affectationEntrepriseChantierId">Rôle de l'entreprise employeuse sur ce chantier *</label>
-            <p-dropdown id="affectationEntrepriseChantierId" [options]="affectationsEntrepriseDuChantier" formControlName="affectationEntrepriseChantierId" optionValue="id" placeholder="-- Sélectionner --" styleClass="w-full" [class.ng-dirty]="affectationForm.controls.affectationEntrepriseChantierId.touched">
-                <ng-template let-a pTemplate="item">{{ nomEntreprise(a?.entrepriseId) }} ({{ a?.role }})</ng-template>
-                <ng-template let-a pTemplate="selectedItem">{{ nomEntreprise(a?.entrepriseId) }} ({{ a?.role }})</ng-template>
-            </p-dropdown>
-            <small class="p-error" *ngIf="affectationForm.controls.affectationEntrepriseChantierId.invalid && affectationForm.controls.affectationEntrepriseChantierId.touched">Ce champ est requis.</small>
-            <small class="text-500" *ngIf="affectationForm.value.chantierId && affectationsEntrepriseDuChantier.length === 0">
-                L'entreprise employeuse de ce salarié n'est pas affectée à ce chantier.
-            </small>
-        </div>
-        <div class="field col-12 md:col-2">
-            <button *ngIf="isSuperAdmin || isEntreprise" pButton type="submit" label="Ajouter" [disabled]="isNew" class="w-full"></button>
-        </div>
-    </form>
+    <p class="text-500 text-sm m-0" *ngIf="mesAffectations.length === 0">Aucune affectation pour l'instant.</p>
 </div>
 
 <!-- Documents (ouverts par défaut en création : peuvent être renseignés tout de
@@ -902,7 +1034,7 @@
         <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="basculerHistorique()"></button>
     </div>
 
-    <p-table [value]="historique" dataKey="id" *ngIf="afficherHistorique" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
+    <p-table [value]="historique" dataKey="id" *ngIf="afficherHistorique" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
         <ng-template pTemplate="header">
             <tr>
                 <th>Date</th>
@@ -942,7 +1074,7 @@
         <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="basculerRelances()"></button>
     </div>
 
-    <p-table [value]="relances" dataKey="id" *ngIf="afficherRelances" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
+    <p-table [value]="relances" dataKey="id" *ngIf="afficherRelances" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
         <ng-template pTemplate="header">
             <tr>
                 <th>Date d'envoi</th>

@@ -144,6 +144,9 @@ export class EntrepriseDetailComponent implements OnInit {
     // --- Utilisateurs (comptes rattachés à cette entreprise) ---
     utilisateurs: Utilisateur[] = [];
     afficherUtilisateurs = false;
+    // Utilisé uniquement par la vue Entreprise (auto-gestion de sa propre équipe, voir plus
+    // bas .ent-layout) — la vue SUPER_ADMIN affiche désormais son formulaire "Ajouter" en
+    // permanence, sans bouton dédié (voir prototype validé).
     afficherFormulaireUtilisateur = false;
     nouveauCompteForm = this.fb.group({
         prenom: ['', Validators.required],
@@ -236,6 +239,28 @@ export class EntrepriseDetailComponent implements OnInit {
 
     nomCorpsDeMetier(id?: string): string {
         return this.corpsDeMetiers.find((c) => c.id === id)?.libelle ?? '—';
+    }
+
+    // --- Bandeau d'en-tête SUPER_ADMIN (voir prototype validé) : reprend tel quel les
+    // chiffres déjà calculés pour la carte Documents/Affectation/Salariés plus bas — aucune
+    // donnée de plus à charger, juste remontée en haut de page. Même traitement que les
+    // fiches Client et Chantier.
+    get entrepriseInitiales(): string {
+        const mots = (this.entreprise?.raisonSociale ?? '').trim().split(/\s+/).filter(Boolean);
+        if (mots.length === 0) {
+            return '?';
+        }
+        return mots.length === 1 ? mots[0].slice(0, 2).toUpperCase() : (mots[0][0] + mots[1][0]).toUpperCase();
+    }
+
+    get nbAffectationsActives(): number {
+        return this.mesAffectations.filter((a) => a.statut === 'ACTIF').length;
+    }
+
+    initialesUtilisateur(u: Utilisateur): string {
+        const p = (u.prenom || '').trim();
+        const n = (u.nom || '').trim();
+        return ((p[0] ?? '') + (n[0] ?? '')).toUpperCase() || '?';
     }
 
     annulerEditionCoordonnees() {

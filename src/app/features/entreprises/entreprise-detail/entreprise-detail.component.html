@@ -1,7 +1,7 @@
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
-<div class="card mb-3" *ngIf="!isClient">
+<div class="card mb-3" *ngIf="!isClient && !isSuperAdmin">
     <div class="flex align-items-center justify-content-between">
         <div class="flex align-items-center gap-3">
             <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
@@ -9,15 +9,6 @@
         </div>
         <div class="flex align-items-center gap-2" *ngIf="entreprise">
             <p-tag [severity]="entreprise.actif ? 'success' : 'danger'" [value]="entreprise.actif | etatLabel"></p-tag>
-            <button
-                *ngIf="isSuperAdmin"
-                pButton
-                type="button"
-                [label]="entreprise.actif ? 'Désactiver' : 'Activer'"
-                [icon]="entreprise.actif ? 'pi pi-ban' : 'pi pi-check'"
-                class="p-button-text"
-                (click)="confirmerBasculeStatut()"
-            ></button>
         </div>
     </div>
 
@@ -62,6 +53,86 @@
                 <span class="ent-stat-label">Sous-traitant(s)</span>
             </span>
         </button>
+    </div>
+</div>
+
+<!-- Vue SUPER_ADMIN : en-tête simple à la création, bandeau d'identité avec les
+     chiffres déjà calculés pour les cartes Documents/Affectation/Salariés plus bas
+     une fois enregistré — même traitement que les fiches Client et Chantier. -->
+<div class="mb-3" *ngIf="isSuperAdmin && isNew">
+    <div class="flex align-items-center gap-3">
+        <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
+        <div>
+            <h5 class="m-0">Ajouter une entreprise</h5>
+            <p class="text-500 text-sm m-0">Ces informations serviront à contacter l'entreprise et à déterminer les documents légaux qui lui sont demandés.</p>
+        </div>
+    </div>
+</div>
+
+<div class="chantier-hero" *ngIf="isSuperAdmin && !isNew && entreprise">
+    <div class="chantier-hero-inner">
+        <div class="chantier-hero-top">
+            <div class="chantier-hero-title-row">
+                <button type="button" class="id-card-back" pTooltip="Retour à la liste" tooltipPosition="bottom" (click)="retour()">
+                    <i class="pi pi-arrow-left"></i>
+                </button>
+                <div class="chantier-hero-mark">{{ entrepriseInitiales }}</div>
+                <div>
+                    <h1 class="chantier-hero-title">{{ entreprise.raisonSociale }}</h1>
+                    <div class="chantier-hero-sub">
+                        <span class="status-pill" [class.success]="entreprise.actif" [class.danger]="!entreprise.actif">
+                            <span class="status-pill-dot"></span>{{ entreprise.actif | etatLabel }}
+                        </span>
+                        <span>·</span>
+                        <span>{{ nomCorpsDeMetier(entreprise.corpsDeMetierId) }}</span>
+                        <ng-container *ngIf="entreprise.ville"><span>·</span><span>{{ entreprise.ville }}</span></ng-container>
+                    </div>
+                </div>
+            </div>
+            <div class="chantier-hero-actions">
+                <button
+                    pButton
+                    type="button"
+                    [label]="entreprise.actif ? 'Désactiver' : 'Activer'"
+                    [icon]="entreprise.actif ? 'pi pi-ban' : 'pi pi-check'"
+                    class="p-button-text"
+                    (click)="confirmerBasculeStatut()"
+                ></button>
+            </div>
+        </div>
+
+        <div class="chantier-hero-stats">
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-ring">
+                    <svg viewBox="0 0 36 36">
+                        <circle class="chantier-hstat-ring-track" cx="18" cy="18" r="15.5"></circle>
+                        <circle class="chantier-hstat-ring-value" cx="18" cy="18" r="15.5"
+                            [attr.stroke]="pourcentageObligatoires === 100 ? '#a9e0bf' : '#f0d19f'"
+                            [attr.stroke-dasharray]="97.39"
+                            [attr.stroke-dashoffset]="ringDashoffset(pourcentageObligatoires)"></circle>
+                    </svg>
+                    <span class="chantier-hstat-ring-num">{{ pourcentageObligatoires }}%</span>
+                </span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value tabular-nums">{{ nbObligatoiresFournis }}<small>/{{ nbObligatoiresTotal }}</small></span>
+                    <span class="chantier-hstat-label">Documents obligatoires conformes</span>
+                </span>
+            </div>
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-icon blue"><i class="pi pi-map-marker"></i></span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value tabular-nums">{{ nbAffectationsActives }}</span>
+                    <span class="chantier-hstat-label">Chantiers actifs</span>
+                </span>
+            </div>
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-icon"><i class="pi pi-users"></i></span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value tabular-nums">{{ salaries.length }}</span>
+                    <span class="chantier-hstat-label">Salariés</span>
+                </span>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -892,7 +963,8 @@
 <!-- Coordonnées : carte complète (formulaire admin / lecture seule Client-Contrôleur) —
      masquée pour l'Entreprise, qui a sa propre carte compacte dans la vue deux colonnes
      plus bas (voir .ent-layout). -->
-<div class="card mb-3" *ngIf="!isEntreprise && !isClient">
+<!-- Lecture seule pour le Contrôleur (jamais éditable pour lui non plus) — inchangée. -->
+<div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isSuperAdmin">
     <div class="card-head">
         <i class="pi pi-building"></i>
         <h6 class="m-0">Coordonnées</h6>
@@ -900,8 +972,7 @@
 
     <app-card-skeleton *ngIf="loading" [lignes]="8"></app-card-skeleton>
 
-    <!-- Lecture seule pour le Client/Contrôleur (jamais éditable pour eux non plus). -->
-    <div *ngIf="!loading && !isSuperAdmin" class="entreprise-readonly">
+    <div *ngIf="!loading" class="entreprise-readonly">
         <div class="formgrid grid">
             <div class="field col-12 md:col-6">
                 <label class="text-500 text-sm">Nom</label>
@@ -974,221 +1045,279 @@
         </div>
         <small class="text-500 block mt-3">Pour toute correction, contactez votre administrateur.</small>
     </div>
+</div>
 
-    <form *ngIf="!loading && isSuperAdmin" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
-        <div class="field">
-            <label for="raisonSociale">Nom *</label>
-            <input id="raisonSociale" type="text" pInputText formControlName="raisonSociale" [class.ng-dirty]="coordonneesForm.controls.raisonSociale.touched" />
-            <small class="p-error" *ngIf="coordonneesForm.controls.raisonSociale.invalid && coordonneesForm.controls.raisonSociale.touched">Ce champ est requis.</small>
-        </div>
+<!-- Formulaire SUPER_ADMIN : réparti en 3 cartes lisibles (Identité/Coordonnées/
+     Informations légales), aperçu en direct + rappels pratiques à la création — même
+     traitement que les fiches Client et Chantier (voir prototype validé). -->
+<div class="grid" *ngIf="isSuperAdmin">
+    <div class="col-12 lg:col-8">
 
-        <div class="formgrid grid">
-            <div class="field col-12 md:col-4">
-                <label for="adresse">Adresse *</label>
-                <input id="adresse" type="text" pInputText formControlName="adresse" [class.ng-dirty]="coordonneesForm.controls.adresse.touched" />
-                <small class="p-error" *ngIf="coordonneesForm.controls.adresse.invalid && coordonneesForm.controls.adresse.touched">Ce champ est requis.</small>
-            </div>
-            <div class="field col-12 md:col-4">
-                <label for="adresse2">Adresse complément n°1</label>
-                <input id="adresse2" type="text" pInputText formControlName="adresse2" />
-            </div>
-            <div class="field col-12 md:col-4">
-                <label for="adresse3">Adresse complément n°2</label>
-                <input id="adresse3" type="text" pInputText formControlName="adresse3" />
-            </div>
-        </div>
+        <app-card-skeleton *ngIf="loading" [lignes]="8"></app-card-skeleton>
 
-        <div class="formgrid grid">
-            <div class="field col-12 md:col-6">
-                <label for="ville">Ville *</label>
-                <input id="ville" type="text" pInputText formControlName="ville" [class.ng-dirty]="coordonneesForm.controls.ville.touched" />
-                <small class="p-error" *ngIf="coordonneesForm.controls.ville.invalid && coordonneesForm.controls.ville.touched">Ce champ est requis.</small>
-            </div>
-            <div class="field col-12 md:col-6">
-                <label for="paysId">Pays *</label>
-                <p-dropdown
-                    id="paysId"
-                    [options]="pays"
-                    formControlName="paysId"
-                    optionLabel="nom"
-                    optionValue="id"
-                    [filter]="true"
-                    filterBy="nom"
-                    placeholder="Sélectionner un pays"
-                    [class.ng-dirty]="coordonneesForm.controls.paysId.touched"
-                ></p-dropdown>
-                <small class="p-error" *ngIf="coordonneesForm.controls.paysId.invalid && coordonneesForm.controls.paysId.touched">Ce champ est requis.</small>
-            </div>
-        </div>
+        <form *ngIf="!loading" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
 
-        <div class="formgrid grid">
-            <div class="field col-12 md:col-4">
-                <label for="telephone">Tel *</label>
-                <input id="telephone" type="text" pInputText formControlName="telephone" [class.ng-dirty]="coordonneesForm.controls.telephone.touched" />
-                <small class="p-error" *ngIf="coordonneesForm.controls.telephone.invalid && coordonneesForm.controls.telephone.touched">Ce champ est requis.</small>
-            </div>
-            <div class="field col-12 md:col-4">
-                <label for="telephone2">Tel 2</label>
-                <input id="telephone2" type="text" pInputText formControlName="telephone2" />
-            </div>
-            <div class="field col-12 md:col-4">
-                <label for="telephone3">Tel 3</label>
-                <input id="telephone3" type="text" pInputText formControlName="telephone3" />
-            </div>
-        </div>
-
-        <div class="field">
-            <label for="email">Email</label>
-            <input id="email" type="email" pInputText formControlName="email" [class.ng-dirty]="coordonneesForm.controls.email.touched" />
-            <small class="p-error" *ngIf="coordonneesForm.controls.email.invalid && coordonneesForm.controls.email.touched">Adresse email invalide.</small>
-        </div>
-
-        <!-- Informations légales : identité administrative de l'entreprise, remplie une fois à
-             la création et rarement retouchée. Ce formulaire n'est de toute façon visible qu'au
-             SUPER_ADMIN (voir *ngIf plus haut) — l'Entreprise a la version lecture seule. -->
-        <div class="flex align-items-center gap-2 mt-2 mb-3">
-            <h6 class="m-0 text-500">Informations légales</h6>
-        </div>
-
-        <div class="field">
-            <label for="corpsDeMetierId">Corps de métier *</label>
-            <p-dropdown
-                id="corpsDeMetierId"
-                [options]="corpsDeMetiers"
-                formControlName="corpsDeMetierId"
-                optionLabel="libelle"
-                optionValue="id"
-                [filter]="true"
-                filterBy="libelle"
-                placeholder="Sélectionner un corps de métier"
-                [class.ng-dirty]="coordonneesForm.controls.corpsDeMetierId.touched"
-            ></p-dropdown>
-            <small class="p-error" *ngIf="coordonneesForm.controls.corpsDeMetierId.invalid && coordonneesForm.controls.corpsDeMetierId.touched">Ce champ est requis.</small>
-        </div>
-
-        <div class="formgrid grid">
-            <div class="field col-12 md:col-4">
-                <label for="siren">Siren *</label>
-                <input id="siren" type="text" pInputText formControlName="siren" [class.ng-dirty]="coordonneesForm.controls.siren.touched" />
-                <small class="p-error" *ngIf="coordonneesForm.controls.siren.invalid && coordonneesForm.controls.siren.touched">Ce champ est requis.</small>
-            </div>
-            <div class="field col-12 md:col-4">
-                <label for="siret">Siret *</label>
-                <input id="siret" type="text" pInputText formControlName="siret" [class.ng-dirty]="coordonneesForm.controls.siret.touched" />
-                <small class="p-error" *ngIf="coordonneesForm.controls.siret.invalid && coordonneesForm.controls.siret.touched">Ce champ est requis.</small>
-            </div>
-            <div class="field col-12 md:col-4">
-                <label for="rcsRci">RCS / RCI *</label>
-                <input id="rcsRci" type="text" pInputText formControlName="rcsRci" [class.ng-dirty]="coordonneesForm.controls.rcsRci.touched" />
-                <small class="p-error" *ngIf="coordonneesForm.controls.rcsRci.invalid && coordonneesForm.controls.rcsRci.touched">Ce champ est requis.</small>
-            </div>
-        </div>
-
-        <div class="formgrid grid">
-            <div class="field col-12 md:col-6">
-                <label for="tvaIntra">N° de TVA Intra</label>
-                <input id="tvaIntra" type="text" pInputText formControlName="tvaIntra" />
-            </div>
-            <div class="field col-12 md:col-6">
-                <label for="numCotisant">N° de cotisant URSSAF / CCSS / CAR</label>
-                <input id="numCotisant" type="text" pInputText formControlName="numCotisant" />
-            </div>
-        </div>
-
-        <div class="field">
-            <label for="responsableSignataireAgrement">Responsable signataire agrément</label>
-            <input id="responsableSignataireAgrement" type="text" pInputText formControlName="responsableSignataireAgrement" />
-        </div>
-
-        <div class="field">
-            <label for="commentaire">Commentaire / Info</label>
-            <textarea id="commentaire" pInputTextarea formControlName="commentaire" rows="3"></textarea>
-        </div>
-
-        <div class="account-inline-panel" *ngIf="isNew">
-            <div class="account-inline-panel__header">
-                <div class="account-inline-panel__title">
-                    <span class="account-inline-panel__icon"><i class="pi pi-user-plus"></i></span>
-                    <div>
-                        <div class="account-inline-panel__label">Créer un compte utilisateur pour cette entreprise</div>
-                        <div class="text-500 text-sm">Elle pourra se connecter immédiatement, sans étape supplémentaire.</div>
-                    </div>
-                </div>
-                <p-inputSwitch [(ngModel)]="creerCompteUtilisateur" [ngModelOptions]="{standalone: true}"></p-inputSwitch>
-            </div>
-
-            <div class="account-inline-panel__body" *ngIf="creerCompteUtilisateur" [formGroup]="compteForm">
-                <div class="formgrid grid">
-                    <div class="field col-12 md:col-6">
-                        <label for="comptePrenom">Prénom *</label>
-                        <input id="comptePrenom" type="text" pInputText formControlName="prenom" [class.ng-dirty]="compteForm.controls.prenom.touched" />
-                        <small class="p-error" *ngIf="compteForm.controls.prenom.invalid && compteForm.controls.prenom.touched">Ce champ est requis.</small>
-                    </div>
-                    <div class="field col-12 md:col-6">
-                        <label for="compteNom">Nom *</label>
-                        <input id="compteNom" type="text" pInputText formControlName="nom" [class.ng-dirty]="compteForm.controls.nom.touched" />
-                        <small class="p-error" *ngIf="compteForm.controls.nom.invalid && compteForm.controls.nom.touched">Ce champ est requis.</small>
-                    </div>
+            <div class="card mb-3">
+                <div class="card-head">
+                    <i class="pi pi-building"></i>
+                    <h6 class="m-0">Identité</h6>
                 </div>
                 <div class="field">
-                    <label for="compteEmail">Email *</label>
-                    <input id="compteEmail" type="email" pInputText formControlName="email" [class.ng-dirty]="compteForm.controls.email.touched" />
-                    <small class="p-error" *ngIf="compteForm.controls.email.invalid && compteForm.controls.email.touched">Adresse email valide requise.</small>
+                    <label for="raisonSociale">Nom de l'entreprise *</label>
+                    <input id="raisonSociale" type="text" pInputText formControlName="raisonSociale" [class.ng-dirty]="coordonneesForm.controls.raisonSociale.touched" />
+                    <small class="p-error" *ngIf="coordonneesForm.controls.raisonSociale.invalid && coordonneesForm.controls.raisonSociale.touched">Ce champ est requis.</small>
                 </div>
                 <div class="formgrid grid">
                     <div class="field col-12 md:col-6">
-                        <label for="compteUsername">Nom d'utilisateur *</label>
-                        <input id="compteUsername" type="text" pInputText formControlName="username" [class.ng-dirty]="compteForm.controls.username.touched" />
-                        <small class="p-error" *ngIf="compteForm.controls.username.invalid && compteForm.controls.username.touched">Ce champ est requis.</small>
+                        <label for="ville">Ville *</label>
+                        <input id="ville" type="text" pInputText formControlName="ville" [class.ng-dirty]="coordonneesForm.controls.ville.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.ville.invalid && coordonneesForm.controls.ville.touched">Ce champ est requis.</small>
                     </div>
                     <div class="field col-12 md:col-6">
-                        <label for="comptePassword">Mot de passe *</label>
-                        <div class="flex gap-2 align-items-start">
-                            <p-password
-                                id="comptePassword"
-                                formControlName="password"
-                                [toggleMask]="true"
-                                [feedback]="true"
-                                styleClass="w-full"
-                                inputStyleClass="w-full"
-                                [class.ng-dirty]="compteForm.controls.password.touched"
-                            ></p-password>
-                            <button pButton type="button" icon="pi pi-sync" pTooltip="Générer un mot de passe" class="p-button-outlined flex-shrink-0" (click)="genererMotDePasse()"></button>
-                        </div>
-                        <small class="p-error" *ngIf="compteForm.controls.password.invalid && compteForm.controls.password.touched">8 caractères minimum.</small>
+                        <label for="paysId">Pays *</label>
+                        <p-dropdown
+                            id="paysId"
+                            [options]="pays"
+                            formControlName="paysId"
+                            optionLabel="nom"
+                            optionValue="id"
+                            [filter]="true"
+                            filterBy="nom"
+                            placeholder="Sélectionner un pays"
+                            [class.ng-dirty]="coordonneesForm.controls.paysId.touched"
+                        ></p-dropdown>
+                        <small class="p-error" *ngIf="coordonneesForm.controls.paysId.invalid && coordonneesForm.controls.paysId.touched">Ce champ est requis.</small>
                     </div>
                 </div>
-                <small class="account-inline-panel__note"><i class="pi pi-shield"></i> Rôle attribué automatiquement : <strong>Entreprise</strong>, rattaché à cette fiche.</small>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-head">
+                    <i class="pi pi-phone"></i>
+                    <h6 class="m-0">Coordonnées</h6>
+                </div>
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-4">
+                        <label for="adresse">Adresse *</label>
+                        <input id="adresse" type="text" pInputText formControlName="adresse" [class.ng-dirty]="coordonneesForm.controls.adresse.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.adresse.invalid && coordonneesForm.controls.adresse.touched">Ce champ est requis.</small>
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="adresse2">Complément n°1 <span class="text-400 font-normal">(optionnel)</span></label>
+                        <input id="adresse2" type="text" pInputText formControlName="adresse2" />
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="adresse3">Complément n°2 <span class="text-400 font-normal">(optionnel)</span></label>
+                        <input id="adresse3" type="text" pInputText formControlName="adresse3" />
+                    </div>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-4">
+                        <label for="telephone">Téléphone *</label>
+                        <input id="telephone" type="text" pInputText formControlName="telephone" [class.ng-dirty]="coordonneesForm.controls.telephone.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.telephone.invalid && coordonneesForm.controls.telephone.touched">Ce champ est requis.</small>
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="telephone2">Téléphone 2 <span class="text-400 font-normal">(optionnel)</span></label>
+                        <input id="telephone2" type="text" pInputText formControlName="telephone2" />
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="telephone3">Téléphone 3 <span class="text-400 font-normal">(optionnel)</span></label>
+                        <input id="telephone3" type="text" pInputText formControlName="telephone3" />
+                    </div>
+                </div>
+
+                <div class="field" style="max-width:24rem;">
+                    <label for="email">Email <span class="text-400 font-normal">(optionnel)</span></label>
+                    <input id="email" type="email" pInputText formControlName="email" [class.ng-dirty]="coordonneesForm.controls.email.touched" />
+                    <small class="p-error" *ngIf="coordonneesForm.controls.email.invalid && coordonneesForm.controls.email.touched">Adresse email invalide.</small>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-head">
+                    <i class="pi pi-lock"></i>
+                    <h6 class="m-0">Informations légales</h6>
+                </div>
+                <div class="field">
+                    <label for="corpsDeMetierId">Corps de métier *</label>
+                    <p-dropdown
+                        id="corpsDeMetierId"
+                        [options]="corpsDeMetiers"
+                        formControlName="corpsDeMetierId"
+                        optionLabel="libelle"
+                        optionValue="id"
+                        [filter]="true"
+                        filterBy="libelle"
+                        placeholder="Sélectionner un corps de métier"
+                        [class.ng-dirty]="coordonneesForm.controls.corpsDeMetierId.touched"
+                    ></p-dropdown>
+                    <small class="p-error" *ngIf="coordonneesForm.controls.corpsDeMetierId.invalid && coordonneesForm.controls.corpsDeMetierId.touched">Ce champ est requis.</small>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-4">
+                        <label for="siren">Siren *</label>
+                        <input id="siren" type="text" pInputText formControlName="siren" [class.ng-dirty]="coordonneesForm.controls.siren.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.siren.invalid && coordonneesForm.controls.siren.touched">Ce champ est requis.</small>
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="siret">Siret *</label>
+                        <input id="siret" type="text" pInputText formControlName="siret" [class.ng-dirty]="coordonneesForm.controls.siret.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.siret.invalid && coordonneesForm.controls.siret.touched">Ce champ est requis.</small>
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="rcsRci">RCS / RCI *</label>
+                        <input id="rcsRci" type="text" pInputText formControlName="rcsRci" [class.ng-dirty]="coordonneesForm.controls.rcsRci.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.rcsRci.invalid && coordonneesForm.controls.rcsRci.touched">Ce champ est requis.</small>
+                    </div>
+                </div>
+
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-6">
+                        <label for="tvaIntra">N° de TVA Intra <span class="text-400 font-normal">(optionnel)</span></label>
+                        <input id="tvaIntra" type="text" pInputText formControlName="tvaIntra" />
+                    </div>
+                    <div class="field col-12 md:col-6">
+                        <label for="numCotisant">N° de cotisant URSSAF / CCSS / CAR <span class="text-400 font-normal">(optionnel)</span></label>
+                        <input id="numCotisant" type="text" pInputText formControlName="numCotisant" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="responsableSignataireAgrement">Responsable signataire agrément <span class="text-400 font-normal">(optionnel)</span></label>
+                    <input id="responsableSignataireAgrement" type="text" pInputText formControlName="responsableSignataireAgrement" />
+                </div>
+
+                <div class="field">
+                    <label for="commentaire">Commentaire / Info <span class="text-400 font-normal">(optionnel)</span></label>
+                    <textarea id="commentaire" pInputTextarea formControlName="commentaire" rows="3"></textarea>
+                </div>
+
+                <div class="account-inline-panel" *ngIf="isNew">
+                    <div class="account-inline-panel__header">
+                        <div class="account-inline-panel__title">
+                            <span class="account-inline-panel__icon"><i class="pi pi-user-plus"></i></span>
+                            <div>
+                                <div class="account-inline-panel__label">Créer un compte utilisateur pour cette entreprise</div>
+                                <div class="text-500 text-sm">Elle pourra se connecter immédiatement, sans étape supplémentaire.</div>
+                            </div>
+                        </div>
+                        <p-inputSwitch [(ngModel)]="creerCompteUtilisateur" [ngModelOptions]="{standalone: true}"></p-inputSwitch>
+                    </div>
+
+                    <div class="account-inline-panel__body" *ngIf="creerCompteUtilisateur" [formGroup]="compteForm">
+                        <div class="formgrid grid">
+                            <div class="field col-12 md:col-6">
+                                <label for="comptePrenom">Prénom *</label>
+                                <input id="comptePrenom" type="text" pInputText formControlName="prenom" [class.ng-dirty]="compteForm.controls.prenom.touched" />
+                                <small class="p-error" *ngIf="compteForm.controls.prenom.invalid && compteForm.controls.prenom.touched">Ce champ est requis.</small>
+                            </div>
+                            <div class="field col-12 md:col-6">
+                                <label for="compteNom">Nom *</label>
+                                <input id="compteNom" type="text" pInputText formControlName="nom" [class.ng-dirty]="compteForm.controls.nom.touched" />
+                                <small class="p-error" *ngIf="compteForm.controls.nom.invalid && compteForm.controls.nom.touched">Ce champ est requis.</small>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label for="compteEmail">Email *</label>
+                            <input id="compteEmail" type="email" pInputText formControlName="email" [class.ng-dirty]="compteForm.controls.email.touched" />
+                            <small class="p-error" *ngIf="compteForm.controls.email.invalid && compteForm.controls.email.touched">Adresse email valide requise.</small>
+                        </div>
+                        <div class="formgrid grid">
+                            <div class="field col-12 md:col-6">
+                                <label for="compteUsername">Nom d'utilisateur *</label>
+                                <input id="compteUsername" type="text" pInputText formControlName="username" [class.ng-dirty]="compteForm.controls.username.touched" />
+                                <small class="p-error" *ngIf="compteForm.controls.username.invalid && compteForm.controls.username.touched">Ce champ est requis.</small>
+                            </div>
+                            <div class="field col-12 md:col-6">
+                                <label for="comptePassword">Mot de passe *</label>
+                                <div class="flex gap-2 align-items-start">
+                                    <p-password
+                                        id="comptePassword"
+                                        formControlName="password"
+                                        [toggleMask]="true"
+                                        [feedback]="true"
+                                        styleClass="w-full"
+                                        inputStyleClass="w-full"
+                                        [class.ng-dirty]="compteForm.controls.password.touched"
+                                    ></p-password>
+                                    <button pButton type="button" icon="pi pi-sync" pTooltip="Générer un mot de passe" class="p-button-outlined flex-shrink-0" (click)="genererMotDePasse()"></button>
+                                </div>
+                                <small class="p-error" *ngIf="compteForm.controls.password.invalid && compteForm.controls.password.touched">8 caractères minimum.</small>
+                            </div>
+                        </div>
+                        <small class="account-inline-panel__note"><i class="pi pi-shield"></i> Rôle attribué automatiquement : <strong>Entreprise</strong>, rattaché à cette fiche.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-content-end gap-2 mb-3">
+                <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
+                <button pButton type="submit" [label]="isNew ? 'Ajouter' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-12 lg:col-4" *ngIf="isNew && !loading">
+        <p class="text-500 text-xs font-bold uppercase mb-2" style="letter-spacing:.05em;">Aperçu de la fiche</p>
+        <div class="id-card mb-3">
+            <div class="id-card-band">
+                <div class="id-card-mark">{{ (coordonneesForm.get('raisonSociale')?.value || '?') | slice:0:2 | uppercase }}</div>
+                <div class="id-card-name-row">
+                    <span class="id-card-name">{{ coordonneesForm.get('raisonSociale')?.value || 'Nouvelle entreprise' }}</span>
+                    <div class="id-card-sub">
+                        <span class="status-pill success"><span class="status-pill-dot"></span>Actif</span>
+                        <span *ngIf="coordonneesForm.get('ville')?.value">· {{ coordonneesForm.get('ville')?.value }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="id-card-body">
+                <div class="id-kv-grid">
+                    <div>
+                        <div class="id-kv-label">Corps de métier</div>
+                        <div class="id-kv-value">{{ nomCorpsDeMetier(coordonneesForm.get('corpsDeMetierId')?.value ?? undefined) }}</div>
+                    </div>
+                    <div>
+                        <div class="id-kv-label">Téléphone</div>
+                        <div class="id-kv-value">{{ coordonneesForm.get('telephone')?.value || '—' }}</div>
+                    </div>
+                </div>
             </div>
         </div>
+        <p class="text-500 text-sm mb-3" style="line-height:1.5;">Le corps de métier détermine quels documents obligatoires lui seront ensuite demandés.</p>
 
-        <div class="flex justify-content-end gap-2 mt-4">
-            <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
-            <button pButton type="submit" [label]="isNew ? 'Ajouter' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
+        <div class="tip-card">
+            <h6><i class="pi pi-info-circle"></i>Bon à savoir</h6>
+            <ul>
+                <li>Le Siren et le Siret figurent sur l'extrait Kbis de l'entreprise.</li>
+                <li>Le statut est « Actif » par défaut à la création.</li>
+                <li>Affectation à un chantier, sous-traitants, salariés et utilisateurs se règlent juste après l'enregistrement.</li>
+            </ul>
         </div>
-    </form>
+    </div>
 </div>
 
 <!-- Affectation à un chantier : gestion (ajout/retrait) réservée au SUPER_ADMIN — le client
-     décide qui intervient sur son chantier. Masquée pour l'Entreprise, qui a sa propre carte
-     compacte (lecture seule, cliquable vers le chantier) dans la vue deux colonnes plus bas. -->
-<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise && !isClient">
+     décide qui intervient sur son chantier. Masquée pour l'Entreprise (sa propre carte
+     compacte, vue deux colonnes plus bas) et absente à la création (rien à affecter tant
+     que l'entreprise n'existe pas), plutôt que montrée grisée — voir prototype validé. -->
+<div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isNew">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-map-marker"></i>
             <h6 class="m-0">Affectation de l'entreprise à un chantier</h6>
         </div>
-        <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="!isNew && afficherAffectation" (click)="afficherAffectation = false"></button>
+        <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherAffectation" (click)="afficherAffectation = false"></button>
     </div>
 
-    <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez l'entreprise pour activer cette section.</small>
-
-    <div *ngIf="!isNew && !afficherAffectation" class="flex align-items-center justify-content-between">
+    <div *ngIf="!afficherAffectation" class="flex align-items-center justify-content-between">
         <a class="cursor-pointer text-primary" (click)="afficherAffectation = true">{{ mesAffectations.length }} chantier(s) affecté(s)</a>
         <button pButton type="button" [label]="isSuperAdmin ? 'Gérer les affectations' : 'Voir les affectations'" class="p-button-outlined" (click)="afficherAffectation = true"></button>
     </div>
 
-    <ng-container *ngIf="!isNew && afficherAffectation">
+    <ng-container *ngIf="afficherAffectation">
     <form [formGroup]="affectationForm" (ngSubmit)="submitAffectation()" *ngIf="isSuperAdmin">
         <div class="formgrid grid">
             <div class="field col-12 md:col-3">
@@ -1228,12 +1357,12 @@
                 <small class="p-error" *ngIf="affectationForm.controls.affectationParenteId.invalid && affectationForm.controls.affectationParenteId.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-2 flex align-items-end">
-                <button pButton type="submit" label="Ajouter" [disabled]="isNew" class="w-full"></button>
+                <button pButton type="submit" label="Ajouter" class="w-full"></button>
             </div>
         </div>
     </form>
 
-    <p-table [value]="mesAffectations" dataKey="id" *ngIf="mesAffectations.length > 0">
+    <p-table [value]="mesAffectations" dataKey="id" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="400px" *ngIf="mesAffectations.length > 0">
         <ng-template pTemplate="header">
             <tr>
                 <th>Chantier</th>
@@ -1290,7 +1419,7 @@
         <h6 class="m-0">Sous-traitants</h6>
     </div>
 
-    <p-table [value]="sousTraitants" dataKey="id" *ngIf="sousTraitants.length > 0">
+    <p-table [value]="sousTraitants" dataKey="id" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="400px" *ngIf="sousTraitants.length > 0">
         <ng-template pTemplate="header">
             <tr>
                 <th>Chantier</th>
@@ -1312,35 +1441,33 @@
 </div>
 
 <!-- Salariés (raccourci) : table complète pour SUPER_ADMIN/Client/Contrôleur — l'Entreprise
-     a sa propre carte compacte (vue deux colonnes) dans le même style que le reste de sa page. -->
-<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise && !isClient">
+     a sa propre carte compacte (vue deux colonnes). Absente à la création (rien à lister
+     tant que l'entreprise n'existe pas), plutôt que montrée grisée. -->
+<div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isNew">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-users"></i>
             <h6 class="m-0">Salariés</h6>
         </div>
         <div class="flex align-items-center gap-2">
-            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="!isNew && afficherSalaries" (click)="afficherSalaries = false"></button>
+            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherSalaries" (click)="afficherSalaries = false"></button>
             <button
                 pButton
                 type="button"
                 icon="pi pi-plus"
                 label="Ajouter un salarié"
-                [disabled]="isNew"
                 [routerLink]="['/salaries/nouveau']"
                 [queryParams]="{ entrepriseId: entrepriseId }"
             ></button>
         </div>
     </div>
 
-    <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez l'entreprise pour activer cette section.</small>
-
-    <div *ngIf="!isNew && !afficherSalaries" class="flex align-items-center justify-content-between">
+    <div *ngIf="!afficherSalaries" class="flex align-items-center justify-content-between">
         <a class="cursor-pointer text-primary" (click)="afficherSalaries = true">{{ salaries.length }} salarié(s)</a>
         <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="afficherSalaries = true"></button>
     </div>
 
-    <p-table [value]="salaries" dataKey="id" *ngIf="!isNew && afficherSalaries">
+    <p-table [value]="salaries" dataKey="id" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="400px" *ngIf="afficherSalaries">
         <ng-template pTemplate="header">
             <tr>
                 <th>Identité</th>
@@ -1370,35 +1497,24 @@
 
 <!-- Utilisateurs (comptes rattachés à cette entreprise) : table complète pour
      SUPER_ADMIN/Client/Contrôleur — l'Entreprise a sa propre carte compacte (vue deux
-     colonnes), le formulaire de création reste identique (juste redisposé). -->
-<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise && !isClient">
+     colonnes). Absente à la création. Le formulaire "Ajouter" reste visible en permanence
+     (pas de bouton cacher/afficher séparé) — voir prototype validé. -->
+<div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isNew">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-id-card"></i>
             <h6 class="m-0">Utilisateurs</h6>
         </div>
-        <div class="flex align-items-center gap-2">
-            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="!isNew && afficherUtilisateurs" (click)="afficherUtilisateurs = false"></button>
-            <button
-                pButton
-                type="button"
-                icon="pi pi-plus"
-                label="Ajouter un utilisateur"
-                [disabled]="isNew"
-                (click)="afficherUtilisateurs = true; afficherFormulaireUtilisateur = !afficherFormulaireUtilisateur"
-            ></button>
-        </div>
+        <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherUtilisateurs" (click)="afficherUtilisateurs = false"></button>
     </div>
 
-    <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez l'entreprise pour activer cette section.</small>
-
-    <div *ngIf="!isNew && !afficherUtilisateurs" class="flex align-items-center justify-content-between">
+    <div *ngIf="!afficherUtilisateurs" class="flex align-items-center justify-content-between">
         <a class="cursor-pointer text-primary" (click)="afficherUtilisateurs = true">{{ utilisateurs.length }} utilisateur(s)</a>
         <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="afficherUtilisateurs = true"></button>
     </div>
 
-    <ng-container *ngIf="!isNew && afficherUtilisateurs">
-        <form [formGroup]="nouveauCompteForm" (ngSubmit)="ajouterUtilisateur()" class="p-fluid mb-3" *ngIf="afficherFormulaireUtilisateur">
+    <ng-container *ngIf="afficherUtilisateurs">
+        <form [formGroup]="nouveauCompteForm" (ngSubmit)="ajouterUtilisateur()" class="p-fluid mb-3">
             <div class="formgrid grid">
                 <div class="field col-12 md:col-6">
                     <label for="ncPrenom">Prénom *</label>
@@ -1444,25 +1560,19 @@
             </div>
         </form>
 
-        <p-table [value]="utilisateurs" dataKey="id">
-            <ng-template pTemplate="header">
-                <tr>
-                    <th>Identité</th>
-                    <th>Nom d'utilisateur</th>
-                    <th>Statut</th>
-                </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-utilisateur>
-                <tr>
-                    <td>{{ utilisateur.prenom }} {{ utilisateur.nom }}</td>
-                    <td>{{ utilisateur.username }}</td>
-                    <td><p-tag [severity]="utilisateur.actif ? 'success' : 'danger'" [value]="utilisateur.actif | etatLabel"></p-tag></td>
-                </tr>
-            </ng-template>
-            <ng-template pTemplate="emptymessage">
-                <tr><td colspan="3" class="text-center text-500">Aucun utilisateur rattaché à cette entreprise.</td></tr>
-            </ng-template>
-        </p-table>
+        <div class="member-list" *ngIf="utilisateurs.length > 0">
+            <div class="member-row" *ngFor="let utilisateur of utilisateurs">
+                <span class="member-avatar">{{ initialesUtilisateur(utilisateur) }}</span>
+                <span class="member-body">
+                    <span class="member-name">{{ utilisateur.prenom }} {{ utilisateur.nom }}</span>
+                    <span class="member-email">{{ utilisateur.username }}</span>
+                </span>
+                <span class="member-end">
+                    <p-tag [severity]="utilisateur.actif ? 'success' : 'danger'" [value]="utilisateur.actif | etatLabel"></p-tag>
+                </span>
+            </div>
+        </div>
+        <p class="text-500 text-sm m-0" *ngIf="utilisateurs.length === 0">Aucun utilisateur rattaché à cette entreprise.</p>
     </ng-container>
 </div>
 
@@ -1641,7 +1751,7 @@
         <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="basculerHistorique()"></button>
     </div>
 
-    <p-table [value]="historique" dataKey="id" *ngIf="afficherHistorique" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
+    <p-table [value]="historique" dataKey="id" *ngIf="afficherHistorique" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
         <ng-template pTemplate="header">
             <tr>
                 <th>Date</th>
@@ -1680,7 +1790,7 @@
         <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="basculerRelances()"></button>
     </div>
 
-    <p-table [value]="relances" dataKey="id" *ngIf="afficherRelances" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
+    <p-table [value]="relances" dataKey="id" *ngIf="afficherRelances" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
         <ng-template pTemplate="header">
             <tr>
                 <th>Date d'envoi</th>

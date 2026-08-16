@@ -29,6 +29,7 @@ export interface Entreprise {
     // Rang(s) (PRINCIPALE/STT1/STT2) sur ses chantiers en cours — absent/null = aucune
     // affectation active. Plusieurs rangs distincts possibles, séparés par ", ".
     rangActuel?: string | null;
+    createdAt: string;
 }
 
 export interface CreateEntrepriseRequest {

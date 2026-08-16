@@ -17,6 +17,7 @@ export interface Client {
     numCotisant?: string;
     responsableSignataireAgrement?: string;
     actif: boolean;
+    createdAt: string;
 }
 
 export interface CreateClientRequest {

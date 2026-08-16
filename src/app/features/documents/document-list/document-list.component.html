@@ -3,6 +3,79 @@
 
 <p-tabView [(activeIndex)]="activeTabIndex">
     <p-tabPanel header="Documents">
+        <div class="stat-grid" *ngIf="isSuperAdmin && !loadingIndicateurs && !loadingTypes">
+            <div class="stat-card" style="cursor:default;">
+                <div class="stat-top">
+                    <div>
+                        <div class="stat-label">Conformité</div>
+                        <div class="stat-value-row">
+                            <span class="stat-value tabular-nums">{{ conformite && conformite.total > 0 ? conformite.conformes : '—' }}</span>
+                            <span class="stat-value-suffix" *ngIf="conformite && conformite.total > 0">/{{ conformite.total }}</span>
+                        </div>
+                    </div>
+                    <span class="stat-icon tint-success"><i class="pi pi-shield"></i></span>
+                </div>
+                <div class="stat-bar" *ngIf="conformite && conformite.total > 0">
+                    <span class="stat-bar-seg success" [style.width.%]="(conformite.conformes / conformite.total) * 100"></span>
+                    <span class="stat-bar-seg danger" [style.width.%]="((conformite.total - conformite.conformes) / conformite.total) * 100"></span>
+                </div>
+                <span class="stat-caption" *ngIf="conformite && conformite.total > 0">entreprises conformes</span>
+                <span class="stat-caption" *ngIf="!conformite || conformite.total === 0">Aucune entreprise à évaluer.</span>
+            </div>
+
+            <div class="stat-card" style="cursor:default;">
+                <div class="stat-top">
+                    <div>
+                        <div class="stat-label">En attente</div>
+                        <div class="stat-value-row"><span class="stat-value tabular-nums">{{ documentsEnAttente.length }}</span></div>
+                    </div>
+                    <span class="stat-icon tint-warning"><i class="pi pi-clock"></i></span>
+                </div>
+                <span class="stat-caption">documents à valider</span>
+            </div>
+
+            <div class="stat-card" style="cursor:default;">
+                <div class="stat-top">
+                    <div>
+                        <div class="stat-label">Expirent</div>
+                        <div class="stat-value-row"><span class="stat-value tabular-nums">{{ documentsExpirant.length }}</span><span class="stat-value-suffix">sous 30j</span></div>
+                    </div>
+                    <span class="stat-icon tint-danger"><i class="pi pi-exclamation-triangle"></i></span>
+                </div>
+                <span class="stat-caption">à relancer avant échéance</span>
+            </div>
+
+            <div class="stat-card" style="cursor:default;">
+                <div class="stat-top">
+                    <div>
+                        <div class="stat-label">Types suivis</div>
+                        <div class="stat-value-row"><span class="stat-value tabular-nums">{{ types.length }}</span></div>
+                    </div>
+                    <span class="stat-icon tint-accent"><i class="pi pi-tags"></i></span>
+                </div>
+                <span class="stat-caption">types de documents</span>
+            </div>
+        </div>
+
+        <div class="card mb-3" *ngIf="isSuperAdmin && !loadingIndicateurs && documentsExpirant.length > 0">
+            <div class="card-head">
+                <i class="pi pi-clock"></i>
+                <h6 class="m-0">Expirent bientôt</h6>
+            </div>
+            <div class="ent-compact-list">
+                <div class="ent-compact-row" *ngFor="let d of documentsExpirant.slice(0, 6)" (click)="ouvrirDocumentExpirant(d)">
+                    <span class="ent-compact-row-icon"><i class="pi pi-file"></i></span>
+                    <span class="ent-compact-row-body">
+                        <span class="ent-compact-row-title">{{ d.typeLibelle }}<ng-container *ngIf="d.salarieNom"> — {{ d.salarieNom }}</ng-container></span>
+                        <span class="ent-compact-row-sub">{{ d.entrepriseNom }}</span>
+                    </span>
+                    <span class="ent-compact-row-end">
+                        <p-tag [severity]="(joursAvantExpiration(d.dateExpiration) ?? 0) <= 7 ? 'danger' : 'warning'" [value]="(joursAvantExpiration(d.dateExpiration) ?? 0) + ' jour(s)'"></p-tag>
+                    </span>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="left">
@@ -45,7 +118,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtDocuments [value]="documents" dataKey="id" [loading]="loadingDocuments" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [first]="tableFirst">
+            <p-table #dtDocuments [value]="documents" dataKey="id" [loading]="loadingDocuments" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" [first]="tableFirst">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Type</th>
@@ -74,7 +147,13 @@
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-document>
-                    <tr [class.row-highlight]="document.id === documentHighlightId">
+                    <tr
+                        class="row-stripe"
+                        [class.row-highlight]="document.id === documentHighlightId"
+                        [class.success]="document.statutValidation === 'VALIDE'"
+                        [class.danger]="document.statutValidation === 'REFUSE' || document.statutValidation === 'EXPIRE'"
+                        [class.warning]="document.statutValidation === 'EN_ATTENTE'"
+                    >
                         <td>{{ document.typeLibelle }}</td>
                         <td>{{ document.dateExpiration }}</td>
                         <td>
@@ -110,7 +189,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtTypes [value]="types" dataKey="id" [loading]="loadingTypes" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
+            <p-table #dtTypes [value]="types" dataKey="id" [loading]="loadingTypes" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Libellé</th>
@@ -176,7 +255,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtEtats [value]="etats" dataKey="id" [loading]="loadingEtats" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
+            <p-table #dtEtats [value]="etats" dataKey="id" [loading]="loadingEtats" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Nom de l'état</th>

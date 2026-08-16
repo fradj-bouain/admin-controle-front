@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { CibleDocument, CreateDocumentEtatRequest, DocumentEtat, DocumentItem, TypeDocument } from '../models/document.model';
+import { forkJoin } from 'rxjs';
+import { CibleDocument, ConformitePortefeuille, CreateDocumentEtatRequest, DocumentEnAttente, DocumentEtat, DocumentExpirant, DocumentItem, TypeDocument } from '../models/document.model';
 import { TypeDocumentService } from '../services/type-document.service';
 import { DocumentService } from '../services/document.service';
 import { DocumentEtatService } from '../services/document-etat.service';
@@ -51,6 +52,13 @@ export class DocumentListComponent implements OnInit {
     documentHighlightId: string | null = null;
     tableFirst = 0;
 
+    // --- Indicateurs (voir prototype validé) : réservés à SUPER_ADMIN, ces endpoints
+    // renvoient 403 pour les autres rôles (déjà utilisés par le Dashboard, mêmes services).
+    conformite: ConformitePortefeuille | null = null;
+    documentsEnAttente: DocumentEnAttente[] = [];
+    documentsExpirant: DocumentExpirant[] = [];
+    loadingIndicateurs = false;
+
     // Champs calculés une seule fois par changement de source (pas des getters) :
     // un p-dropdown filtrable lié à un getter qui renvoie un nouveau tableau à
     // chaque cycle de détection de changements entre en boucle infinie avec
@@ -82,6 +90,9 @@ export class DocumentListComponent implements OnInit {
         this.activeTabIndex = params.get('tab') === 'types' ? 1 : params.get('tab') === 'etats' ? 2 : 0;
         this.chargerTypes();
         this.chargerEtats();
+        if (this.isSuperAdmin) {
+            this.chargerIndicateurs();
+        }
         this.salarieService.lister().subscribe((salaries) => {
             this.salaries = salaries;
             this.recalculerEntitesDisponibles();
@@ -100,6 +111,52 @@ export class DocumentListComponent implements OnInit {
             this.recalculerTypesPourCible();
             this.onEntiteChange();
         }
+    }
+
+    chargerIndicateurs() {
+        this.loadingIndicateurs = true;
+        forkJoin({
+            conformite: this.documentService.conformiteEntreprises(),
+            enAttente: this.documentService.listerEnAttente(),
+            expirant: this.documentService.listerExpirantBientot(30)
+        }).subscribe({
+            next: ({ conformite, enAttente, expirant }) => {
+                this.conformite = conformite;
+                this.documentsEnAttente = enAttente;
+                this.documentsExpirant = expirant;
+                this.loadingIndicateurs = false;
+            },
+            error: () => this.loadingIndicateurs = false
+        });
+    }
+
+    // Même calcul que DashboardComponent.joursAvantExpiration.
+    joursAvantExpiration(dateExpiration?: string | null): number | null {
+        if (!dateExpiration) {
+            return null;
+        }
+        const aujourdHui = new Date();
+        aujourdHui.setHours(0, 0, 0, 0);
+        const expiration = new Date(dateExpiration);
+        expiration.setHours(0, 0, 0, 0);
+        return Math.round((expiration.getTime() - aujourdHui.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    // Clic sur une ligne "Expirent bientôt" : bascule directement la liste ci-dessous
+    // sur l'entité concernée, plutôt que de forcer une re-sélection manuelle.
+    ouvrirDocumentExpirant(document: DocumentExpirant) {
+        if (document.salarieId) {
+            this.cible = 'SALARIE';
+            this.entiteId = document.salarieId;
+        } else if (document.entrepriseId) {
+            this.cible = 'ENTREPRISE';
+            this.entiteId = document.entrepriseId;
+        } else {
+            return;
+        }
+        this.recalculerTypesPourCible();
+        this.recalculerEntitesDisponibles();
+        this.onEntiteChange();
     }
 
     chargerTypes() {

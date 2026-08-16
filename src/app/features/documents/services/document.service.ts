@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { CreateDocumentRequest, DocumentEnAttente, DocumentItem, HistoriqueModification } from '../models/document.model';
+import { ConformitePortefeuille, CreateDocumentRequest, DocumentEnAttente, DocumentExpirant, DocumentItem, HistoriqueModification } from '../models/document.model';
 import { MessagePlanifie } from 'src/app/features/messagerie/models/message.model';
 
 @Injectable({ providedIn: 'root' })
@@ -72,5 +72,13 @@ export class DocumentService {
 
     listerEnAttente(): Observable<DocumentEnAttente[]> {
         return this.http.get<DocumentEnAttente[]>(`${this.baseUrl}/en-attente`);
+    }
+
+    listerExpirantBientot(jours = 30): Observable<DocumentExpirant[]> {
+        return this.http.get<DocumentExpirant[]>(`${this.baseUrl}/expirant-bientot`, { params: { jours: `${jours}` } });
+    }
+
+    conformiteEntreprises(): Observable<ConformitePortefeuille> {
+        return this.http.get<ConformitePortefeuille>(`${this.baseUrl}/conformite-entreprises`);
     }
 }

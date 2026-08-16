@@ -1,5 +1,53 @@
 <p-toast></p-toast>
 
+<div class="stat-grid" *ngIf="!loadingReception && !loadingEnvoyes">
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Reçus</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ reception.length }}</span></div>
+            </div>
+            <span class="stat-icon tint-info"><i class="pi pi-inbox"></i></span>
+        </div>
+        <span class="stat-caption">tous expéditeurs confondus</span>
+    </div>
+
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Non lus</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ nbNonLus }}</span></div>
+            </div>
+            <span class="stat-icon" [ngClass]="nbNonLus > 0 ? 'tint-danger' : 'tint-success'"><i class="pi" [ngClass]="nbNonLus > 0 ? 'pi-envelope' : 'pi-check-circle'"></i></span>
+        </div>
+        <span class="stat-caption" *ngIf="nbNonLus > 0">à traiter en priorité</span>
+        <span class="stat-caption" *ngIf="nbNonLus === 0">Boîte de réception à jour.</span>
+    </div>
+
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Envoyés</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ envoyes.length }}</span></div>
+            </div>
+            <span class="stat-icon tint-accent"><i class="pi pi-send"></i></span>
+        </div>
+        <span class="stat-caption">depuis cette messagerie</span>
+    </div>
+
+    <div class="stat-card" style="cursor:default;" *ngIf="isSuperAdmin && !loadingIndicateursAdmin">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Automatisations</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ nbReglesActives }}</span><span class="stat-value-suffix">/{{ reglesAutomatisation.length }} actives</span></div>
+            </div>
+            <span class="stat-icon tint-warning"><i class="pi pi-clock"></i></span>
+        </div>
+        <span class="stat-caption" *ngIf="nbPlanifiesEnAttente > 0">{{ nbPlanifiesEnAttente }} envoi{{ nbPlanifiesEnAttente > 1 ? 's' : '' }} planifié{{ nbPlanifiesEnAttente > 1 ? 's' : '' }} en attente</span>
+        <span class="stat-caption" *ngIf="nbPlanifiesEnAttente === 0">Aucun envoi planifié en attente.</span>
+    </div>
+</div>
+
 <div class="card">
     <p-toolbar styleClass="mb-4">
         <ng-template pTemplate="left"><h5 class="m-0">Messagerie</h5></ng-template>
@@ -10,7 +58,7 @@
 
     <p-tabView [(activeIndex)]="activeTabIndex">
         <p-tabPanel header="Boîte de réception">
-            <p-table #dtReception [value]="reception" dataKey="id" [loading]="loadingReception" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
+            <p-table #dtReception [value]="reception" dataKey="id" [loading]="loadingReception" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
                 <ng-template pTemplate="header">
                     <tr>
                         <th></th>
@@ -31,8 +79,8 @@
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-message>
-                    <tr [ngClass]="{ 'font-bold': !message.lu }" [routerLink]="['/messagerie', message.id]" style="cursor: pointer;">
-                        <td><i class="pi" [ngClass]="message.lu ? 'pi-envelope-open' : 'pi-envelope'"></i></td>
+                    <tr class="row-stripe cursor-pointer" [class.warning]="!message.lu" [class.font-bold]="!message.lu" [routerLink]="['/messagerie', message.id]">
+                        <td><i class="pi" [class.pi-envelope-open]="message.lu" [class.pi-envelope]="!message.lu" [style.color]="!message.lu ? 'var(--brand-warning)' : 'var(--ink-faint)'"></i></td>
                         <td>{{ message.sujet }}</td>
                         <td class="white-space-nowrap overflow-hidden text-overflow-ellipsis" style="max-width: 22rem;">{{ apercuTexte(message.contenu) }}</td>
                         <td>{{ message.createdAt | date: 'short' }}</td>
@@ -45,7 +93,7 @@
         </p-tabPanel>
 
         <p-tabPanel header="Envoyés">
-            <p-table #dtEnvoyes [value]="envoyes" dataKey="id" [loading]="loadingEnvoyes" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
+            <p-table #dtEnvoyes [value]="envoyes" dataKey="id" [loading]="loadingEnvoyes" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Destinataire</th>

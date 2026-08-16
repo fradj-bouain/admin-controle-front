@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { forkJoin } from 'rxjs';
+import { MessageService } from 'primeng/api';
 import { ChantierService } from '../chantiers/services/chantier.service';
 import { ClientService } from '../clients/services/client.service';
 import { EntrepriseService } from '../entreprises/services/entreprise.service';
@@ -7,10 +8,12 @@ import { SalarieService } from '../salaries/services/salarie.service';
 import { AffectationSalarieChantierService } from '../salaries/services/affectation-salarie-chantier.service';
 import { ReferenceDataService } from '../configuration/services/reference-data.service';
 import { ControleService } from '../controles/services/controle.service';
-import { DocumentEnAttente, DocumentItem } from '../documents/models/document.model';
+import { ConformitePortefeuille, DocumentEnAttente, DocumentEtat, DocumentExpirant, DocumentItem, TypeDocument } from '../documents/models/document.model';
 import { DocumentService } from '../documents/services/document.service';
 import { TypeDocumentService } from '../documents/services/type-document.service';
+import { DocumentEtatService } from '../documents/services/document-etat.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
+import { ValidationDocument } from 'src/app/shared/components/valider-document-dialog/valider-document-dialog.component';
 
 interface EtatEntite {
     total: number;
@@ -20,7 +23,8 @@ interface EtatEntite {
 
 @Component({
     selector: 'app-dashboard',
-    templateUrl: './dashboard.component.html'
+    templateUrl: './dashboard.component.html',
+    providers: [MessageService]
 })
 export class DashboardComponent implements OnInit {
 
@@ -66,6 +70,32 @@ export class DashboardComponent implements OnInit {
     peutVoirDocumentsEnAttente = false;
     documentsEnAttente: DocumentEnAttente[] = [];
 
+    // --- Dashboard Admin standard (voir chargerDashboardStandard) : l'Admin gère les
+    // dossiers légaux à la place du client (retour utilisateur explicite) — il lui faut
+    // une vue "à traiter" en premier plutôt que trois compteurs bruts. documentsExpirant/
+    // conformite n'existaient nulle part avant (seule la fiche d'une entreprise montrait
+    // sa propre expiration, une à la fois) : nouveaux endpoints portefeuille dédiés,
+    // voir DocumentService#listerExpirantBientot / #calculerConformitePortefeuille (backend).
+    documentsExpirant: DocumentExpirant[] = [];
+    conformite: ConformitePortefeuille | null = null;
+    statControlesAdmin: { aVenir: number; enRetard: number } = { aVenir: 0, enRetard: 0 };
+    banniereAdminOk = true;
+    banniereAdminTexte = '';
+    // Repliée par défaut (même convention que ChantierDetailComponent.afficherStatistiques) :
+    // section secondaire, ne doit pas concurrencer "À traiter" pour l'attention de l'Admin.
+    afficherStatistiquesAdmin = false;
+    username = '';
+
+    // Réutilisés tels quels par les dialogues partagés (voir EntrepriseDetailComponent,
+    // même pattern) pour valider/refuser un document directement depuis la liste "À
+    // traiter" — sans dupliquer la logique de dates obligatoires par type de document.
+    types: TypeDocument[] = [];
+    etatsPourRefus: DocumentEtat[] = [];
+    dialogValiderVisible = false;
+    documentAValider: DocumentEnAttente | null = null;
+    dialogRefuserVisible = false;
+    documentARefuser: DocumentEnAttente | null = null;
+
     // --- Dashboard Entreprise (voir chargerDashboardEntreprise) ---
     nomEntreprise = '';
     statDocumentsEntreprise: { fournis: number; total: number; pourcentage: number } | null = null;
@@ -106,13 +136,21 @@ export class DashboardComponent implements OnInit {
         private controleService: ControleService,
         private documentService: DocumentService,
         private typeDocumentService: TypeDocumentService,
-        private auth: AuthService
+        private documentEtatService: DocumentEtatService,
+        private auth: AuthService,
+        private message: MessageService
     ) { }
 
     ngOnInit(): void {
+        this.username = this.auth.username;
         this.peutVoirDocumentsEnAttente = this.auth.hasRole('SUPER_ADMIN');
         if (this.peutVoirDocumentsEnAttente) {
-            this.documentService.listerEnAttente().subscribe((documents) => (this.documentsEnAttente = documents));
+            // Chargés à part (pas dans le forkJoin de chargerDashboardStandard) : ce sont
+            // des données de référence pour les dialogues Valider/Refuser, pas des données
+            // affichées elles-mêmes — pas besoin de bloquer l'affichage du tableau de bord
+            // sur leur retour (voir EntrepriseDetailComponent, même pattern).
+            this.typeDocumentService.lister().subscribe((types) => (this.types = types));
+            this.documentEtatService.lister().subscribe((etats) => (this.etatsPourRefus = etats.filter((e) => !e.valideLeDocument)));
         }
 
         this.estControleur = this.auth.hasRole('CONTROLEUR');
@@ -163,9 +201,13 @@ export class DashboardComponent implements OnInit {
             chantiers: this.chantierService.lister(),
             entreprises: this.entrepriseService.lister(),
             salaries: this.salarieService.lister(),
-            typesContrat: this.referenceDataService.listerTypeContratSalarie()
+            typesContrat: this.referenceDataService.listerTypeContratSalarie(),
+            controles: this.controleService.lister(),
+            documentsEnAttente: this.documentService.listerEnAttente(),
+            documentsExpirant: this.documentService.listerExpirantBientot(30),
+            conformite: this.documentService.conformiteEntreprises()
         }).subscribe({
-            next: ({ chantiers, entreprises, salaries, typesContrat }) => {
+            next: ({ chantiers, entreprises, salaries, typesContrat, controles, documentsEnAttente, documentsExpirant, conformite }) => {
                 this.statChantiers = this.calculerEtat(chantiers, (c) => c.statut === 'ACTIF');
                 this.statEntreprises = this.calculerEtat(entreprises, (e) => e.actif);
                 this.statSalaries = this.calculerEtat(salaries, (s) => s.statut === 'ACTIF');
@@ -173,6 +215,31 @@ export class DashboardComponent implements OnInit {
                     surChantier: salaries.filter((s) => !!s.chantierActuel).length,
                     disponibles: salaries.filter((s) => !s.chantierActuel).length
                 };
+
+                this.documentsEnAttente = documentsEnAttente;
+                this.documentsExpirant = documentsExpirant;
+                this.conformite = conformite;
+
+                const aujourdHui = new Date();
+                this.statControlesAdmin = {
+                    aVenir: controles.filter((c) => !c.termine && new Date(c.dateControle) >= aujourdHui).length,
+                    enRetard: controles.filter((c) => !c.termine && new Date(c.dateControle) < aujourdHui).length
+                };
+
+                // Bannière d'état (même idée que le dashboard Client, voir chargerDashboardClient) :
+                // un coup d'œil doit suffire à savoir si quelque chose réclame une action, avant
+                // même de lire le détail de la liste "À traiter" en dessous.
+                this.banniereAdminOk = this.documentsEnAttente.length === 0 && this.statControlesAdmin.enRetard === 0;
+                const motifs: string[] = [];
+                if (this.statControlesAdmin.enRetard > 0) {
+                    motifs.push(`${this.statControlesAdmin.enRetard} contrôle(s) en retard`);
+                }
+                if (this.documentsEnAttente.length > 0) {
+                    motifs.push(`${this.documentsEnAttente.length} document(s) attendent votre validation`);
+                }
+                this.banniereAdminTexte = this.banniereAdminOk
+                    ? "Rien ne réclame votre attention pour l'instant — tout est à jour."
+                    : `${motifs.join(' et ')} — commencez par la liste ci-dessous, classée par urgence.`;
 
                 this.chartEtatParc = {
                     labels: ['Chantiers', 'Entreprises', 'Salariés'],
@@ -409,7 +476,7 @@ export class DashboardComponent implements OnInit {
         });
     }
 
-    private joursAvantExpiration(dateExpiration?: string | null): number | null {
+    joursAvantExpiration(dateExpiration?: string | null): number | null {
         if (!dateExpiration) {
             return null;
         }
@@ -423,5 +490,58 @@ export class DashboardComponent implements OnInit {
     private calculerEtat<T>(items: T[], estActif: (item: T) => boolean): EtatEntite {
         const actifs = items.filter(estActif).length;
         return { total: items.length, actifs, inactifs: items.length - actifs };
+    }
+
+    // --- Valider/Refuser un document directement depuis "À traiter" (voir CardHead ci-dessus) :
+    // même pattern que EntrepriseDetailComponent, réutilise les mêmes dialogues partagés plutôt
+    // que de rediriger vers la fiche pour un geste aussi fréquent que valider un document.
+
+    ouvrirValidation(document: DocumentEnAttente): void {
+        this.documentAValider = document;
+        this.dialogValiderVisible = true;
+    }
+
+    get typeDuDocumentAValider(): TypeDocument | undefined {
+        return this.documentAValider ? this.types.find((t) => t.id === this.documentAValider!.typeDocumentId) : undefined;
+    }
+
+    confirmerValidationDashboard(dates: ValidationDocument): void {
+        if (!this.documentAValider) {
+            return;
+        }
+        this.documentService.valider(this.documentAValider.documentId, {
+            dateDebutValidite: dates.dateDebutValidite ? this.toIsoDate(dates.dateDebutValidite) : undefined,
+            dateExpiration: dates.dateExpiration ? this.toIsoDate(dates.dateExpiration) : undefined
+        }).subscribe({
+            next: () => {
+                this.documentAValider = null;
+                this.message.add({ severity: 'success', summary: 'Succès', detail: 'Document validé' });
+                this.chargerDashboardStandard();
+            },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Validation impossible' })
+        });
+    }
+
+    ouvrirRefus(document: DocumentEnAttente): void {
+        this.documentARefuser = document;
+        this.dialogRefuserVisible = true;
+    }
+
+    confirmerRefusDashboard(documentEtatId: string): void {
+        if (!this.documentARefuser) {
+            return;
+        }
+        this.documentService.refuser(this.documentARefuser.documentId, documentEtatId).subscribe({
+            next: () => {
+                this.documentARefuser = null;
+                this.message.add({ severity: 'success', summary: 'Succès', detail: 'Document refusé' });
+                this.chargerDashboardStandard();
+            },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Refus impossible' })
+        });
+    }
+
+    private toIsoDate(date: Date): string {
+        return date.toISOString().substring(0, 10);
     }
 }

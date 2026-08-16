@@ -30,105 +30,160 @@
     </div>
 </div>
 
-<div class="grid" *ngIf="!estControleur && !estEntreprise && !estClient">
-    <div class="col-12 md:col-4">
-        <div class="card mb-0">
-            <app-stat-tile
-                [label]="'menu.chantiers' | translate"
-                [value]="chargement ? '—' : (statChantiers?.total ?? 0)"
-                icon="map"
-                color="blue"
-            ></app-stat-tile>
-            <div class="mt-3 text-500 text-sm" *ngIf="!chargement && statChantiers as s">
-                <span class="text-green-600 font-medium">{{ s.actifs }} actif(s)</span>
-                <span *ngIf="s.inactifs > 0"> · {{ s.inactifs }} inactif(s)</span>
-            </div>
+<!-- ============================================================
+     Dashboard Admin (SUPER_ADMIN) : l'Admin gère les dossiers légaux à la place
+     du client (retour utilisateur explicite) — priorité à "que dois-je traiter
+     aujourd'hui" plutôt qu'à trois compteurs bruts, voir prototype validé.
+     ============================================================ -->
+<ng-container *ngIf="!estControleur && !estEntreprise && !estClient">
+
+    <div class="flex align-items-end justify-content-between flex-wrap gap-3 mb-3" *ngIf="!chargement">
+        <div>
+            <h5 class="m-0">Bonjour, {{ username }}</h5>
+            <p class="text-500 text-sm mt-1 mb-0">Voici ce qui a besoin de vous aujourd'hui.</p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+            <button pButton type="button" icon="pi pi-plus" label="Entreprise" class="p-button-outlined p-button-sm" [routerLink]="['/entreprises/nouveau']"></button>
+            <button pButton type="button" icon="pi pi-plus" label="Chantier" class="p-button-outlined p-button-sm" [routerLink]="['/chantiers/nouveau']"></button>
+            <button pButton type="button" icon="pi pi-plus" label="Contrôle" class="p-button-outlined p-button-sm" [routerLink]="['/controles/nouveau']"></button>
+            <button pButton type="button" icon="pi pi-envelope" label="Envoyer un e-mail" class="p-button-sm" [routerLink]="['/messagerie/nouveau']"></button>
         </div>
     </div>
 
-    <div class="col-12 md:col-4">
-        <div class="card mb-0">
-            <app-stat-tile
-                [label]="'menu.entreprises' | translate"
-                [value]="chargement ? '—' : (statEntreprises?.total ?? 0)"
-                icon="briefcase"
-                color="orange"
-            ></app-stat-tile>
-            <div class="mt-3 text-500 text-sm" *ngIf="!chargement && statEntreprises as s">
-                <span class="text-green-600 font-medium">{{ s.actifs }} active(s)</span>
-                <span *ngIf="s.inactifs > 0"> · {{ s.inactifs }} inactive(s)</span>
-            </div>
-        </div>
+    <div class="p-3 border-round flex align-items-center gap-2 text-sm font-medium mb-3"
+         *ngIf="!chargement"
+         [ngClass]="banniereAdminOk ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'">
+        <i class="pi" [class.pi-check-circle]="banniereAdminOk" [class.pi-exclamation-triangle]="!banniereAdminOk"></i>
+        {{ banniereAdminTexte }}
     </div>
 
-    <div class="col-12 md:col-4">
-        <div class="card mb-0">
-            <app-stat-tile
-                [label]="'menu.salaries' | translate"
-                [value]="chargement ? '—' : (statSalaries?.total ?? 0)"
-                icon="users"
-                color="green"
-            ></app-stat-tile>
-            <div class="mt-3 text-500 text-sm" *ngIf="!chargement && statSalariesChantier as s">
-                <span class="text-blue-600 font-medium">{{ s.surChantier }} sur chantier</span>
-                <span *ngIf="s.disponibles > 0"> · {{ s.disponibles }} disponible(s)</span>
-            </div>
+    <div class="card mb-3" *ngIf="!chargement">
+        <div class="card-head">
+            <i class="pi pi-file"></i>
+            <h6 class="m-0">À traiter en priorité</h6>
+            <span class="ml-2" *ngIf="documentsEnAttente.length > 0"><p-tag severity="warning" [value]="documentsEnAttente.length + ''"></p-tag></span>
         </div>
-    </div>
-</div>
 
-<div class="card mb-0" *ngIf="peutVoirDocumentsEnAttente && !chargement">
-    <app-stat-tile
-        label="Documents en attente de validation"
-        [value]="documentsEnAttente.length"
-        icon="clock"
-        color="yellow"
-    ></app-stat-tile>
-
-    <p-table [value]="documentsEnAttente" dataKey="documentId" class="mt-4" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" *ngIf="documentsEnAttente.length > 0">
-        <ng-template pTemplate="header">
-            <tr>
-                <th>Document</th>
-                <th>Salarié / Entreprise</th>
-                <th>Soumis le</th>
-                <th style="width: 4rem"></th>
-            </tr>
+        <ng-container *ngIf="documentsEnAttente.length > 0; else aucunDocumentEnAttente">
+            <div class="ent-doc-row" style="cursor:default;" *ngFor="let doc of documentsEnAttente.slice(0, 5)">
+                <span class="ent-doc-row-icon warn"><i class="pi pi-file"></i></span>
+                <span class="ent-doc-row-body">
+                    <span class="ent-doc-row-title">{{ doc.typeLibelle }}</span>
+                    <span class="ent-doc-row-sub">{{ doc.entrepriseNom || doc.salarieNom }} · soumis le {{ doc.createdAt | date: 'dd/MM/yyyy' }}</span>
+                </span>
+                <span class="ent-doc-row-end">
+                    <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" pTooltip="Valider" (click)="ouvrirValidation(doc)"></button>
+                    <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" pTooltip="Refuser" (click)="ouvrirRefus(doc)"></button>
+                    <button pButton type="button" icon="pi pi-arrow-right" class="p-button-text p-button-rounded" pTooltip="Voir le dossier" [routerLink]="doc.salarieId ? ['/salaries', doc.salarieId] : ['/entreprises', doc.entrepriseId]"></button>
+                </span>
+            </div>
+            <div class="text-center mt-2" *ngIf="documentsEnAttente.length > 5">
+                <a class="text-sm font-medium cursor-pointer" style="color:var(--brand-accent-ink);" [routerLink]="['/documents']">Voir les {{ documentsEnAttente.length }} documents en attente &rarr;</a>
+            </div>
+        </ng-container>
+        <ng-template #aucunDocumentEnAttente>
+            <p class="text-500 text-sm m-0">Rien à valider pour l'instant — tous les documents déposés ont été traités.</p>
         </ng-template>
-        <ng-template pTemplate="body" let-doc>
-            <tr>
-                <td>{{ doc.typeLibelle }}</td>
-                <td>{{ doc.salarieNom || doc.entrepriseNom }}</td>
-                <td>{{ doc.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
-                <td>
-                    <button
-                        pButton
-                        type="button"
-                        icon="pi pi-arrow-right"
-                        class="p-button-text p-button-rounded"
-                        pTooltip="Voir la fiche"
-                        [routerLink]="doc.salarieId ? ['/salaries', doc.salarieId] : ['/entreprises', doc.entrepriseId]"
-                    ></button>
-                </td>
-            </tr>
-        </ng-template>
-    </p-table>
-</div>
+    </div>
 
-<div class="grid" *ngIf="!chargement && !estControleur && !estEntreprise && !estClient">
-    <div class="col-12 lg:col-6">
-        <div class="card">
-            <h6 class="mb-4">État du parc</h6>
-            <p-chart type="bar" [data]="chartEtatParc" [options]="chartOptions" height="16rem"></p-chart>
+    <div class="stat-grid" *ngIf="!chargement">
+        <button type="button" class="stat-card" [routerLink]="['/documents']">
+            <div class="stat-top">
+                <div>
+                    <div class="stat-label">Documents</div>
+                    <div class="stat-value-row"><span class="stat-value tabular-nums">{{ documentsEnAttente.length }}</span></div>
+                </div>
+                <span class="stat-icon tint-warning"><i class="pi pi-file"></i></span>
+            </div>
+            <span class="stat-caption">en attente de validation</span>
+        </button>
+
+        <button type="button" class="stat-card" [routerLink]="['/documents']">
+            <div class="stat-top">
+                <div>
+                    <div class="stat-label">Documents</div>
+                    <div class="stat-value-row"><span class="stat-value tabular-nums">{{ documentsExpirant.length }}</span></div>
+                </div>
+                <span class="stat-icon tint-warning"><i class="pi pi-clock"></i></span>
+            </div>
+            <span class="stat-caption">expirent sous 30 jours</span>
+        </button>
+
+        <button type="button" class="stat-card" [routerLink]="['/controles']">
+            <div class="stat-top">
+                <div>
+                    <div class="stat-label">Contrôles</div>
+                    <div class="stat-value-row"><span class="stat-value tabular-nums">{{ statControlesAdmin.aVenir + statControlesAdmin.enRetard }}</span><span class="stat-value-suffix">à venir</span></div>
+                </div>
+                <span class="stat-icon" [ngClass]="statControlesAdmin.enRetard > 0 ? 'tint-danger' : 'tint-info'"><i class="pi pi-verified"></i></span>
+            </div>
+            <span class="stat-caption" *ngIf="statControlesAdmin.enRetard > 0">{{ statControlesAdmin.enRetard }} en retard</span>
+        </button>
+
+        <button type="button" class="stat-card" [routerLink]="['/entreprises']" *ngIf="conformite as c">
+            <div class="stat-top">
+                <div>
+                    <div class="stat-label">Entreprises</div>
+                    <div class="stat-value-row"><span class="stat-value tabular-nums">{{ c.conformes }}<small>/{{ c.total }}</small></span></div>
+                </div>
+                <span class="stat-icon tint-success"><i class="pi pi-check-circle"></i></span>
+            </div>
+            <span class="stat-caption">à jour sur leurs documents obligatoires</span>
+        </button>
+    </div>
+
+    <div class="flex gap-4 flex-wrap text-sm text-500 mb-3" *ngIf="!chargement">
+        <span><i class="pi pi-map-marker mr-1" style="color:var(--brand-accent-ink);"></i><b class="text-900 tabular-nums">{{ statChantiers?.actifs ?? 0 }}</b>/{{ statChantiers?.total ?? 0 }} chantiers actifs</span>
+        <span><i class="pi pi-users mr-1" style="color:var(--brand-info);"></i><b class="text-900 tabular-nums">{{ statSalariesChantier?.surChantier ?? 0 }}</b>/{{ statSalaries?.total ?? 0 }} salariés sur chantier</span>
+    </div>
+
+    <div class="card mb-3" *ngIf="!chargement">
+        <div class="card-head">
+            <i class="pi pi-clock"></i>
+            <h6 class="m-0">Échéances à venir</h6>
+        </div>
+        <div class="ent-compact-list" *ngIf="documentsExpirant.length > 0">
+            <div class="ent-compact-row" style="cursor:default;" *ngFor="let d of documentsExpirant.slice(0, 6)">
+                <span class="ent-compact-row-icon"><i class="pi pi-file"></i></span>
+                <span class="ent-compact-row-body">
+                    <span class="ent-compact-row-title">{{ d.typeLibelle }}<ng-container *ngIf="d.salarieNom"> — {{ d.salarieNom }}</ng-container></span>
+                    <span class="ent-compact-row-sub">{{ d.entrepriseNom }}</span>
+                </span>
+                <span class="ent-compact-row-end">
+                    <p-tag [severity]="(joursAvantExpiration(d.dateExpiration) ?? 0) <= 7 ? 'danger' : 'warning'" [value]="(joursAvantExpiration(d.dateExpiration) ?? 0) + ' jour(s)'"></p-tag>
+                </span>
+            </div>
+        </div>
+        <p class="text-500 text-sm m-0" *ngIf="documentsExpirant.length === 0">Aucun document ne doit être renouvelé dans les 30 prochains jours.</p>
+    </div>
+
+    <div class="card mb-3" *ngIf="!chargement">
+        <div class="card-head justify-content-between">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-chart-bar"></i>
+                <h6 class="m-0">Statistiques — vue d'ensemble du parc</h6>
+            </div>
+            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherStatistiquesAdmin" (click)="afficherStatistiquesAdmin = false"></button>
+        </div>
+
+        <div *ngIf="!afficherStatistiquesAdmin" class="flex align-items-center justify-content-between">
+            <a class="cursor-pointer text-primary">Statistiques masquées</a>
+            <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="afficherStatistiquesAdmin = true"></button>
+        </div>
+
+        <div class="grid" *ngIf="afficherStatistiquesAdmin">
+            <div class="col-12 lg:col-6">
+                <h6 class="mb-4">État du parc</h6>
+                <p-chart type="bar" [data]="chartEtatParc" [options]="chartOptions" height="16rem"></p-chart>
+            </div>
+            <div class="col-12 lg:col-6">
+                <h6 class="mb-4">Salariés par type de contrat</h6>
+                <p-chart type="bar" [data]="chartTypesContrat" [options]="chartOptions" height="16rem"></p-chart>
+            </div>
         </div>
     </div>
 
-    <div class="col-12 lg:col-6">
-        <div class="card">
-            <h6 class="mb-4">Salariés par type de contrat</h6>
-            <p-chart type="bar" [data]="chartTypesContrat" [options]="chartOptions" height="16rem"></p-chart>
-        </div>
-    </div>
-</div>
+</ng-container>
 
 <!-- ============================================================
      Dashboard Entreprise : indicateurs propres à sa situation (conformité
@@ -485,3 +540,7 @@
 
     </div>
 </div>
+
+<app-refuser-document-dialog [(visible)]="dialogRefuserVisible" [etatsDisponibles]="etatsPourRefus" (confirme)="confirmerRefusDashboard($event)"></app-refuser-document-dialog>
+<app-valider-document-dialog [(visible)]="dialogValiderVisible" [dateDebutRequise]="typeDuDocumentAValider?.dateDebutValiditeRequise ?? true" [dateFinRequise]="typeDuDocumentAValider?.dateFinValiditeRequise ?? true" (confirme)="confirmerValidationDashboard($event)"></app-valider-document-dialog>
+<p-toast></p-toast>

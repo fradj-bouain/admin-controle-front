@@ -26,7 +26,7 @@
     </div>
     <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? regles).length }} résultat(s)</p>
 
-    <p-table #dt [value]="regles" dataKey="id" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [globalFilterFields]="['nom','titreInterne']">
+    <p-table #dt [value]="regles" dataKey="id" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" [globalFilterFields]="['nom','titreInterne']">
         <ng-template pTemplate="header">
             <tr>
                 <th>N° / Titre interne</th>
@@ -75,7 +75,7 @@
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-regle>
-            <tr class="cursor-pointer" [routerLink]="['/messagerie/automatisation', regle.id]">
+            <tr class="cursor-pointer row-stripe" [class.success]="regle.actif" [class.muted]="!regle.actif" [routerLink]="['/messagerie/automatisation', regle.id]">
                 <td>
                     <div>{{ regle.numeroInterne || '—' }}</div>
                     <div class="text-500 text-sm">{{ regle.titreInterne }}</div>

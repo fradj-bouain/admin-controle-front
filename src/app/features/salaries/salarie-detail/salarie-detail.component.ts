@@ -189,6 +189,22 @@ export class SalarieDetailComponent implements OnInit {
         return this.mesAffectations.find((a) => !a.dateFin);
     }
 
+    // Bandeau d'en-tête SUPER_ADMIN (voir prototype validé) : mêmes 3 indicateurs déjà
+    // utilisés par le bandeau vue Entreprise ci-dessus, juste remontés pour ce rôle aussi.
+    get salarieInitiales(): string {
+        const p = (this.salarie?.prenom ?? '').trim();
+        const n = (this.salarie?.nom ?? '').trim();
+        return ((p[0] ?? '') + (n[0] ?? '')).toUpperCase() || '?';
+    }
+
+    /** Initiales de l'aperçu à la création (voir prototype validé) — lues directement sur
+        le formulaire encore non enregistré, contrairement à salarieInitiales ci-dessus. */
+    get previewInitiales(): string {
+        const p = (this.coordonneesForm.controls.prenom.value ?? '').trim();
+        const n = (this.coordonneesForm.controls.nom.value ?? '').trim();
+        return ((p[0] ?? '') + (n[0] ?? '')).toUpperCase() || '?';
+    }
+
     private readonly RING_CIRCONFERENCE = 2 * Math.PI * 15.5;
 
     ringDashoffset(pourcentage: number): number {

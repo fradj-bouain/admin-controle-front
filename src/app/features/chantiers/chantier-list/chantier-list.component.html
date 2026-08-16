@@ -1,6 +1,83 @@
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
+<div class="stat-grid" *ngIf="!loading">
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Chantiers</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ chantiers.length }}</span></div>
+            </div>
+            <span class="stat-icon tint-accent"><i class="pi pi-map"></i></span>
+        </div>
+        <span class="stat-caption">au registre</span>
+    </div>
+
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Statut</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ nbActifs }}</span><span class="stat-value-suffix">actifs</span></div>
+            </div>
+            <span class="stat-icon tint-success"><i class="pi pi-check-circle"></i></span>
+        </div>
+        <div class="stat-bar" *ngIf="nbInactifs > 0">
+            <span class="stat-bar-seg success" [style.width.%]="(nbActifs / chantiers.length) * 100"></span>
+            <span class="stat-bar-seg danger" [style.width.%]="(nbInactifs / chantiers.length) * 100"></span>
+        </div>
+        <div class="stat-legend" *ngIf="nbInactifs > 0">
+            <span class="stat-legend-item"><span class="stat-legend-dot success"></span>{{ nbActifs }} actifs</span>
+            <span class="stat-legend-item"><span class="stat-legend-dot danger"></span>{{ nbInactifs }} inactifs</span>
+        </div>
+        <span class="stat-caption" *ngIf="nbInactifs === 0">Tous les chantiers sont actifs.</span>
+    </div>
+
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Contrôles</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ nbControlesEnRetard }}</span></div>
+            </div>
+            <span class="stat-icon tint-danger"><i class="pi pi-verified"></i></span>
+        </div>
+        <span class="stat-caption">chantiers avec un contrôle en retard</span>
+    </div>
+
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Ce mois-ci</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ nbNouveauxCeMois }}</span></div>
+            </div>
+            <span class="stat-icon tint-info"><i class="pi pi-plus"></i></span>
+        </div>
+        <span class="stat-caption">nouveaux chantiers ouverts</span>
+    </div>
+</div>
+
+<div class="card mb-3" *ngIf="!loading && repartitionClients.length > 0">
+    <div class="card-head justify-content-between">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-building"></i>
+            <h6 class="m-0">Chantiers par client</h6>
+        </div>
+        <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherRepartitionClients" (click)="afficherRepartitionClients = false"></button>
+    </div>
+
+    <div *ngIf="!afficherRepartitionClients" class="flex align-items-center justify-content-between">
+        <a class="cursor-pointer text-primary" (click)="afficherRepartitionClients = true">Répartition masquée</a>
+        <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="afficherRepartitionClients = true"></button>
+    </div>
+
+    <div class="bar-chart" *ngIf="afficherRepartitionClients">
+        <div class="bar-row" *ngFor="let c of repartitionClients">
+            <span class="bar-label">{{ c.nom }}</span>
+            <span class="bar-track"><span class="bar-fill" [style.width.%]="(c.total / maxRepartitionClient) * 100" style="background:var(--brand-accent);"></span></span>
+            <span class="bar-count">{{ c.total }}</span>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <p-toolbar styleClass="mb-4">
         <ng-template pTemplate="left">
@@ -10,6 +87,13 @@
             <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-plus" [label]="'common.add' | translate" routerLink="/chantiers/nouveau"></button>
         </ng-template>
     </p-toolbar>
+
+    <div class="flex align-items-center gap-2 mb-3" *ngIf="filtreClientId">
+        <span class="tag info" style="display:inline-flex; align-items:center; gap:0.4rem; background:var(--brand-info-tint); color:var(--brand-info); font-size:0.78rem; font-weight:600; padding:0.35rem 0.7rem; border-radius:999px;">
+            <i class="pi pi-filter"></i>Filtré pour {{ nomClientFiltre }}
+        </span>
+        <button pButton type="button" icon="pi pi-times" label="Retirer le filtre" class="p-button-text p-button-sm" (click)="retirerFiltreClient()"></button>
+    </div>
 
     <div class="flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
         <span class="p-input-icon-left w-full md:w-25rem">
@@ -26,13 +110,15 @@
     </div>
     <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? chantiers).length }} résultat(s)</p>
 
-    <p-table #dt [value]="chantiers" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" dataKey="id" [globalFilterFields]="['nom','nomClientCalcule','ville']">
+    <p-table #dt [value]="chantiers" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="id" [globalFilterFields]="['nom','nomClientCalcule','ville']">
         <ng-template pTemplate="header">
             <tr>
                 <th>{{ 'chantier.nom' | translate }}</th>
                 <th>{{ 'chantier.client' | translate }}</th>
                 <th>{{ 'chantier.ville' | translate }}</th>
                 <th>{{ 'chantier.dateDebut' | translate }}</th>
+                <th>{{ 'chantier.dateFinPrevue' | translate }}</th>
+                <th>Prochain contrôle</th>
                 <th>{{ 'chantier.statut' | translate }}</th>
                 <th style="width: 4rem"></th>
             </tr>
@@ -41,6 +127,8 @@
                 <th><p-columnFilter type="text" field="nomClientCalcule" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="ville" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="dateDebut" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th><p-columnFilter type="text" field="dateFinPrevue" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th></th>
                 <th>
                     <p-columnFilter field="statut" matchMode="equals" [showMenu]="false">
                         <ng-template pTemplate="filter" let-value let-filter="filterCallback">
@@ -62,6 +150,11 @@
                 <td>{{ nomClient(chantier.clientId) }}</td>
                 <td>{{ chantier.ville }}</td>
                 <td>{{ chantier.dateDebut }}</td>
+                <td>{{ chantier.dateFinPrevue || '—' }}</td>
+                <td>
+                    <p-tag *ngIf="chantier.prochainControleEnRetard" severity="danger" value="En retard"></p-tag>
+                    <span *ngIf="!chantier.prochainControleEnRetard">{{ chantier.dateProchainControle || '—' }}</span>
+                </td>
                 <td>
                     <p-tag [severity]="chantier.statut === 'ACTIF' ? 'success' : 'danger'" [value]="chantier.statut | etatLabel"></p-tag>
                 </td>
@@ -79,7 +172,7 @@
         </ng-template>
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="6" class="text-center text-500 py-4">Aucun chantier ne correspond à cette recherche.</td>
+                <td colspan="8" class="text-center text-500 py-4">Aucun chantier ne correspond à cette recherche.</td>
             </tr>
         </ng-template>
     </p-table>

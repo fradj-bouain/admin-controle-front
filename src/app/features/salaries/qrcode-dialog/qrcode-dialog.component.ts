@@ -16,6 +16,11 @@ export class QrCodeDialogComponent implements OnChanges {
 
     @Input() visible = false;
     @Input() salarie: Salarie | null = null;
+    // Affichage encastré dans la page (fiche Salarié, à côté de Coordonnées) plutôt qu'en
+    // popup — même composant, mêmes actions (télécharger/imprimer/régénérer), juste sans le
+    // chrome de dialogue. Chargé dès que `salarie` est renseigné, sans attendre un `visible`
+    // qui n'a pas de sens ici (rien à ouvrir/fermer).
+    @Input() inline = false;
     @Output() visibleChange = new EventEmitter<boolean>();
 
     @ViewChild('badgeCard') badgeCard?: ElementRef<HTMLElement>;
@@ -36,7 +41,7 @@ export class QrCodeDialogComponent implements OnChanges {
     ) { }
 
     ngOnChanges(): void {
-        if (this.visible && this.salarie) {
+        if (this.salarie && (this.inline || this.visible)) {
             this.charger();
         }
     }

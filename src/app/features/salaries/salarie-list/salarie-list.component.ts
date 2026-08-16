@@ -9,6 +9,11 @@ import { SalarieFonction } from 'src/app/features/configuration/models/configura
 import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
 
+interface RepartitionFonction {
+    libelle: string;
+    total: number;
+}
+
 @Component({
     selector: 'app-salarie-list',
     templateUrl: './salarie-list.component.html',
@@ -27,6 +32,16 @@ export class SalarieListComponent implements OnInit {
 
     dialogQrCodeVisible = false;
     salarieSelectionne: Salarie | null = null;
+
+    // --- Indicateurs (voir prototype validé) : comptés côté client à partir de la
+    // liste déjà chargée pour cette page, pas de nouvel appel dédié.
+    nbActifs = 0;
+    nbInactifs = 0;
+    nbSurChantier = 0;
+    nbNouveauxCeMois = 0;
+    repartitionFonctions: RepartitionFonction[] = [];
+    // Repliable, repliée par défaut (même convention que ClientListComponent.afficherRepartitionVilles).
+    afficherRepartitionFonctions = false;
 
     constructor(
         private salarieService: SalarieService,
@@ -52,6 +67,14 @@ export class SalarieListComponent implements OnInit {
         return this.auth.hasRole('CLIENT');
     }
 
+    get maxRepartitionFonctions(): number {
+        return Math.max(1, ...this.repartitionFonctions.map((f) => f.total));
+    }
+
+    initiales(nom: string, prenom: string): string {
+        return ((prenom[0] ?? '') + (nom[0] ?? '')).toUpperCase() || '?';
+    }
+
     ngOnInit(): void {
         this.charger();
     }
@@ -71,6 +94,7 @@ export class SalarieListComponent implements OnInit {
                     nomEntrepriseCalculee: this.nomEntreprise(s.entrepriseEmployeurId),
                     libelleFonctionCalculee: this.nomFonction(s.fonctionId)
                 }));
+                this.calculerIndicateurs(salaries, fonctions);
                 this.loading = false;
             },
             error: () => {
@@ -78,6 +102,29 @@ export class SalarieListComponent implements OnInit {
                 this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Impossible de charger les salariés' });
             }
         });
+    }
+
+    private calculerIndicateurs(salaries: Salarie[], fonctions: SalarieFonction[]): void {
+        this.nbActifs = salaries.filter((s) => s.statut === 'ACTIF').length;
+        this.nbInactifs = salaries.length - this.nbActifs;
+        this.nbSurChantier = salaries.filter((s) => !!s.chantierActuel).length;
+
+        const debutMois = new Date();
+        debutMois.setDate(1);
+        debutMois.setHours(0, 0, 0, 0);
+        this.nbNouveauxCeMois = salaries.filter((s) => new Date(s.createdAt) >= debutMois).length;
+
+        const totalParFonction: Record<string, number> = {};
+        salaries.forEach((s) => {
+            const libelle = fonctions.find((f) => f.id === s.fonctionId)?.libelle;
+            if (libelle) {
+                totalParFonction[libelle] = (totalParFonction[libelle] ?? 0) + 1;
+            }
+        });
+        this.repartitionFonctions = Object.entries(totalParFonction)
+            .map(([libelle, total]) => ({ libelle, total }))
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 4);
     }
 
     ouvrirQrCode(salarie: Salarie) {

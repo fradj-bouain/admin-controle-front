@@ -11,7 +11,7 @@
         </ng-template>
     </p-toolbar>
 
-    <p-table [value]="utilisateurs" dataKey="id" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
+    <p-table [value]="utilisateurs" dataKey="id" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
         <ng-template pTemplate="header">
             <tr>
                 <th>Utilisateur</th>

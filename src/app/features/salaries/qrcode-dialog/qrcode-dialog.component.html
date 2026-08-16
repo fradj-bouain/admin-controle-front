@@ -1,3 +1,4 @@
+<ng-container *ngIf="!inline">
 <p-dialog
     header="Badge du salarié"
     [(visible)]="visible"
@@ -6,6 +7,18 @@
     [style]="{ width: '27rem' }"
     (onHide)="close()"
 >
+    <ng-container *ngTemplateOutlet="badgeContent"></ng-container>
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="Fermer" class="p-button-text" (click)="close()"></button>
+    </ng-template>
+</p-dialog>
+</ng-container>
+
+<ng-container *ngIf="inline">
+    <ng-container *ngTemplateOutlet="badgeContent"></ng-container>
+</ng-container>
+
+<ng-template #badgeContent>
     <div *ngIf="salarie" class="flex flex-column align-items-center gap-3">
         <div *ngIf="loading" class="p-4">
             <i class="pi pi-spin pi-spinner text-3xl"></i>
@@ -48,8 +61,4 @@
             </small>
         </ng-container>
     </div>
-
-    <ng-template pTemplate="footer">
-        <button pButton type="button" label="Fermer" class="p-button-text" (click)="close()"></button>
-    </ng-template>
-</p-dialog>
+</ng-template>

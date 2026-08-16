@@ -1,26 +1,83 @@
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
-<!-- Bandeau retour + statut/actions : redondant avec la carte d'identité en vue Entreprise/Client
-     (nom + statut y sont déjà) — masqué pour ces rôles, le bouton retour est repris dans le
-     bandeau sombre de la carte d'identité juste en dessous. -->
-<div class="card mb-3" *ngIf="!isEntreprise && !isClient">
-    <div class="flex align-items-center justify-content-between">
-        <div class="flex align-items-center gap-3">
-            <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
-            <h5 class="m-0">Client {{ client ? '(' + client.raisonSociale + ')' : '' }}</h5>
+<!-- Création : en-tête simple, rien à montrer dans un bandeau d'indicateurs tant que
+     la fiche n'existe pas encore. -->
+<div class="mb-3" *ngIf="!isEntreprise && !isClient && isNew">
+    <div class="flex align-items-center gap-3">
+        <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
+        <div>
+            <h5 class="m-0">Ajouter un client</h5>
+            <p class="text-500 text-sm m-0">Ces informations serviront à contacter le client et à générer ses documents légaux.</p>
         </div>
-        <div class="flex align-items-center gap-2" *ngIf="client">
-            <p-tag [severity]="client.actif ? 'success' : 'danger'" [value]="client.actif | etatLabel"></p-tag>
-            <button
-                *ngIf="isSuperAdmin"
-                pButton
-                type="button"
-                [label]="client.actif ? 'Désactiver' : 'Activer'"
-                [icon]="client.actif ? 'pi pi-ban' : 'pi pi-check'"
-                class="p-button-text"
-                (click)="confirmerBasculeStatut()"
-            ></button>
+    </div>
+</div>
+
+<!-- Modification : bandeau d'identité avec les indicateurs du quotidien (chantiers actifs,
+     utilisateurs, contrôles en retard sur ses chantiers) plutôt qu'un simple titre — même
+     traitement que .chantier-hero (jusqu'ici réservé aux vues consultatives Client/Entreprise,
+     voir brand.scss), première utilisation ici côté SUPER_ADMIN. -->
+<div class="chantier-hero" *ngIf="!isEntreprise && !isClient && !isNew && client">
+    <div class="chantier-hero-inner">
+        <div class="chantier-hero-top">
+            <div class="chantier-hero-title-row">
+                <button type="button" class="id-card-back" pTooltip="Retour à la liste" tooltipPosition="bottom" (click)="retour()">
+                    <i class="pi pi-arrow-left"></i>
+                </button>
+                <div class="chantier-hero-mark">{{ clientInitiales }}</div>
+                <div>
+                    <h1 class="chantier-hero-title">{{ client.raisonSociale }}</h1>
+                    <div class="chantier-hero-sub">
+                        <span class="status-pill" [class.success]="client.actif" [class.danger]="!client.actif">
+                            <span class="status-pill-dot"></span>{{ client.actif | etatLabel }}
+                        </span>
+                        <ng-container *ngIf="client.ville"><span>·</span><span>{{ client.ville }}</span></ng-container>
+                    </div>
+                </div>
+            </div>
+            <div class="chantier-hero-actions" *ngIf="isSuperAdmin">
+                <button
+                    pButton
+                    type="button"
+                    [label]="client.actif ? 'Désactiver' : 'Activer'"
+                    [icon]="client.actif ? 'pi pi-ban' : 'pi pi-check'"
+                    class="p-button-text"
+                    (click)="confirmerBasculeStatut()"
+                ></button>
+            </div>
+        </div>
+
+        <div class="chantier-hero-stats">
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-ring">
+                    <svg viewBox="0 0 36 36">
+                        <circle class="chantier-hstat-ring-track" cx="18" cy="18" r="15.5"></circle>
+                        <circle class="chantier-hstat-ring-value" cx="18" cy="18" r="15.5"
+                            [attr.stroke]="nbChantiersInactifs === 0 ? '#a9e0bf' : '#f0d19f'"
+                            [attr.stroke-dasharray]="97.39"
+                            [attr.stroke-dashoffset]="ringDashoffset(chantiers.length ? (nbChantiersActifs / chantiers.length) * 100 : 100)"></circle>
+                    </svg>
+                    <span class="chantier-hstat-ring-num">{{ nbChantiersActifs }}/{{ chantiers.length }}</span>
+                </span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value tabular-nums">{{ nbChantiersActifs }}<small>/{{ chantiers.length }}</small></span>
+                    <span class="chantier-hstat-label">Chantiers actifs</span>
+                </span>
+            </div>
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-icon blue"><i class="pi pi-users"></i></span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value tabular-nums">{{ utilisateurs.length }}</span>
+                    <span class="chantier-hstat-label">Utilisateurs · {{ nbUtilisateursAvecAcces }} avec accès</span>
+                </span>
+            </div>
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-icon" [ngClass]="nbControlesEnRetard > 0 ? 'warn' : ''"><i class="pi pi-verified"></i></span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value tabular-nums">{{ nbControlesEnRetard }}</span>
+                    <span class="chantier-hstat-label">Contrôle(s) en retard sur ses chantiers</span>
+                </span>
+            </div>
         </div>
     </div>
 </div>
@@ -248,40 +305,38 @@
     </div>
 </div>
 
+<!-- Repère de progression (voir .section-tracker) : uniquement à la création — sur une
+     fiche existante le formulaire est déjà rempli, il n'y a rien à "progresser". -->
+<div class="section-tracker" *ngIf="!isEntreprise && !isClient && isNew && !loading">
+    <div class="section-step" [class.done]="sectionIdentiteValide">
+        <span class="dot"><i class="pi pi-check" *ngIf="sectionIdentiteValide"></i><ng-container *ngIf="!sectionIdentiteValide">1</ng-container></span>Identité
+    </div>
+    <div class="section-step" [class.done]="sectionCoordonneesValide" [class.current]="sectionIdentiteValide && !sectionCoordonneesValide">
+        <span class="dot"><i class="pi pi-check" *ngIf="sectionCoordonneesValide"></i><ng-container *ngIf="!sectionCoordonneesValide">2</ng-container></span>Coordonnées
+    </div>
+    <div class="section-step" [class.done]="sectionLegaleValide" [class.current]="sectionCoordonneesValide && !sectionLegaleValide">
+        <span class="dot"><i class="pi pi-check" *ngIf="sectionLegaleValide"></i><ng-container *ngIf="!sectionLegaleValide">3</ng-container></span>Informations légales
+    </div>
+</div>
+
 <div class="grid" *ngIf="!isEntreprise && !isClient">
     <div class="col-12 lg:col-8">
-        <!-- Coordonnées -->
-        <div class="card mb-3">
-            <div class="card-head">
-                <i class="pi pi-building"></i>
-                <h6 class="m-0">Coordonnées</h6>
-            </div>
 
-            <app-card-skeleton *ngIf="loading" [lignes]="8"></app-card-skeleton>
+        <app-card-skeleton *ngIf="loading" [lignes]="8"></app-card-skeleton>
 
-            <form *ngIf="!loading" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
+        <form *ngIf="!loading" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
+
+            <!-- Identité -->
+            <div class="card mb-3">
+                <div class="card-head">
+                    <i class="pi pi-building"></i>
+                    <h6 class="m-0">Identité</h6>
+                </div>
                 <div class="field">
-                    <label for="raisonSociale">Nom *</label>
+                    <label for="raisonSociale">Nom du client *</label>
                     <input id="raisonSociale" type="text" pInputText formControlName="raisonSociale" [class.ng-dirty]="coordonneesForm.controls.raisonSociale.touched" />
                     <small class="p-error" *ngIf="coordonneesForm.controls.raisonSociale.invalid && coordonneesForm.controls.raisonSociale.touched">Ce champ est requis.</small>
                 </div>
-
-                <div class="formgrid grid">
-                    <div class="field col-12 md:col-4">
-                        <label for="adresse">Adresse *</label>
-                        <input id="adresse" type="text" pInputText formControlName="adresse" [class.ng-dirty]="coordonneesForm.controls.adresse.touched" />
-                        <small class="p-error" *ngIf="coordonneesForm.controls.adresse.invalid && coordonneesForm.controls.adresse.touched">Ce champ est requis.</small>
-                    </div>
-                    <div class="field col-12 md:col-4">
-                        <label for="adresse2">Adresse complément n°1</label>
-                        <input id="adresse2" type="text" pInputText formControlName="adresse2" />
-                    </div>
-                    <div class="field col-12 md:col-4">
-                        <label for="adresse3">Adresse complément n°2</label>
-                        <input id="adresse3" type="text" pInputText formControlName="adresse3" />
-                    </div>
-                </div>
-
                 <div class="formgrid grid">
                     <div class="field col-12 md:col-6">
                         <label for="ville">Ville *</label>
@@ -304,29 +359,59 @@
                         <small class="p-error" *ngIf="coordonneesForm.controls.paysId.invalid && coordonneesForm.controls.paysId.touched">Ce champ est requis.</small>
                     </div>
                 </div>
+            </div>
+
+            <!-- Coordonnées -->
+            <div class="card mb-3">
+                <div class="card-head">
+                    <i class="pi pi-phone"></i>
+                    <h6 class="m-0">Coordonnées</h6>
+                </div>
+                <div class="formgrid grid">
+                    <div class="field col-12 md:col-4">
+                        <label for="adresse">Adresse *</label>
+                        <input id="adresse" type="text" pInputText formControlName="adresse" [class.ng-dirty]="coordonneesForm.controls.adresse.touched" />
+                        <small class="p-error" *ngIf="coordonneesForm.controls.adresse.invalid && coordonneesForm.controls.adresse.touched">Ce champ est requis.</small>
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="adresse2">Complément n°1 <span class="text-400 font-normal">(optionnel)</span></label>
+                        <input id="adresse2" type="text" pInputText formControlName="adresse2" />
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="adresse3">Complément n°2 <span class="text-400 font-normal">(optionnel)</span></label>
+                        <input id="adresse3" type="text" pInputText formControlName="adresse3" />
+                    </div>
+                </div>
 
                 <div class="formgrid grid">
                     <div class="field col-12 md:col-4">
-                        <label for="telephone">Tel *</label>
+                        <label for="telephone">Téléphone *</label>
                         <input id="telephone" type="text" pInputText formControlName="telephone" [class.ng-dirty]="coordonneesForm.controls.telephone.touched" />
                         <small class="p-error" *ngIf="coordonneesForm.controls.telephone.invalid && coordonneesForm.controls.telephone.touched">Ce champ est requis.</small>
                     </div>
                     <div class="field col-12 md:col-4">
-                        <label for="telephone2">Tel 2</label>
+                        <label for="telephone2">Téléphone 2 <span class="text-400 font-normal">(optionnel)</span></label>
                         <input id="telephone2" type="text" pInputText formControlName="telephone2" />
                     </div>
                     <div class="field col-12 md:col-4">
-                        <label for="telephone3">Tel 3</label>
+                        <label for="telephone3">Téléphone 3 <span class="text-400 font-normal">(optionnel)</span></label>
                         <input id="telephone3" type="text" pInputText formControlName="telephone3" />
                     </div>
                 </div>
 
-                <div class="field">
-                    <label for="email">Email</label>
+                <div class="field" style="max-width:24rem;">
+                    <label for="email">Email <span class="text-400 font-normal">(optionnel)</span></label>
                     <input id="email" type="email" pInputText formControlName="email" [class.ng-dirty]="coordonneesForm.controls.email.touched" />
                     <small class="p-error" *ngIf="coordonneesForm.controls.email.invalid && coordonneesForm.controls.email.touched">Adresse email invalide.</small>
                 </div>
+            </div>
 
+            <!-- Informations légales -->
+            <div class="card mb-3">
+                <div class="card-head">
+                    <i class="pi pi-lock"></i>
+                    <h6 class="m-0">Informations légales</h6>
+                </div>
                 <div class="formgrid grid">
                     <div class="field col-12 md:col-4">
                         <label for="siren">Siren *</label>
@@ -347,17 +432,17 @@
 
                 <div class="formgrid grid">
                     <div class="field col-12 md:col-6">
-                        <label for="tvaIntra">N° de TVA Intra</label>
+                        <label for="tvaIntra">N° de TVA Intra <span class="text-400 font-normal">(optionnel)</span></label>
                         <input id="tvaIntra" type="text" pInputText formControlName="tvaIntra" />
                     </div>
                     <div class="field col-12 md:col-6">
-                        <label for="numCotisant">N° de cotisant URSSAF / CCSS / CAR</label>
+                        <label for="numCotisant">N° de cotisant URSSAF / CCSS / CAR <span class="text-400 font-normal">(optionnel)</span></label>
                         <input id="numCotisant" type="text" pInputText formControlName="numCotisant" />
                     </div>
                 </div>
 
                 <div class="field">
-                    <label for="responsableSignataireAgrement">Responsable signataire agrément</label>
+                    <label for="responsableSignataireAgrement">Responsable signataire agrément <span class="text-400 font-normal">(optionnel)</span></label>
                     <input id="responsableSignataireAgrement" type="text" pInputText formControlName="responsableSignataireAgrement" />
                 </div>
 
@@ -417,44 +502,80 @@
                         <small class="account-inline-panel__note"><i class="pi pi-shield"></i> Rôle attribué automatiquement : <strong>Client</strong>, rattaché à cette fiche.</small>
                     </div>
                 </div>
+            </div>
 
-                <div class="flex justify-content-end gap-2 mt-4">
-                    <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
-                    <button *ngIf="isSuperAdmin" pButton type="submit" [label]="isNew ? 'Ajouter' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
-                </div>
-            </form>
-        </div>
+            <div class="flex justify-content-end gap-2 mb-3">
+                <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
+                <button *ngIf="isSuperAdmin" pButton type="submit" [label]="isNew ? 'Ajouter' : 'Modifier'" icon="pi pi-check" [loading]="saving"></button>
+            </div>
+        </form>
     </div>
 
     <div class="col-12 lg:col-4">
-        <!-- Utilisateurs -->
-        <div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
+
+        <!-- Création : aperçu en direct de la fiche + rappels pratiques, plutôt qu'une
+             colonne vide tant que le client n'existe pas encore. -->
+        <ng-container *ngIf="isNew && !loading">
+            <p class="text-500 text-xs font-bold uppercase mb-2" style="letter-spacing:.05em;">Aperçu de la fiche</p>
+            <div class="id-card mb-3">
+                <div class="id-card-band">
+                    <div class="id-card-mark">{{ (coordonneesForm.get('raisonSociale')?.value || '?') | slice:0:2 | uppercase }}</div>
+                    <div class="id-card-name-row">
+                        <span class="id-card-name">{{ coordonneesForm.get('raisonSociale')?.value || 'Nouveau client' }}</span>
+                        <div class="id-card-sub">
+                            <span class="status-pill success"><span class="status-pill-dot"></span>Actif</span>
+                            <span *ngIf="coordonneesForm.get('ville')?.value">· {{ coordonneesForm.get('ville')?.value }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="id-card-body">
+                    <div class="id-kv-grid">
+                        <div>
+                            <div class="id-kv-label">Téléphone</div>
+                            <div class="id-kv-value">{{ coordonneesForm.get('telephone')?.value || '—' }}</div>
+                        </div>
+                        <div>
+                            <div class="id-kv-label">Email</div>
+                            <div class="id-kv-value">{{ coordonneesForm.get('email')?.value || '—' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="text-500 text-sm mb-3" style="line-height:1.5;">C'est à peu près ce que le client (ou l'entreprise qui travaille pour lui) verra sur sa fiche — se remplit au fur et à mesure.</p>
+
+            <div class="tip-card">
+                <h6><i class="pi pi-info-circle"></i>Bon à savoir</h6>
+                <ul>
+                    <li>Le Siren et le Siret figurent sur l'extrait Kbis du client.</li>
+                    <li>Le statut est « Actif » par défaut à la création.</li>
+                    <li>Vous pourrez ajouter des chantiers et des utilisateurs juste après l'enregistrement.</li>
+                </ul>
+            </div>
+        </ng-container>
+
+        <!-- Modification : la liste des utilisateurs du client, habillée comme partout
+             ailleurs dans l'app (voir .member-row, déjà utilisé côté vue Client). -->
+        <div class="card mb-3" *ngIf="!isNew">
             <div class="card-head">
                 <i class="pi pi-users"></i>
                 <h6 class="m-0">Utilisateurs</h6>
             </div>
-            <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez le client pour activer cette section.</small>
 
-            <ul class="list-none p-0 m-0" *ngIf="!isNew">
-                <li
-                    *ngFor="let u of utilisateurs"
-                    class="py-2 border-bottom-1 surface-border"
-                >
-                    <div class="flex align-items-center justify-content-between gap-2">
-                        <div class="min-w-0">
-                            <div class="font-medium white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ u.prenom }} {{ u.nom }}</div>
-                            <div class="text-500 text-sm white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ u.email }}</div>
-                        </div>
-                        <span *ngIf="u.nbChantiersAssignes" class="inline-flex align-items-center gap-2 text-green-700 text-sm font-medium flex-shrink-0">
-                            <i class="pi pi-circle-fill text-xs"></i> {{ u.nbChantiersAssignes }} chantier(s)
-                        </span>
-                        <span *ngIf="!u.nbChantiersAssignes" class="inline-flex align-items-center gap-2 text-orange-600 text-sm font-medium flex-shrink-0" pTooltip="Aucun chantier assigné : cet utilisateur ne voit rien tant qu'il n'est pas assigné depuis une fiche chantier.">
-                            <i class="pi pi-exclamation-triangle text-xs"></i> Aucun accès
-                        </span>
+            <div class="member-list" *ngIf="utilisateurs.length > 0">
+                <div class="member-row" *ngFor="let u of utilisateurs">
+                    <div class="member-avatar">{{ initialesUtilisateur(u) }}</div>
+                    <div class="member-body">
+                        <span class="member-name">{{ u.prenom }} {{ u.nom }}<ng-container *ngIf="u.id === auth.userId"> (vous)</ng-container></span>
+                        <span class="member-email">{{ u.email }}</span>
                     </div>
-                </li>
-                <li *ngIf="utilisateurs.length === 0" class="text-500 py-2">Aucun utilisateur.</li>
-            </ul>
+                    <div class="member-end">
+                        <p-tag *ngIf="u.accesTousChantiers" severity="info" value="Accès total"></p-tag>
+                        <p-tag *ngIf="!u.accesTousChantiers && u.nbChantiersAssignes" severity="success" [value]="u.nbChantiersAssignes + ' chantier(s)'"></p-tag>
+                        <p-tag *ngIf="!u.accesTousChantiers && !u.nbChantiersAssignes" severity="warning" value="Aucun accès" pTooltip="Cette personne ne voit rien tant qu'elle n'est pas assignée à un chantier."></p-tag>
+                    </div>
+                </div>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="utilisateurs.length === 0">Aucun utilisateur.</p>
 
             <button
                 pButton
@@ -462,68 +583,40 @@
                 icon="pi pi-plus"
                 label="Créer un utilisateur"
                 class="w-full mt-3"
-                [disabled]="isNew"
                 [routerLink]="['/configuration/utilisateurs/nouveau']"
                 [queryParams]="{ clientId: clientId }"
             ></button>
         </div>
-    </div>
-</div>
 
-<!-- Liste des chantiers : masquée pour l'Entreprise (elle y verrait des chantiers du
-     client où elle n'intervient même pas — voir note dans la carte d'identité) et pour
-     le Client (déjà couverte par le bloc "Mes chantiers" de sa propre vue ci-dessus). -->
-<div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1" *ngIf="!isEntreprise && !isClient">
-    <div class="card-head justify-content-between">
-        <div class="flex align-items-center gap-2">
-            <i class="pi pi-map-marker"></i>
-            <h6 class="m-0">Liste des chantiers</h6>
+        <!-- Liste des chantiers : repositionnée sous "Utilisateurs" (demande explicite),
+             aperçu compact des 7 derniers plutôt qu'un tableau complet — même traitement
+             que "Mes chantiers" côté vue Client (.ent-compact-list/.ent-compact-row).
+             Masquée pour l'Entreprise (elle y verrait des chantiers du client où elle
+             n'intervient même pas) et pour le Client (déjà couverte par "Mes chantiers"
+             plus haut dans sa propre vue), et absente à la création (rien à montrer). -->
+        <div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isNew">
+            <div class="card-head justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-map-marker"></i>
+                    <h6 class="m-0">Liste des chantiers</h6>
+                </div>
+                <div class="flex align-items-center gap-2">
+                    <button pButton type="button" icon="pi pi-plus" class="p-button-text p-button-rounded" pTooltip="Ajouter un chantier" [routerLink]="['/chantiers/nouveau']" [queryParams]="{ clientId: clientId }"></button>
+                    <a class="card-head-action" style="font-size:0.78rem; font-weight:600; color:var(--brand-accent-ink); cursor:pointer;" [routerLink]="['/chantiers']" [queryParams]="{ clientId: clientId }">Voir tout ({{ chantiers.length }})</a>
+                </div>
+            </div>
+
+            <div class="ent-compact-list" *ngIf="chantiersApercu.length > 0">
+                <button type="button" class="ent-compact-row" [routerLink]="['/chantiers', c.id]" *ngFor="let c of chantiersApercu">
+                    <span class="ent-compact-row-icon"><i class="pi pi-building"></i></span>
+                    <span class="ent-compact-row-body">
+                        <span class="ent-compact-row-title">{{ c.nom }}</span>
+                        <span class="ent-compact-row-sub" *ngIf="c.ville">{{ c.ville }}</span>
+                    </span>
+                    <span class="ent-compact-row-end"><p-tag [severity]="c.statut === 'ACTIF' ? 'success' : 'danger'" [value]="c.statut | etatLabel"></p-tag></span>
+                </button>
+            </div>
+            <p class="text-500 text-sm m-0" *ngIf="chantiersApercu.length === 0">Aucun chantier pour ce client.</p>
         </div>
-        <div class="flex align-items-center gap-2">
-            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="!isNew && afficherChantiers" (click)="afficherChantiers = false"></button>
-            <button
-                pButton
-                type="button"
-                icon="pi pi-plus"
-                label="Ajouter un chantier"
-                [disabled]="isNew"
-                [routerLink]="['/chantiers/nouveau']"
-                [queryParams]="{ clientId: clientId }"
-            ></button>
-        </div>
     </div>
-
-    <small class="text-500 block" *ngIf="isNew">Enregistrez le client pour activer cette section.</small>
-
-    <div *ngIf="!isNew && !afficherChantiers" class="flex align-items-center justify-content-between">
-        <a class="cursor-pointer text-primary" (click)="afficherChantiers = true">{{ chantiers.length }} chantier(s) — voir la liste</a>
-        <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="afficherChantiers = true"></button>
-    </div>
-
-    <p-table [value]="chantiers" dataKey="id" *ngIf="!isNew && afficherChantiers">
-        <ng-template pTemplate="header">
-            <tr><th>Nom</th><th>Ville</th><th>Statut</th></tr>
-            <tr>
-                <th><p-columnFilter type="text" field="nom" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                <th><p-columnFilter type="text" field="ville" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                <th>
-                    <p-columnFilter field="statut" matchMode="equals" [showMenu]="false">
-                        <ng-template pTemplate="filter" let-value let-filter="filterCallback">
-                            <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Actif', value: 'ACTIF'}, {label: 'Inactif', value: 'INACTIF'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
-                        </ng-template>
-                    </p-columnFilter>
-                </th>
-            </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-chantier>
-            <tr class="cursor-pointer" [routerLink]="['/chantiers', chantier.id]">
-                <td>{{ chantier.nom }}</td>
-                <td>{{ chantier.ville }}</td>
-                <td><p-tag [severity]="chantier.statut === 'ACTIF' ? 'success' : 'danger'" [value]="chantier.statut | etatLabel"></p-tag></td>
-            </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-            <tr><td colspan="3" class="text-center text-500">Aucun chantier pour ce client.</td></tr>
-        </ng-template>
-    </p-table>
 </div>

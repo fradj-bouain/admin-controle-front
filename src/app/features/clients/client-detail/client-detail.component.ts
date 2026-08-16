@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -9,6 +10,7 @@ import { ReferenceDataService } from 'src/app/features/configuration/services/re
 import { UtilisateurService } from 'src/app/features/configuration/services/utilisateur.service';
 import { Chantier } from 'src/app/features/chantiers/models/chantier.model';
 import { ChantierService } from 'src/app/features/chantiers/services/chantier.service';
+import { ControleService } from 'src/app/features/controles/services/controle.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
 
 @Component({
@@ -27,7 +29,13 @@ export class ClientDetailComponent implements OnInit {
     pays: Pays[] = [];
     utilisateurs: Utilisateur[] = [];
     chantiers: Chantier[] = [];
-    afficherChantiers = false;
+
+    // --- Indicateurs du bandeau d'en-tête (voir prototype validé) : comptés à partir
+    // des chantiers/utilisateurs déjà chargés pour cette fiche, plus un aller par
+    // chantier accessible pour les contrôles (aucun endpoint ne les renvoie filtrés
+    // par clientId directement — même pattern que AffectationSalarieChantierService
+    // côté dashboard Client).
+    nbControlesEnRetard = 0;
 
     coordonneesForm = this.fb.group({
         raisonSociale: ['', Validators.required],
@@ -67,6 +75,7 @@ export class ClientDetailComponent implements OnInit {
         private referenceDataService: ReferenceDataService,
         private utilisateurService: UtilisateurService,
         private chantierService: ChantierService,
+        private controleService: ControleService,
         private confirmation: ConfirmationService,
         private message: MessageService,
         public auth: AuthService
@@ -126,6 +135,43 @@ export class ClientDetailComponent implements OnInit {
         return mots.length === 1 ? mots[0].slice(0, 2).toUpperCase() : (mots[0][0] + mots[1][0]).toUpperCase();
     }
 
+    get nbChantiersActifs(): number {
+        return this.chantiers.filter((c) => c.statut === 'ACTIF').length;
+    }
+
+    get nbChantiersInactifs(): number {
+        return this.chantiers.length - this.nbChantiersActifs;
+    }
+
+    get nbUtilisateursAvecAcces(): number {
+        return this.utilisateurs.filter((u) => u.accesTousChantiers || (u.nbChantiersAssignes ?? 0) > 0).length;
+    }
+
+    // --- Repère de progression du formulaire de création (voir .section-tracker) : un
+    // même FormGroup plat, juste regroupé visuellement par section — pas de sous-formulaires.
+    get sectionIdentiteValide(): boolean {
+        const c = this.coordonneesForm.controls;
+        return c.raisonSociale.valid && c.ville.valid && c.paysId.valid;
+    }
+
+    get sectionCoordonneesValide(): boolean {
+        const c = this.coordonneesForm.controls;
+        return c.adresse.valid && c.telephone.valid && c.email.valid;
+    }
+
+    get sectionLegaleValide(): boolean {
+        const c = this.coordonneesForm.controls;
+        return c.siren.valid && c.siret.valid && c.rcsRci.valid;
+    }
+
+    // Même calcul que EntrepriseDetailComponent.ringDashoffset (2πr, r=15.5 sur .chantier-hstat-ring).
+    private readonly RING_CIRCONFERENCE = 2 * Math.PI * 15.5;
+
+    ringDashoffset(pourcentage: number): number {
+        const clamped = Math.min(100, Math.max(0, pourcentage || 0));
+        return this.RING_CIRCONFERENCE * (1 - clamped / 100);
+    }
+
     ngOnInit(): void {
         this.referenceDataService.listerPays().subscribe((pays) => (this.pays = pays));
 
@@ -167,7 +213,24 @@ export class ClientDetailComponent implements OnInit {
     }
 
     private chargerChantiers(clientId: string) {
-        this.chantierService.lister(clientId).subscribe((chantiers) => (this.chantiers = chantiers));
+        this.chantierService.lister(clientId).subscribe((chantiers) => {
+            this.chantiers = chantiers;
+            this.chargerControlesEnRetard(chantiers.map((c) => c.id));
+        });
+    }
+
+    private chargerControlesEnRetard(chantierIds: string[]): void {
+        if (chantierIds.length === 0) {
+            this.nbControlesEnRetard = 0;
+            return;
+        }
+        forkJoin(chantierIds.map((id) => this.controleService.lister(id))).subscribe({
+            next: (listesParChantier) => {
+                const aujourdHui = new Date();
+                this.nbControlesEnRetard = listesParChantier.flat()
+                    .filter((c) => !c.termine && new Date(c.dateControle) < aujourdHui).length;
+            }
+        });
     }
 
     submitCoordonnees() {

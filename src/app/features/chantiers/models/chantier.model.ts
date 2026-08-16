@@ -19,6 +19,7 @@ export interface Chantier {
     statut: StatutChantier;
     recurrenceControles?: RecurrenceControles;
     dateProchainControle?: string;
+    createdAt: string;
 }
 
 export interface CreateChantierRequest {

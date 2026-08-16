@@ -1,6 +1,83 @@
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
+<div class="stat-grid" *ngIf="!loading">
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Entreprises</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ entreprises.length }}</span></div>
+            </div>
+            <span class="stat-icon tint-accent"><i class="pi pi-briefcase"></i></span>
+        </div>
+        <span class="stat-caption">au registre</span>
+    </div>
+
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Statut</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ nbActifs }}</span><span class="stat-value-suffix">actives</span></div>
+            </div>
+            <span class="stat-icon tint-success"><i class="pi pi-check-circle"></i></span>
+        </div>
+        <div class="stat-bar" *ngIf="nbInactifs > 0">
+            <span class="stat-bar-seg success" [style.width.%]="(nbActifs / entreprises.length) * 100"></span>
+            <span class="stat-bar-seg danger" [style.width.%]="(nbInactifs / entreprises.length) * 100"></span>
+        </div>
+        <div class="stat-legend" *ngIf="nbInactifs > 0">
+            <span class="stat-legend-item"><span class="stat-legend-dot success"></span>{{ nbActifs }} actives</span>
+            <span class="stat-legend-item"><span class="stat-legend-dot danger"></span>{{ nbInactifs }} inactives</span>
+        </div>
+        <span class="stat-caption" *ngIf="nbInactifs === 0">Toutes les entreprises sont actives.</span>
+    </div>
+
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Chantiers</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ nbSurChantier }}</span></div>
+            </div>
+            <span class="stat-icon tint-info"><i class="pi pi-map-marker"></i></span>
+        </div>
+        <span class="stat-caption">entreprises actuellement sur un chantier</span>
+    </div>
+
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Ce mois-ci</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ nbNouveauxCeMois }}</span></div>
+            </div>
+            <span class="stat-icon tint-warning"><i class="pi pi-plus"></i></span>
+        </div>
+        <span class="stat-caption">nouvelles entreprises ajoutées</span>
+    </div>
+</div>
+
+<div class="card mb-3" *ngIf="!loading && repartitionCorpsMetier.length > 0">
+    <div class="card-head justify-content-between">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-building"></i>
+            <h6 class="m-0">Entreprises par corps de métier</h6>
+        </div>
+        <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherRepartitionCorpsMetier" (click)="afficherRepartitionCorpsMetier = false"></button>
+    </div>
+
+    <div *ngIf="!afficherRepartitionCorpsMetier" class="flex align-items-center justify-content-between">
+        <a class="cursor-pointer text-primary" (click)="afficherRepartitionCorpsMetier = true">Répartition masquée</a>
+        <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="afficherRepartitionCorpsMetier = true"></button>
+    </div>
+
+    <div class="bar-chart" *ngIf="afficherRepartitionCorpsMetier">
+        <div class="bar-row" *ngFor="let c of repartitionCorpsMetier">
+            <span class="bar-label">{{ c.libelle }}</span>
+            <span class="bar-track"><span class="bar-fill" [style.width.%]="(c.total / maxRepartitionCorpsMetier) * 100" style="background:var(--brand-accent);"></span></span>
+            <span class="bar-count">{{ c.total }}</span>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <p-toolbar styleClass="mb-4">
         <ng-template pTemplate="left">
@@ -26,7 +103,7 @@
     </div>
     <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? entreprises).length }} résultat(s)</p>
 
-    <p-table #dt [value]="entreprises" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" dataKey="id" [globalFilterFields]="['raisonSociale','siret','telephone','email','ville','rangActuel']">
+    <p-table #dt [value]="entreprises" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="id" [globalFilterFields]="['raisonSociale','siret','telephone','email','ville','rangActuel']">
         <ng-template pTemplate="header">
             <tr>
                 <th>Raison sociale</th>
@@ -62,7 +139,12 @@
         </ng-template>
         <ng-template pTemplate="body" let-entreprise>
             <tr class="cursor-pointer" [routerLink]="['/entreprises', entreprise.id]">
-                <td>{{ entreprise.raisonSociale }}</td>
+                <td>
+                    <div class="flex align-items-center gap-2">
+                        <span class="member-avatar">{{ initiales(entreprise.raisonSociale) }}</span>
+                        {{ entreprise.raisonSociale }}
+                    </div>
+                </td>
                 <td>{{ entreprise.siret }}</td>
                 <td>{{ entreprise.telephone }}</td>
                 <td>{{ entreprise.ville || '—' }}</td>

@@ -7,21 +7,34 @@
 
 <ng-container *ngIf="rapport">
 
-<div class="card mb-3 no-print">
-    <div class="flex align-items-center justify-content-between flex-wrap gap-2">
-        <div class="flex align-items-center gap-3">
-            <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
-            <div>
-                <h5 class="m-0">Rapport de contrôle{{ chantier ? ' — ' + chantier.nom : '' }}</h5>
-                <p-tag *ngIf="rapport.dateEnvoi" severity="success" value="Envoyé" class="mt-1"></p-tag>
-                <p-tag *ngIf="!rapport.dateEnvoi" severity="warning" value="Non envoyé" class="mt-1"></p-tag>
+<div class="chantier-hero no-print">
+    <div class="chantier-hero-inner">
+        <div class="chantier-hero-top">
+            <div class="chantier-hero-title-row">
+                <button type="button" class="id-card-back" pTooltip="Retour à la liste" tooltipPosition="bottom" (click)="retour()">
+                    <i class="pi pi-arrow-left"></i>
+                </button>
+                <div class="chantier-hero-mark"><i class="pi pi-file"></i></div>
+                <div>
+                    <h1 class="chantier-hero-title">Rapport de contrôle{{ chantier ? ' — ' + chantier.nom : '' }}</h1>
+                    <div class="chantier-hero-sub">
+                        <span *ngIf="controle">Contrôle du {{ controle.dateControle | date: 'dd/MM/yyyy' }}</span>
+                        <ng-container *ngIf="controle && nomControleTiers(controle.controleTiersId) as organisme">
+                            <span>·</span>
+                            <span>{{ organisme }}</span>
+                        </ng-container>
+                        <span *ngIf="controle">·</span>
+                        <span class="status-pill success" *ngIf="rapport.dateEnvoi"><span class="status-pill-dot"></span>Envoyé le {{ rapport.dateEnvoi | date: 'dd/MM/yyyy' }}</span>
+                        <span class="status-pill warning" *ngIf="!rapport.dateEnvoi"><span class="status-pill-dot"></span>Non envoyé</span>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="flex align-items-center gap-2">
-            <button pButton type="button" icon="pi pi-print" label="Imprimer / PDF" class="p-button-outlined" (click)="imprimer()"></button>
-            <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-send" label="Renvoyer par email" class="p-button-outlined" [loading]="envoiEnCours" (click)="confirmerRenvoiEmail()"></button>
-            <button *ngIf="isSuperAdmin && !edition" pButton type="button" icon="pi pi-pencil" label="Modifier" class="p-button-outlined" (click)="ouvrirEdition()"></button>
-            <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-trash" label="Supprimer" class="p-button-outlined p-button-danger" (click)="confirmerSuppression()"></button>
+            <div class="chantier-hero-actions">
+                <button pButton type="button" icon="pi pi-print" label="Imprimer / PDF" class="p-button-text" (click)="imprimer()"></button>
+                <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-send" label="Renvoyer par email" class="p-button-text" [loading]="envoiEnCours" (click)="confirmerRenvoiEmail()"></button>
+                <button *ngIf="isSuperAdmin && !edition" pButton type="button" icon="pi pi-pencil" label="Modifier" class="p-button-text" (click)="ouvrirEdition()"></button>
+                <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-trash" label="Supprimer" class="p-button-text" (click)="confirmerSuppression()"></button>
+            </div>
         </div>
     </div>
 </div>
@@ -34,41 +47,82 @@
 
     <p class="text-500 mb-4 hidden-screen">Chantier : <strong>{{ chantier?.nom }}</strong></p>
 
-    <div class="grid">
-        <div class="col-6 md:col-3">
-            <div class="text-500 text-sm">Salariés contrôlés</div>
-            <div class="text-2xl font-bold tabular-nums">{{ rapport.nbSalariesControles }}</div>
+    <div class="verdict" *ngIf="tauxConformite !== null">
+        <div class="verdict-ring">
+            <svg viewBox="0 0 36 36">
+                <circle class="verdict-ring-track" cx="18" cy="18" r="15.5"></circle>
+                <circle class="verdict-ring-value" cx="18" cy="18" r="15.5"
+                    [attr.stroke]="couleurConformite"
+                    [attr.stroke-dasharray]="97.39"
+                    [attr.stroke-dashoffset]="ringDashoffset(tauxConformite)"></circle>
+            </svg>
+            <span class="verdict-ring-num"><b>{{ tauxConformite }}%</b><span>conforme</span></span>
         </div>
-        <div class="col-6 md:col-3">
-            <div class="text-500 text-sm">Accords</div>
-            <div class="text-2xl font-bold tabular-nums text-green-600">{{ rapport.nbAccords }}</div>
-        </div>
-        <div class="col-6 md:col-3">
-            <div class="text-500 text-sm">Refus</div>
-            <div class="text-2xl font-bold tabular-nums text-red-600">{{ rapport.nbRefus }}</div>
-        </div>
-        <div class="col-6 md:col-3">
-            <div class="text-500 text-sm">Entreprises</div>
-            <div class="text-2xl font-bold tabular-nums">{{ rapport.nbEntreprises }}</div>
+        <div class="verdict-body">
+            <h4>{{ rapport.nbSalariesControles }} salarié{{ rapport.nbSalariesControles > 1 ? 's' : '' }} contrôlé{{ rapport.nbSalariesControles > 1 ? 's' : '' }} sur {{ rapport.nbEntreprises }} entreprise{{ rapport.nbEntreprises > 1 ? 's' : '' }}</h4>
+            <p>
+                {{ rapport.nbAccords }} accord{{ rapport.nbAccords > 1 ? 's' : '' }}, {{ rapport.nbRefus }} refus
+                <ng-container *ngIf="rapport.nbRefus === 0"> — situation entièrement conforme.</ng-container>
+                <ng-container *ngIf="rapport.nbRefus > 0"> — voir le détail des refus dans la checklist ci-dessous.</ng-container>
+            </p>
         </div>
     </div>
 
-    <div class="grid mt-2" *ngIf="!edition">
-        <div class="col-6 md:col-3">
-            <div class="text-500 text-sm">Nouvelles entreprises</div>
-            <div class="font-medium tabular-nums">{{ rapport.nbNouvellesEntreprises }}</div>
+    <div class="stat-grid" style="margin-top:0;">
+        <div class="stat-card" style="cursor:default;">
+            <div class="stat-top">
+                <div><div class="stat-label">Salariés contrôlés</div><div class="stat-value-row"><span class="stat-value tabular-nums">{{ rapport.nbSalariesControles }}</span></div></div>
+                <span class="stat-icon tint-info"><i class="pi pi-users"></i></span>
+            </div>
         </div>
-        <div class="col-6 md:col-3">
-            <div class="text-500 text-sm">Nouveaux salariés</div>
-            <div class="font-medium tabular-nums">{{ rapport.nbNouveauxSalaries }}</div>
+        <div class="stat-card" style="cursor:default;">
+            <div class="stat-top">
+                <div><div class="stat-label">Accords</div><div class="stat-value-row"><span class="stat-value tabular-nums" style="color:var(--brand-success);">{{ rapport.nbAccords }}</span></div></div>
+                <span class="stat-icon tint-success"><i class="pi pi-check-circle"></i></span>
+            </div>
         </div>
-        <div class="col-6 md:col-3">
-            <div class="text-500 text-sm">Salariés détachés</div>
-            <div class="font-medium tabular-nums">{{ rapport.nbSalariesDetaches }}</div>
+        <div class="stat-card" style="cursor:default;">
+            <div class="stat-top">
+                <div><div class="stat-label">Refus</div><div class="stat-value-row"><span class="stat-value tabular-nums" style="color:var(--brand-danger);">{{ rapport.nbRefus }}</span></div></div>
+                <span class="stat-icon tint-danger"><i class="pi pi-times-circle"></i></span>
+            </div>
         </div>
-        <div class="col-6 md:col-3">
-            <div class="text-500 text-sm">Responsable</div>
-            <div class="font-medium">{{ nomResponsable(rapport.responsableUtilisateurId) }}</div>
+        <div class="stat-card" style="cursor:default;">
+            <div class="stat-top">
+                <div><div class="stat-label">Entreprises</div><div class="stat-value-row"><span class="stat-value tabular-nums">{{ rapport.nbEntreprises }}</span></div></div>
+                <span class="stat-icon tint-accent"><i class="pi pi-building"></i></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-strip mt-4" *ngIf="!edition">
+        <div class="detail-strip-item">
+            <span class="stat-icon tint-accent"><i class="pi pi-building"></i></span>
+            <div>
+                <div class="detail-strip-label">Nouvelles entreprises</div>
+                <div class="detail-strip-value tabular-nums">{{ rapport.nbNouvellesEntreprises }}</div>
+            </div>
+        </div>
+        <div class="detail-strip-item">
+            <span class="stat-icon tint-info"><i class="pi pi-user-plus"></i></span>
+            <div>
+                <div class="detail-strip-label">Nouveaux salariés</div>
+                <div class="detail-strip-value tabular-nums">{{ rapport.nbNouveauxSalaries }}</div>
+            </div>
+        </div>
+        <div class="detail-strip-item">
+            <span class="stat-icon tint-warning"><i class="pi pi-globe"></i></span>
+            <div>
+                <div class="detail-strip-label">Salariés détachés</div>
+                <div class="detail-strip-value tabular-nums">{{ rapport.nbSalariesDetaches }}</div>
+            </div>
+        </div>
+        <div class="detail-strip-item">
+            <span class="stat-icon tint-success"><i class="pi pi-user"></i></span>
+            <div>
+                <div class="detail-strip-label">Responsable</div>
+                <div class="detail-strip-value">{{ nomResponsable(rapport.responsableUtilisateurId) }}</div>
+            </div>
         </div>
     </div>
 
@@ -123,8 +177,13 @@
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-entree>
-            <tr>
-                <td>{{ nomSalarie(entree.salarieId) }}</td>
+            <tr class="row-stripe" [class.success]="entree.accorde" [class.danger]="!entree.accorde">
+                <td>
+                    <div class="flex align-items-center gap-2">
+                        <span class="member-avatar">{{ initialesSalarie(entree.salarieId) }}</span>
+                        {{ nomSalarie(entree.salarieId) }}
+                    </div>
+                </td>
                 <td>{{ nomEntreprise(entree.entrepriseId) }}</td>
                 <td><p-tag [severity]="entree.accorde ? 'success' : 'danger'" [value]="entree.accorde ? 'Accordé' : 'Refusé'"></p-tag></td>
                 <td>{{ !entree.accorde ? libelleMotif(entree.actionCorrectiveId) : '—' }}</td>
@@ -134,20 +193,25 @@
     <p class="text-500 text-center py-3" *ngIf="entrees.length === 0">Aucune checklist enregistrée pour ce contrôle.</p>
 </div>
 
-<div class="card no-print" *ngIf="autresRapports.length > 0">
+<div class="card no-print">
     <div class="card-head">
         <i class="pi pi-history"></i>
         <h6 class="m-0">Autres rapports pour ce chantier</h6>
     </div>
-    <ul class="list-none p-0 m-0">
-        <li *ngFor="let r of autresRapports" class="flex align-items-center justify-content-between py-2 border-bottom-1 surface-border">
-            <a class="cursor-pointer text-primary" [routerLink]="['/controles/rapports', r.id]">
-                {{ r.nbSalariesControles }} salarié(s) contrôlé(s) — {{ r.nbAccords }} accord(s), {{ r.nbRefus }} refus
-            </a>
-            <p-tag *ngIf="r.dateEnvoi" severity="success" value="Envoyé"></p-tag>
-            <p-tag *ngIf="!r.dateEnvoi" severity="warning" value="Non envoyé"></p-tag>
-        </li>
-    </ul>
+    <div class="ent-compact-list" *ngIf="autresRapports.length > 0">
+        <div class="ent-compact-row" *ngFor="let r of autresRapports" [routerLink]="['/controles/rapports', r.id]">
+            <span class="ent-compact-row-icon"><i class="pi pi-file"></i></span>
+            <span class="ent-compact-row-body">
+                <span class="ent-compact-row-title">{{ r.nbSalariesControles }} salarié(s) contrôlé(s) — {{ r.nbAccords }} accord(s), {{ r.nbRefus }} refus</span>
+                <span class="ent-compact-row-sub" *ngIf="dateControlePour(r.controleId) as date">Contrôle du {{ date | date: 'dd/MM/yyyy' }}</span>
+            </span>
+            <span class="ent-compact-row-end">
+                <p-tag *ngIf="r.dateEnvoi" severity="success" value="Envoyé"></p-tag>
+                <p-tag *ngIf="!r.dateEnvoi" severity="warning" value="Non envoyé"></p-tag>
+            </span>
+        </div>
+    </div>
+    <p class="text-500 text-center py-3" *ngIf="autresRapports.length === 0">C'est le seul rapport enregistré pour ce chantier.</p>
 </div>
 
 </ng-container>

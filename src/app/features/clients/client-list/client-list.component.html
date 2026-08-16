@@ -1,6 +1,83 @@
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
+<div class="stat-grid" *ngIf="!loading">
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Clients</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ clients.length }}</span></div>
+            </div>
+            <span class="stat-icon tint-accent"><i class="pi pi-building"></i></span>
+        </div>
+        <span class="stat-caption">au registre</span>
+    </div>
+
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Statut</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ nbActifs }}</span><span class="stat-value-suffix">actifs</span></div>
+            </div>
+            <span class="stat-icon tint-success"><i class="pi pi-check-circle"></i></span>
+        </div>
+        <div class="stat-bar" *ngIf="nbInactifs > 0">
+            <span class="stat-bar-seg success" [style.width.%]="(nbActifs / clients.length) * 100"></span>
+            <span class="stat-bar-seg danger" [style.width.%]="(nbInactifs / clients.length) * 100"></span>
+        </div>
+        <div class="stat-legend" *ngIf="nbInactifs > 0">
+            <span class="stat-legend-item"><span class="stat-legend-dot success"></span>{{ nbActifs }} actifs</span>
+            <span class="stat-legend-item"><span class="stat-legend-dot danger"></span>{{ nbInactifs }} inactifs</span>
+        </div>
+        <span class="stat-caption" *ngIf="nbInactifs === 0">Tous les clients sont actifs.</span>
+    </div>
+
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Chantiers</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ nbAvecChantierActif }}</span></div>
+            </div>
+            <span class="stat-icon tint-info"><i class="pi pi-map-marker"></i></span>
+        </div>
+        <span class="stat-caption">clients avec un chantier en cours</span>
+    </div>
+
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Ce mois-ci</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ nbNouveauxCeMois }}</span></div>
+            </div>
+            <span class="stat-icon tint-warning"><i class="pi pi-plus"></i></span>
+        </div>
+        <span class="stat-caption">nouveaux clients ajoutés</span>
+    </div>
+</div>
+
+<div class="card mb-3" *ngIf="!loading && repartitionVilles.length > 0">
+    <div class="card-head justify-content-between">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-map-marker"></i>
+            <h6 class="m-0">Répartition par ville</h6>
+        </div>
+        <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherRepartitionVilles" (click)="afficherRepartitionVilles = false"></button>
+    </div>
+
+    <div *ngIf="!afficherRepartitionVilles" class="flex align-items-center justify-content-between">
+        <a class="cursor-pointer text-primary" (click)="afficherRepartitionVilles = true">Répartition masquée</a>
+        <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="afficherRepartitionVilles = true"></button>
+    </div>
+
+    <div class="bar-chart" *ngIf="afficherRepartitionVilles">
+        <div class="bar-row" *ngFor="let v of repartitionVilles">
+            <span class="bar-label">{{ v.ville }}</span>
+            <span class="bar-track"><span class="bar-fill" [style.width.%]="(v.total / maxRepartitionVille) * 100" style="background:var(--brand-accent);"></span></span>
+            <span class="bar-count">{{ v.total }}</span>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <p-toolbar styleClass="mb-4">
         <ng-template pTemplate="left">
@@ -26,13 +103,14 @@
     </div>
     <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? clients).length }} résultat(s)</p>
 
-    <p-table #dt [value]="clients" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" dataKey="id" [globalFilterFields]="['raisonSociale','ville','telephone','email']">
+    <p-table #dt [value]="clients" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="id" [globalFilterFields]="['raisonSociale','ville','telephone','email']">
         <ng-template pTemplate="header">
             <tr>
                 <th>Raison sociale</th>
                 <th>Ville</th>
                 <th>Téléphone</th>
                 <th>Email</th>
+                <th>Chantiers</th>
                 <th>Statut</th>
                 <th style="width: 4rem"></th>
             </tr>
@@ -41,6 +119,7 @@
                 <th><p-columnFilter type="text" field="ville" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="telephone" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="email" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th></th>
                 <th>
                     <p-columnFilter field="actif" matchMode="equals" [showMenu]="false">
                         <ng-template pTemplate="filter" let-value let-filter="filterCallback">
@@ -58,10 +137,19 @@
         </ng-template>
         <ng-template pTemplate="body" let-client>
             <tr class="cursor-pointer" [routerLink]="['/clients', client.id]">
-                <td>{{ client.raisonSociale }}</td>
+                <td>
+                    <div class="flex align-items-center gap-2">
+                        <span class="member-avatar">{{ initiales(client.raisonSociale) }}</span>
+                        {{ client.raisonSociale }}
+                    </div>
+                </td>
                 <td>{{ client.ville }}</td>
                 <td>{{ client.telephone }}</td>
                 <td>{{ client.email }}</td>
+                <td>
+                    <p-tag *ngIf="client.nbChantiers > 0" severity="info" [value]="client.nbChantiers + ''"></p-tag>
+                    <span *ngIf="client.nbChantiers === 0" class="text-500">0</span>
+                </td>
                 <td><p-tag [severity]="client.actif ? 'success' : 'danger'" [value]="client.actif | etatLabel"></p-tag></td>
                 <td>
                     <button
@@ -77,7 +165,7 @@
         </ng-template>
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="6" class="text-center text-500 py-4">Aucun client ne correspond à cette recherche.</td>
+                <td colspan="7" class="text-center text-500 py-4">Aucun client ne correspond à cette recherche.</td>
             </tr>
         </ng-template>
     </p-table>

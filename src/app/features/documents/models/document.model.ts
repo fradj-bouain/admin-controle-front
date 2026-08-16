@@ -94,10 +94,27 @@ export interface HistoriqueModification {
 
 export interface DocumentEnAttente {
     documentId: string;
+    typeDocumentId: string;
     typeLibelle: string;
     salarieId?: string;
     salarieNom?: string;
     entrepriseId?: string;
     entrepriseNom?: string;
     createdAt: string;
+}
+
+export interface DocumentExpirant {
+    documentId: string;
+    typeDocumentId: string;
+    typeLibelle: string;
+    salarieId?: string;
+    salarieNom?: string;
+    entrepriseId?: string;
+    entrepriseNom?: string;
+    dateExpiration: string;
+}
+
+export interface ConformitePortefeuille {
+    conformes: number;
+    total: number;
 }

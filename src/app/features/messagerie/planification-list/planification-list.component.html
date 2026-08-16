@@ -11,7 +11,7 @@
         </ng-template>
     </p-toolbar>
 
-    <p-table #dt [value]="messages" dataKey="id" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
+    <p-table #dt [value]="messages" dataKey="id" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
         <ng-template pTemplate="header">
             <tr>
                 <th>Destinataires</th>
@@ -46,7 +46,7 @@
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-message>
-            <tr>
+            <tr class="row-stripe" [class.success]="message.statut === 'ENVOYE'" [class.warning]="message.statut === 'EN_ATTENTE'" [class.muted]="message.statut === 'ANNULE'">
                 <td>{{ cibleLabels[message.cibleGroupe] }}</td>
                 <td>{{ message.sujet }}</td>
                 <td>{{ message.dateEnvoiPrevue | date: 'short' }}</td>

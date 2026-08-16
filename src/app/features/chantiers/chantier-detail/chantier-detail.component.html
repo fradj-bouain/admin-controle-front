@@ -1,7 +1,7 @@
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
-<div class="card mb-3" *ngIf="!isClient">
+<div class="card mb-3" *ngIf="!isClient && !isSuperAdmin">
     <div class="flex align-items-center justify-content-between">
         <div class="flex align-items-center gap-3">
             <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
@@ -9,15 +9,6 @@
         </div>
         <div class="flex align-items-center gap-2" *ngIf="chantier">
             <p-tag [severity]="chantier.statut === 'ACTIF' ? 'success' : 'danger'" [value]="chantier.statut | etatLabel"></p-tag>
-            <button
-                *ngIf="isSuperAdmin"
-                pButton
-                type="button"
-                [label]="chantier.statut === 'ACTIF' ? 'Désactiver' : 'Activer'"
-                [icon]="chantier.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"
-                class="p-button-text"
-                (click)="confirmerBasculeStatut()"
-            ></button>
         </div>
     </div>
 
@@ -52,6 +43,79 @@
                 <span class="ent-stat-label">Sous-traitant(s) sur ce chantier</span>
             </span>
         </span>
+    </div>
+</div>
+
+<!-- Vue SUPER_ADMIN : en-tête simple à la création (rien à montrer dans un bandeau
+     d'indicateurs tant que le chantier n'existe pas), bandeau d'identité avec les
+     chiffres déjà calculés pour la carte "Statistiques"/"Contrôles" plus bas (voir
+     statsEntreprises/statsSalariesParStatutAcces/prochainControleEnRetard) une fois
+     enregistré — même traitement que la fiche Client. -->
+<div class="mb-3" *ngIf="isSuperAdmin && isNew">
+    <div class="flex align-items-center gap-3">
+        <button pButton type="button" icon="pi pi-arrow-left" class="p-button-text p-button-rounded" (click)="retour()"></button>
+        <div>
+            <h5 class="m-0">Ajouter un chantier</h5>
+            <p class="text-500 text-sm m-0">Renseignez l'adresse et les dates — vous pourrez affecter entreprises, salariés et contrôles juste après.</p>
+        </div>
+    </div>
+</div>
+
+<div class="chantier-hero" *ngIf="isSuperAdmin && !isNew && chantier">
+    <div class="chantier-hero-inner">
+        <div class="chantier-hero-top">
+            <div class="chantier-hero-title-row">
+                <button type="button" class="id-card-back" pTooltip="Retour à la liste" tooltipPosition="bottom" (click)="retour()">
+                    <i class="pi pi-arrow-left"></i>
+                </button>
+                <div class="chantier-hero-mark"><i class="pi pi-map-marker"></i></div>
+                <div>
+                    <h1 class="chantier-hero-title">{{ chantier.nom }}</h1>
+                    <div class="chantier-hero-sub">
+                        <span class="status-pill" [class.success]="chantier.statut === 'ACTIF'" [class.danger]="chantier.statut !== 'ACTIF'">
+                            <span class="status-pill-dot"></span>{{ chantier.statut | etatLabel }}
+                        </span>
+                        <span>·</span>
+                        <span>{{ nomClient(chantier.clientId) }}</span>
+                        <ng-container *ngIf="chantier.ville"><span>·</span><span>{{ chantier.ville }}</span></ng-container>
+                    </div>
+                </div>
+            </div>
+            <div class="chantier-hero-actions">
+                <button
+                    pButton
+                    type="button"
+                    [label]="chantier.statut === 'ACTIF' ? 'Désactiver' : 'Activer'"
+                    [icon]="chantier.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check'"
+                    class="p-button-text"
+                    (click)="confirmerBasculeStatut()"
+                ></button>
+            </div>
+        </div>
+
+        <div class="chantier-hero-stats">
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-icon blue"><i class="pi pi-briefcase"></i></span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value tabular-nums">{{ statsEntreprises.actif }}</span>
+                    <span class="chantier-hstat-label">Entreprises actives sur ce chantier</span>
+                </span>
+            </div>
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-icon"><i class="pi pi-users"></i></span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value tabular-nums">{{ statsSalariesParStatutAcces.accorde }}<small>/{{ statsSalariesParStatutAcces.total }}</small></span>
+                    <span class="chantier-hstat-label">Salariés avec accès accordé</span>
+                </span>
+            </div>
+            <div class="chantier-hstat">
+                <span class="chantier-hstat-icon" [ngClass]="prochainControleEnRetard ? 'warn' : ''"><i class="pi pi-verified"></i></span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value">{{ prochainControleEnRetard ? 'En retard' : (chantier.dateProchainControle ? 'Programmé' : '—') }}</span>
+                    <span class="chantier-hstat-label">Prochain contrôle{{ chantier.dateProchainControle ? ' — prévu le ' + (chantier.dateProchainControle | date: 'dd/MM/yyyy') : ' non programmé' }}</span>
+                </span>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -524,11 +588,6 @@
                     <small class="p-error" *ngIf="coordonneesForm.controls.clientId.invalid && coordonneesForm.controls.clientId.touched">Ce champ est requis.</small>
                 </div>
 
-                <div class="field">
-                    <label for="ipsAllowed">IPs autorisées sur la visualisation des pièces entreprises / salariés</label>
-                    <textarea id="ipsAllowed" pInputTextarea formControlName="ipsAllowed" rows="3" placeholder="au format IPv4 ou IPv6, une par ligne"></textarea>
-                </div>
-
                 <div class="formgrid grid">
                     <div class="field col-12 md:col-6">
                         <label for="nom">Nom *</label>
@@ -592,6 +651,19 @@
                     </div>
                 </div>
 
+                <button type="button" class="ent-optional-toggle" *ngIf="!afficherOptionsAvancees" (click)="afficherOptionsAvancees = true">
+                    <span>Options avancées — IPs autorisées</span>
+                    <span class="link">Afficher <i class="pi pi-chevron-down text-xs"></i></span>
+                </button>
+                <ng-container *ngIf="afficherOptionsAvancees">
+                    <button pButton type="button" label="Masquer les options avancées" icon="pi pi-chevron-up" class="p-button-text p-button-sm mb-2" (click)="afficherOptionsAvancees = false"></button>
+                    <div class="field">
+                        <label for="ipsAllowed">IPs autorisées sur la visualisation des pièces entreprises / salariés</label>
+                        <textarea id="ipsAllowed" pInputTextarea formControlName="ipsAllowed" rows="3" placeholder="au format IPv4 ou IPv6, une par ligne"></textarea>
+                        <small>Ne concerne que la restriction technique d'accès aux pièces jointes — rarement utilisée.</small>
+                    </div>
+                </ng-container>
+
                 <div class="flex justify-content-end gap-2 mt-4">
                     <button pButton type="button" label="Revenir à la liste" class="p-button-text" (click)="retour()"></button>
                     <button *ngIf="isSuperAdmin" pButton type="submit" [label]="isNew ? 'Créer ce chantier' : 'Modifier ce chantier'" icon="pi pi-check" [loading]="saving"></button>
@@ -600,14 +672,15 @@
         </div>
     </div>
 
-    <div class="col-12 lg:col-4">
-        <!-- Responsable du chantier -->
-        <div class="card mb-3" [style.opacity]="isNew ? 0.6 : 1">
+    <div class="col-12 lg:col-4" *ngIf="!isNew">
+        <!-- Responsable du chantier : masquée à la création (rien à affecter tant que le
+             chantier n'existe pas) plutôt que montrée grisée — même traitement que
+             "Liste des chantiers" sur la fiche Client. -->
+        <div class="card mb-3">
             <div class="card-head">
                 <i class="pi pi-user"></i>
                 <h6 class="m-0">Responsable du chantier</h6>
             </div>
-            <small class="text-500 block mb-3" *ngIf="isNew">Enregistrez le chantier pour activer cette section.</small>
             <form [formGroup]="responsableForm" (ngSubmit)="affecterResponsable()" class="p-fluid">
                 <div class="field">
                     <label for="chefChantierUtilisateurId">Un utilisateur ?</label>
@@ -641,7 +714,7 @@
                         <ng-template let-s pTemplate="selectedItem">{{ s?.prenom }} {{ s?.nom }}</ng-template>
                     </p-dropdown>
                 </div>
-                <button *ngIf="isSuperAdmin" pButton type="submit" label="Affecter" [disabled]="isNew" class="w-full"></button>
+                <button *ngIf="isSuperAdmin" pButton type="submit" label="Affecter" class="w-full"></button>
             </form>
         </div>
     </div>
@@ -711,20 +784,24 @@
         </ng-container>
     </div>
 
-    <!-- Contrôles : masquée pour l'Entreprise (demande client). -->
+    <!-- Contrôles : masquée pour l'Entreprise (demande client). Bouton "+ Créer un contrôle"
+         dans l'en-tête, formulaire au-dessus du tableau plutôt qu'en dessous (voir prototype
+         v2 validé) — un chantier accumule des contrôles sur toute sa durée de vie, un
+         formulaire collé après un tableau de plusieurs dizaines de lignes serait hors-écran
+         en permanence. Tableau paginé + recherche plutôt qu'un tableau brut. -->
     <div class="card mb-3" *ngIf="!isEntreprise">
         <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-pencil"></i>
                 <h6 class="m-0">Contrôles ({{ controles.length }})</h6>
             </div>
-            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherControles" (click)="afficherControles = false"></button>
+            <div class="flex align-items-center gap-2">
+                <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherControles" (click)="afficherControles = false"></button>
+                <button *ngIf="!afficherControles" pButton type="button" label="Gérer les contrôles" class="p-button-outlined p-button-sm" (click)="afficherControles = true"></button>
+            </div>
         </div>
 
-        <div *ngIf="!afficherControles" class="flex align-items-center justify-content-between">
-            <a class="cursor-pointer text-primary" (click)="afficherControles = true">{{ controles.length }} contrôle(s)</a>
-            <button pButton type="button" label="Gérer les contrôles" class="p-button-outlined" (click)="afficherControles = true"></button>
-        </div>
+        <p class="text-500 text-sm m-0" *ngIf="!afficherControles">{{ controles.length }} contrôle(s)</p>
 
         <ng-container *ngIf="afficherControles">
         <form [formGroup]="controlesForm" (ngSubmit)="submitControlesConfig()" class="formgrid grid align-items-end mb-4">
@@ -741,26 +818,12 @@
             </div>
         </form>
 
-        <p-table [value]="controles" dataKey="id" *ngIf="controles.length > 0">
-            <ng-template pTemplate="header">
-                <tr>
-                    <th>Date de début</th>
-                    <th>Date de fin</th>
-                    <th>Remarque</th>
-                    <th>Terminé ?</th>
-                </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-controle>
-                <tr>
-                    <td>{{ controle.dateControle }}</td>
-                    <td>{{ controle.dateFin || '—' }}</td>
-                    <td>{{ controle.remarques || '—' }}</td>
-                    <td><p-tag [severity]="controle.termine ? 'success' : 'danger'" [value]="controle.termine ? 'Oui' : 'Non'"></p-tag></td>
-                </tr>
-            </ng-template>
-        </p-table>
+        <span class="p-input-icon-left w-full md:w-20rem mb-3 block">
+            <i class="pi pi-search"></i>
+            <input type="text" pInputText placeholder="Rechercher par date, organisme, remarque..." class="w-full" (input)="dtControles.filterGlobal($any($event.target).value, 'contains')" />
+        </span>
 
-        <form [formGroup]="nouveauControleForm" (ngSubmit)="submitNouveauControle()" class="formgrid grid align-items-end mt-4">
+        <form *ngIf="isSuperAdmin || isControleur" [formGroup]="nouveauControleForm" (ngSubmit)="submitNouveauControle()" class="formgrid grid align-items-end p-3 border-round mb-3" style="background:var(--brand-accent-tint);">
             <div class="field col-12 md:col-3">
                 <label for="dateControle">Date du contrôle *</label>
                 <p-calendar id="dateControle" formControlName="dateControle" dateFormat="dd/mm/yy" [showIcon]="true" styleClass="w-full" [class.ng-dirty]="nouveauControleForm.controls.dateControle.touched"></p-calendar>
@@ -775,52 +838,74 @@
                 <input id="remarques" type="text" pInputText formControlName="remarques" class="w-full" />
             </div>
             <div class="field col-12 md:col-3">
-                <button *ngIf="isSuperAdmin || isControleur" pButton type="submit" icon="pi pi-plus" label="Créer un contrôle" class="w-full"></button>
+                <button pButton type="submit" icon="pi pi-check" label="Créer" class="w-full"></button>
             </div>
         </form>
+
+        <p-table #dtControles [value]="controles" dataKey="id" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="400px" [globalFilterFields]="['dateControle','remarques','controleTiersNomCalcule']">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Date</th>
+                    <th>Effectué par</th>
+                    <th>Remarque</th>
+                    <th>Statut</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-controle>
+                <tr>
+                    <td>{{ controle.dateControle }}</td>
+                    <td>{{ controle.controleTiersNomCalcule }}</td>
+                    <td>{{ controle.remarques || '—' }}</td>
+                    <td><p-tag [severity]="statutControle(controle).severity" [value]="statutControle(controle).label"></p-tag></td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr><td colspan="4" class="text-center text-500">Aucun contrôle pour l'instant.</td></tr>
+            </ng-template>
+        </p-table>
         </ng-container>
     </div>
 
-    <!-- Utilisateurs du Back Office : masquée pour l'Entreprise (demande client). -->
+    <!-- Utilisateurs du Back Office : masquée pour l'Entreprise (demande client). Même
+         principe que Contrôles : bouton "+" dans l'en-tête, formulaire au-dessus de la
+         liste (voir prototype v2 validé). Liste avatar-initiales plutôt qu'un tableau brut
+         (même style que Utilisateurs sur la fiche Client). -->
     <div class="card mb-3" *ngIf="!isEntreprise">
         <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-users"></i>
                 <h6 class="m-0">Utilisateurs du Back Office ({{ chantierUtilisateurIds.length }})</h6>
             </div>
-            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherUtilisateurs" (click)="afficherUtilisateurs = false"></button>
+            <div class="flex align-items-center gap-2">
+                <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherUtilisateurs" (click)="afficherUtilisateurs = false"></button>
+                <button *ngIf="!afficherUtilisateurs" pButton type="button" label="Gérer les utilisateurs" class="p-button-outlined p-button-sm" (click)="afficherUtilisateurs = true"></button>
+            </div>
         </div>
 
-        <div *ngIf="!afficherUtilisateurs" class="flex align-items-center justify-content-between">
-            <a class="cursor-pointer text-primary" (click)="afficherUtilisateurs = true">{{ chantierUtilisateurIds.length }} utilisateur(s)</a>
-            <button pButton type="button" label="Gérer les utilisateurs" class="p-button-outlined" (click)="afficherUtilisateurs = true"></button>
-        </div>
+        <p class="text-500 text-sm m-0" *ngIf="!afficherUtilisateurs">{{ chantierUtilisateurIds.length }} utilisateur(s)</p>
 
         <ng-container *ngIf="afficherUtilisateurs">
-        <p-table [value]="chantierUtilisateurIds" *ngIf="chantierUtilisateurIds.length > 0">
-            <ng-template pTemplate="header">
-                <tr><th>Identité</th><th style="width: 6rem"></th></tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-utilisateurId>
-                <tr>
-                    <td>{{ nomUtilisateur(utilisateurId) }}</td>
-                    <td>
-                        <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" (click)="revoquerUtilisateur(utilisateurId)"></button>
-                    </td>
-                </tr>
-            </ng-template>
-        </p-table>
-
-        <div class="flex align-items-end gap-2 mt-3">
+        <div class="flex align-items-end gap-2 p-3 border-round mb-3" style="background:var(--brand-accent-tint);" *ngIf="isSuperAdmin">
             <div class="flex-1">
-                <label class="text-500 text-sm block mb-1">Affecter un utilisateur</label>
+                <label class="text-500 text-sm block mb-1">Utilisateur</label>
                 <p-dropdown [options]="utilisateurs" [(ngModel)]="nouvelUtilisateurId" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Sélectionner parmi les utilisateurs --" styleClass="w-full">
                     <ng-template let-u pTemplate="item">{{ u?.prenom }} {{ u?.nom }}</ng-template>
                     <ng-template let-u pTemplate="selectedItem">{{ u?.prenom }} {{ u?.nom }}</ng-template>
                 </p-dropdown>
             </div>
-            <button *ngIf="isSuperAdmin" pButton type="button" label="Affecter" (click)="affecterUtilisateur()"></button>
+            <button pButton type="button" label="Affecter" (click)="affecterUtilisateur()"></button>
         </div>
+
+        <div class="member-list" *ngIf="chantierUtilisateurIds.length > 0">
+            <div class="member-row" *ngFor="let utilisateurId of chantierUtilisateurIds">
+                <span class="member-avatar">{{ initialesUtilisateurId(utilisateurId) }}</span>
+                <span class="member-body"><span class="member-name">{{ nomUtilisateur(utilisateurId) }}</span></span>
+                <span class="member-end">
+                    <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" (click)="revoquerUtilisateur(utilisateurId)"></button>
+                </span>
+            </div>
+        </div>
+        <p class="text-500 text-sm m-0" *ngIf="chantierUtilisateurIds.length === 0">Aucun utilisateur affecté.</p>
         </ng-container>
     </div>
 
@@ -831,13 +916,13 @@
                 <i class="pi pi-user"></i>
                 <h6 class="m-0">Utilisateurs du client assignés ({{ utilisateursClientAssignes.length }})</h6>
             </div>
-            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherUtilisateursClient" (click)="afficherUtilisateursClient = false"></button>
+            <div class="flex align-items-center gap-2">
+                <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherUtilisateursClient" (click)="afficherUtilisateursClient = false"></button>
+                <button *ngIf="!afficherUtilisateursClient" pButton type="button" label="Gérer les accès" class="p-button-outlined p-button-sm" (click)="afficherUtilisateursClient = true"></button>
+            </div>
         </div>
 
-        <div *ngIf="!afficherUtilisateursClient" class="flex align-items-center justify-content-between">
-            <a class="cursor-pointer text-primary" (click)="afficherUtilisateursClient = true">{{ utilisateursClientAssignes.length }} utilisateur(s) assigné(s)</a>
-            <button pButton type="button" label="Gérer les accès" class="p-button-outlined" (click)="afficherUtilisateursClient = true"></button>
-        </div>
+        <p class="text-500 text-sm m-0" *ngIf="!afficherUtilisateursClient">{{ utilisateursClientAssignes.length }} utilisateur(s) assigné(s)</p>
 
         <ng-container *ngIf="afficherUtilisateursClient">
         <small class="text-500 block mb-3">
@@ -845,23 +930,9 @@
             il n'a accès à aucun chantier de ce client.
         </small>
 
-        <p-table [value]="utilisateursClientAssignes" dataKey="id" *ngIf="utilisateursClientAssignes.length > 0">
-            <ng-template pTemplate="header">
-                <tr><th>Identité</th><th style="width: 6rem"></th></tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-utilisateur>
-                <tr>
-                    <td>{{ utilisateur.prenom }} {{ utilisateur.nom }}</td>
-                    <td>
-                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" (click)="revoquerUtilisateur(utilisateur.id)"></button>
-                    </td>
-                </tr>
-            </ng-template>
-        </p-table>
-
-        <div class="flex align-items-end gap-2 mt-3">
+        <div class="flex align-items-end gap-2 p-3 border-round mb-3" style="background:var(--brand-accent-tint);">
             <div class="flex-1">
-                <label class="text-500 text-sm block mb-1">Assigner un utilisateur du client</label>
+                <label class="text-500 text-sm block mb-1">Utilisateur du client</label>
                 <p-dropdown [options]="utilisateursClientDuChantier" [(ngModel)]="nouvelUtilisateurClientId" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Sélectionner parmi les utilisateurs du client --" styleClass="w-full">
                     <ng-template let-u pTemplate="item">{{ u?.prenom }} {{ u?.nom }}</ng-template>
                     <ng-template let-u pTemplate="selectedItem">{{ u?.prenom }} {{ u?.nom }}</ng-template>
@@ -870,6 +941,17 @@
             </div>
             <button pButton type="button" label="Assigner" (click)="affecterUtilisateurClient()"></button>
         </div>
+
+        <div class="member-list" *ngIf="utilisateursClientAssignes.length > 0">
+            <div class="member-row" *ngFor="let utilisateur of utilisateursClientAssignes">
+                <span class="member-avatar">{{ initialesUtilisateur(utilisateur) }}</span>
+                <span class="member-body"><span class="member-name">{{ utilisateur.prenom }} {{ utilisateur.nom }}</span></span>
+                <span class="member-end">
+                    <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" (click)="revoquerUtilisateur(utilisateur.id)"></button>
+                </span>
+            </div>
+        </div>
+        <p class="text-500 text-sm m-0" *ngIf="utilisateursClientAssignes.length === 0">Aucun utilisateur assigné.</p>
         </ng-container>
     </div>
 
@@ -881,58 +963,19 @@
                 <i class="pi pi-building"></i>
                 <h6 class="m-0">Entreprises ({{ affectationsEntreprise.length }})</h6>
             </div>
-            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherEntreprises" (click)="afficherEntreprises = false"></button>
+            <div class="flex align-items-center gap-2">
+                <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherEntreprises" (click)="afficherEntreprises = false"></button>
+                <button *ngIf="!afficherEntreprises" pButton type="button" label="Gérer les entreprises" class="p-button-outlined p-button-sm" (click)="afficherEntreprises = true"></button>
+            </div>
         </div>
 
-        <div *ngIf="!afficherEntreprises" class="flex align-items-center justify-content-between">
-            <a class="cursor-pointer text-primary" (click)="afficherEntreprises = true">{{ affectationsEntreprise.length }} entreprise(s) affectée(s)</a>
-            <button pButton type="button" label="Gérer les entreprises" class="p-button-outlined" (click)="afficherEntreprises = true"></button>
-        </div>
+        <p class="text-500 text-sm m-0" *ngIf="!afficherEntreprises">{{ affectationsEntreprise.length }} entreprise(s) affectée(s)</p>
 
         <ng-container *ngIf="afficherEntreprises">
-        <p-table [value]="affectationsEntreprise" dataKey="id" *ngIf="affectationsEntreprise.length > 0">
-            <ng-template pTemplate="header">
-                <tr>
-                    <th>Entreprise</th>
-                    <th>Rôle</th>
-                    <th>Statut</th>
-                    <th class="text-center">Nb salariés</th>
-                    <th style="width: 6rem"></th>
-                </tr>
-                <tr>
-                    <th><p-columnFilter type="text" field="nomEntrepriseCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                    <th>
-                        <p-columnFilter field="role" matchMode="equals" [showMenu]="false">
-                            <ng-template pTemplate="filter" let-value let-filter="filterCallback">
-                                <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Principale', value: 'PRINCIPALE'}, {label: 'STT1', value: 'STT1'}, {label: 'STT2', value: 'STT2'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
-                            </ng-template>
-                        </p-columnFilter>
-                    </th>
-                    <th>
-                        <p-columnFilter field="statut" matchMode="equals" [showMenu]="false">
-                            <ng-template pTemplate="filter" let-value let-filter="filterCallback">
-                                <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Actif', value: 'ACTIF'}, {label: 'Inactif', value: 'INACTIF'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
-                            </ng-template>
-                        </p-columnFilter>
-                    </th>
-                    <th></th>
-                    <th></th>
-                </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-affectation>
-                <tr>
-                    <td>{{ affectation.nomEntrepriseCalculee }}</td>
-                    <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
-                    <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut | etatLabel"></p-tag></td>
-                    <td class="text-center">{{ entrepriseStatSalaries(affectation.id) }}</td>
-                    <td>
-                        <button pButton type="button" icon="pi pi-ban" class="p-button-text p-button-rounded" *ngIf="affectation.statut === 'ACTIF' && (isSuperAdmin || isEntreprise)" (click)="desactiverAffectationEntreprise(affectation)"></button>
-                    </td>
-                </tr>
-            </ng-template>
-        </p-table>
-
-        <form [formGroup]="affecterEntrepriseForm" (ngSubmit)="submitAffecterEntreprise()" class="formgrid grid align-items-end mt-3">
+        <!-- "Affecter une entreprise" : formulaire toujours visible au-dessus du tableau
+             plutôt qu'en dessous (voir prototype v2 validé) — un chantier peut compter des
+             dizaines d'entreprises sur sa durée de vie. -->
+        <form [formGroup]="affecterEntrepriseForm" (ngSubmit)="submitAffecterEntreprise()" class="formgrid grid align-items-end p-3 border-round mb-3" style="background:var(--brand-accent-tint);" *ngIf="isSuperAdmin || isEntreprise">
             <div class="field col-12 md:col-4">
                 <label for="entrepriseId">Entreprise *</label>
                 <p-dropdown id="entrepriseId" [options]="entreprisesDisponibles" formControlName="entrepriseId" optionLabel="raisonSociale" optionValue="id" [filter]="true" filterBy="raisonSociale" placeholder="-- Choisir --" styleClass="w-full" [class.ng-dirty]="affecterEntrepriseForm.controls.entrepriseId.touched"></p-dropdown>
@@ -948,9 +991,58 @@
                 <small class="p-error" *ngIf="affecterEntrepriseForm.controls.affectationParenteId.invalid && affecterEntrepriseForm.controls.affectationParenteId.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-2">
-                <button *ngIf="isSuperAdmin || isEntreprise" pButton type="submit" label="Ajouter" class="w-full"></button>
+                <button pButton type="submit" icon="pi pi-check" label="Affecter" class="w-full"></button>
             </div>
         </form>
+
+        <!-- Colonne "Rattachée à" (voir nomParenteCalculee) : le lien de sous-traitance
+             s'écrit maintenant en toutes lettres dans sa propre colonne plutôt que d'être
+             deviné via le formulaire ci-dessus. -->
+        <p-table [value]="affectationsEntreprise" dataKey="id" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="400px" *ngIf="affectationsEntreprise.length > 0">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Entreprise</th>
+                    <th>Rôle</th>
+                    <th>Rattachée à</th>
+                    <th>Statut</th>
+                    <th class="text-center">Nb salariés</th>
+                    <th style="width: 6rem"></th>
+                </tr>
+                <tr>
+                    <th><p-columnFilter type="text" field="nomEntrepriseCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                    <th>
+                        <p-columnFilter field="role" matchMode="equals" [showMenu]="false">
+                            <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Principale', value: 'PRINCIPALE'}, {label: 'STT1', value: 'STT1'}, {label: 'STT2', value: 'STT2'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                            </ng-template>
+                        </p-columnFilter>
+                    </th>
+                    <th></th>
+                    <th>
+                        <p-columnFilter field="statut" matchMode="equals" [showMenu]="false">
+                            <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Actif', value: 'ACTIF'}, {label: 'Inactif', value: 'INACTIF'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                            </ng-template>
+                        </p-columnFilter>
+                    </th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-affectation>
+                <tr>
+                    <td>{{ affectation.nomEntrepriseCalculee }}</td>
+                    <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
+                    <td>{{ affectation.nomParenteCalculee || '—' }}</td>
+                    <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut | etatLabel"></p-tag></td>
+                    <td class="text-center">{{ entrepriseStatSalaries(affectation.id) }}</td>
+                    <td>
+                        <button pButton type="button" icon="pi pi-ban" class="p-button-text p-button-rounded" *ngIf="affectation.statut === 'ACTIF' && (isSuperAdmin || isEntreprise)" (click)="desactiverAffectationEntreprise(affectation)"></button>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+        <p class="text-500 text-sm m-0" *ngIf="affectationsEntreprise.length === 0">Aucune entreprise affectée.</p>
         </ng-container>
     </div>
 
@@ -962,54 +1054,19 @@
                 <i class="pi pi-users"></i>
                 <h6 class="m-0">Salariés ({{ affectationsSalarie.length }})</h6>
             </div>
-            <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherSalaries" (click)="afficherSalaries = false"></button>
+            <div class="flex align-items-center gap-2">
+                <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherSalaries" (click)="afficherSalaries = false"></button>
+                <button *ngIf="!afficherSalaries" pButton type="button" label="Gérer les salariés" class="p-button-outlined p-button-sm" (click)="afficherSalaries = true"></button>
+            </div>
         </div>
 
-        <div *ngIf="!afficherSalaries" class="flex align-items-center justify-content-between">
-            <a class="cursor-pointer text-primary" (click)="afficherSalaries = true">{{ affectationsSalarie.length }} salarié(s) affecté(s)</a>
-            <button pButton type="button" label="Gérer les salariés" class="p-button-outlined" (click)="afficherSalaries = true"></button>
-        </div>
+        <p class="text-500 text-sm m-0" *ngIf="!afficherSalaries">{{ affectationsSalarie.length }} salarié(s) affecté(s)</p>
 
         <ng-container *ngIf="afficherSalaries">
-        <p-table [value]="affectationsSalarie" dataKey="id" *ngIf="affectationsSalarie.length > 0">
-            <ng-template pTemplate="header">
-                <tr>
-                    <th>Identité</th>
-                    <th>Statut</th>
-                    <th>Contrat</th>
-                    <th style="width: 10rem"></th>
-                </tr>
-                <tr>
-                    <th><p-columnFilter type="text" field="nomSalarieCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                    <th>
-                        <p-columnFilter field="statutAcces" matchMode="equals" [showMenu]="false">
-                            <ng-template pTemplate="filter" let-value let-filter="filterCallback">
-                                <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Accordé', value: 'ACCORDE'}, {label: 'Refusé', value: 'REFUSE'}, {label: 'En attente', value: 'EN_ATTENTE'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
-                            </ng-template>
-                        </p-columnFilter>
-                    </th>
-                    <th><p-columnFilter type="text" field="contratCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                    <th></th>
-                </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-affectation>
-                <tr>
-                    <td>{{ affectation.nomSalarieCalculee }}</td>
-                    <td>
-                        <p-tag [severity]="affectation.statutAcces === 'ACCORDE' ? 'success' : (affectation.statutAcces === 'REFUSE' ? 'danger' : 'warning')" [value]="affectation.statutAcces"></p-tag>
-                    </td>
-                    <td>{{ affectation.contratCalculee }}</td>
-                    <td>
-                        <div class="flex align-items-center gap-1 flex-nowrap">
-                            <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="affectation.statutAcces !== 'ACCORDE' && isSuperAdmin" (click)="accorderAcces(affectation)"></button>
-                            <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="affectation.statutAcces !== 'REFUSE' && isSuperAdmin" (click)="refuserAcces(affectation)"></button>
-                        </div>
-                    </td>
-                </tr>
-            </ng-template>
-        </p-table>
-
-        <form [formGroup]="affecterSalarieForm" (ngSubmit)="submitAffecterSalarie()" class="formgrid grid align-items-end mt-3">
+        <!-- "Affecter un salarié" : formulaire toujours visible au-dessus du tableau (voir
+             prototype v2 validé) — un chantier peut compter plusieurs dizaines de salariés
+             affectés sur sa durée de vie. -->
+        <form [formGroup]="affecterSalarieForm" (ngSubmit)="submitAffecterSalarie()" class="formgrid grid align-items-end p-3 border-round mb-3" style="background:var(--brand-accent-tint);" *ngIf="isSuperAdmin || isEntreprise">
             <div class="field col-12 md:col-5">
                 <label for="salarieId">Salarié *</label>
                 <p-dropdown id="salarieId" [options]="salariesDisponibles" formControlName="salarieId" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Choisir --" styleClass="w-full" [class.ng-dirty]="affecterSalarieForm.controls.salarieId.touched">
@@ -1027,9 +1084,54 @@
                 <small class="p-error" *ngIf="affecterSalarieForm.controls.affectationEntrepriseChantierId.invalid && affecterSalarieForm.controls.affectationEntrepriseChantierId.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-2">
-                <button *ngIf="isSuperAdmin || isEntreprise" pButton type="submit" label="Ajouter" class="w-full"></button>
+                <button pButton type="submit" icon="pi pi-check" label="Affecter" class="w-full"></button>
             </div>
         </form>
+
+        <!-- Colonne "Entreprise" ajoutée (absente jusqu'ici, voir nomEntrepriseCalculee) :
+             sur un chantier avec plusieurs entreprises, impossible de savoir qui emploie
+             qui sans l'ouvrir. -->
+        <p-table [value]="affectationsSalarie" dataKey="id" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="400px" *ngIf="affectationsSalarie.length > 0">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Identité</th>
+                    <th>Entreprise</th>
+                    <th>Statut</th>
+                    <th>Contrat</th>
+                    <th style="width: 10rem"></th>
+                </tr>
+                <tr>
+                    <th><p-columnFilter type="text" field="nomSalarieCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                    <th><p-columnFilter type="text" field="nomEntrepriseCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                    <th>
+                        <p-columnFilter field="statutAcces" matchMode="equals" [showMenu]="false">
+                            <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'Accordé', value: 'ACCORDE'}, {label: 'Refusé', value: 'REFUSE'}, {label: 'En attente', value: 'EN_ATTENTE'}]" optionLabel="label" optionValue="value" placeholder="Tous" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                            </ng-template>
+                        </p-columnFilter>
+                    </th>
+                    <th><p-columnFilter type="text" field="contratCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                    <th></th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-affectation>
+                <tr>
+                    <td>{{ affectation.nomSalarieCalculee }}</td>
+                    <td>{{ affectation.nomEntrepriseCalculee }}</td>
+                    <td>
+                        <p-tag [severity]="affectation.statutAcces === 'ACCORDE' ? 'success' : (affectation.statutAcces === 'REFUSE' ? 'danger' : 'warning')" [value]="affectation.statutAcces"></p-tag>
+                    </td>
+                    <td>{{ affectation.contratCalculee }}</td>
+                    <td>
+                        <div class="flex align-items-center gap-1 flex-nowrap">
+                            <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="affectation.statutAcces !== 'ACCORDE' && isSuperAdmin" (click)="accorderAcces(affectation)"></button>
+                            <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="affectation.statutAcces !== 'REFUSE' && isSuperAdmin" (click)="refuserAcces(affectation)"></button>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+        <p class="text-500 text-sm m-0" *ngIf="affectationsSalarie.length === 0">Aucun salarié affecté.</p>
         </ng-container>
     </div>
 </ng-container>

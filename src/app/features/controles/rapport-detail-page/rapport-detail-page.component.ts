@@ -2,15 +2,16 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { forkJoin } from 'rxjs';
 import { ControleService } from '../services/controle.service';
-import { ControleSalarie, RapportControle } from '../models/controle.model';
+import { Controle, ControleSalarie, RapportControle } from '../models/controle.model';
 import { Chantier } from 'src/app/features/chantiers/models/chantier.model';
 import { ChantierService } from 'src/app/features/chantiers/services/chantier.service';
 import { Salarie } from 'src/app/features/salaries/models/salarie.model';
 import { SalarieService } from 'src/app/features/salaries/services/salarie.service';
 import { Entreprise } from 'src/app/features/entreprises/models/entreprise.model';
 import { EntrepriseService } from 'src/app/features/entreprises/services/entreprise.service';
-import { ActionCorrective, Utilisateur } from 'src/app/features/configuration/models/configuration.model';
+import { ActionCorrective, ControleTiers, Utilisateur } from 'src/app/features/configuration/models/configuration.model';
 import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
 import { UtilisateurService } from 'src/app/features/configuration/services/utilisateur.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
@@ -24,15 +25,42 @@ export class RapportDetailPageComponent implements OnInit {
 
     rapportId!: string;
     rapport: RapportControle | null = null;
+    controle: Controle | null = null;
     chantier: Chantier | null = null;
     loading = true;
     autresRapports: RapportControle[] = [];
+    autresControles: Map<string, Controle> = new Map();
     entrees: ControleSalarie[] = [];
 
     salaries: Salarie[] = [];
     entreprises: Entreprise[] = [];
     actionsCorrectives: ActionCorrective[] = [];
     utilisateurs: Utilisateur[] = [];
+    controleTiers: ControleTiers[] = [];
+
+    // Même calcul que les anneaux Client/Chantier/Entreprise/Salarié (2πr, r=15.5).
+    private readonly RING_CIRCONFERENCE = 2 * Math.PI * 15.5;
+
+    ringDashoffset(pourcentage: number): number {
+        const clamped = Math.min(100, Math.max(0, pourcentage || 0));
+        return this.RING_CIRCONFERENCE * (1 - clamped / 100);
+    }
+
+    get tauxConformite(): number | null {
+        if (!this.rapport) {
+            return null;
+        }
+        const total = this.rapport.nbAccords + this.rapport.nbRefus;
+        return total > 0 ? Math.round((this.rapport.nbAccords / total) * 100) : null;
+    }
+
+    get couleurConformite(): string {
+        const taux = this.tauxConformite ?? 0;
+        if (taux >= 90) {
+            return 'var(--brand-success)';
+        }
+        return taux >= 70 ? 'var(--brand-warning)' : 'var(--brand-danger)';
+    }
 
     edition = false;
     envoiEnCours = false;
@@ -68,6 +96,7 @@ export class RapportDetailPageComponent implements OnInit {
         this.salarieService.lister().subscribe((salaries) => (this.salaries = salaries));
         this.entrepriseService.lister().subscribe((entreprises) => (this.entreprises = entreprises));
         this.referenceDataService.listerActionsCorrectives().subscribe((actions) => (this.actionsCorrectives = actions));
+        this.referenceDataService.listerControleTiers().subscribe((controleTiers) => (this.controleTiers = controleTiers));
         this.utilisateurService.lister().subscribe((utilisateurs) => (this.utilisateurs = utilisateurs));
         this.charger();
     }
@@ -83,14 +112,47 @@ export class RapportDetailPageComponent implements OnInit {
                     responsableUtilisateurId: rapport.responsableUtilisateurId ?? ''
                 });
                 this.chantierService.obtenir(rapport.chantierId).subscribe((chantier) => (this.chantier = chantier));
+                this.controleService.obtenir(rapport.controleId).subscribe((controle) => (this.controle = controle));
                 this.controleService.listerSalaries(rapport.controleId).subscribe((entrees) => (this.entrees = entrees));
                 this.controleService.listerRapports(rapport.chantierId).subscribe((rapports) => {
                     this.autresRapports = rapports.filter((r) => r.id !== rapport.id);
+                    this.chargerControlesDesAutresRapports(this.autresRapports);
                 });
                 this.loading = false;
             },
             error: () => this.loading = false
         });
+    }
+
+    // La date affichée pour "Autres rapports" est celle du contrôle sous-jacent, pas
+    // celle du rapport lui-même (un rapport n'a qu'une date d'envoi, pas de date propre).
+    private chargerControlesDesAutresRapports(rapports: RapportControle[]): void {
+        const controleIds = [...new Set(rapports.map((r) => r.controleId))];
+        if (controleIds.length === 0) {
+            return;
+        }
+        forkJoin(controleIds.map((id) => this.controleService.obtenir(id))).subscribe((controles) => {
+            this.autresControles = new Map(controles.map((c) => [c.id, c]));
+        });
+    }
+
+    dateControlePour(controleId: string): string | undefined {
+        return this.autresControles.get(controleId)?.dateControle;
+    }
+
+    nomControleTiers(id?: string): string | undefined {
+        if (!id) {
+            return undefined;
+        }
+        return this.controleTiers.find((c) => c.id === id)?.nom;
+    }
+
+    initialesSalarie(id: string): string {
+        const s = this.salaries.find((x) => x.id === id);
+        if (!s) {
+            return '?';
+        }
+        return ((s.prenom[0] ?? '') + (s.nom[0] ?? '')).toUpperCase() || '?';
     }
 
     nomSalarie(id: string): string {

@@ -74,9 +74,14 @@ export class ChantierDetailComponent implements OnInit {
     afficherUtilisateurs = false;
     afficherEntreprises = false;
     afficherSalaries = false;
+    // IPs autorisées : champ technique rarement utilisé au quotidien (retour utilisateur,
+    // même traitement que Client.section-tracker) — replié par défaut dans le formulaire.
+    afficherOptionsAvancees = false;
 
     // --- Contrôles ---
-    controles: Controle[] = [];
+    // controleTiersNomCalcule ajouté au chargement, pour permettre un p-columnFilter
+    // texte simple sur "Effectué par" (le champ brut n'a que controleTiersId).
+    controles: Array<Controle & { controleTiersNomCalcule: string }> = [];
     controlesForm = this.fb.group({
         recurrenceControles: ['AUCUNE' as RecurrenceControles],
         dateProchainControle: [null as Date | null]
@@ -99,9 +104,10 @@ export class ChantierDetailComponent implements OnInit {
     nouvelUtilisateurClientId = '';
 
     // --- Entreprises affectées ---
-    // nomEntrepriseCalculee ajouté au chargement, pour permettre un p-columnFilter
-    // texte simple sur le nom de l'entreprise (le champ brut n'a que entrepriseId).
-    affectationsEntreprise: Array<AffectationEntrepriseChantier & { nomEntrepriseCalculee: string }> = [];
+    // nomEntrepriseCalculee/nomParenteCalculee ajoutés au chargement, pour permettre un
+    // p-columnFilter texte simple (les champs bruts n'ont que des id) et afficher le
+    // rattachement en toutes lettres dans sa propre colonne (voir prototype v2 validé).
+    affectationsEntreprise: Array<AffectationEntrepriseChantier & { nomEntrepriseCalculee: string; nomParenteCalculee: string }> = [];
     entreprisesDisponibles: Entreprise[] = [];
     roles: RoleEntreprise[] = ['PRINCIPALE', 'STT1', 'STT2'];
     parentsDisponibles: Array<{ id: string; label: string }> = [];
@@ -112,9 +118,10 @@ export class ChantierDetailComponent implements OnInit {
     });
 
     // --- Salariés affectés ---
-    // nomSalarieCalculee/contratCalculee ajoutés au chargement, pour permettre des
-    // p-columnFilter simples (les champs bruts n'ont que salarieId).
-    affectationsSalarie: Array<AffectationSalarieChantier & { nomSalarieCalculee: string; contratCalculee: string }> = [];
+    // nomSalarieCalculee/contratCalculee/nomEntrepriseCalculee ajoutés au chargement, pour
+    // permettre des p-columnFilter simples et afficher l'entreprise employeuse en colonne
+    // (absente jusqu'ici, voir prototype v2 validé).
+    affectationsSalarie: Array<AffectationSalarieChantier & { nomSalarieCalculee: string; contratCalculee: string; nomEntrepriseCalculee: string }> = [];
     salariesDisponibles: Salarie[] = [];
     affecterSalarieForm = this.fb.group({
         salarieId: ['', Validators.required],
@@ -315,6 +322,11 @@ export class ChantierDetailComponent implements OnInit {
         const p = (u.prenom || '').trim();
         const n = (u.nom || '').trim();
         return ((p[0] ?? '') + (n[0] ?? '')).toUpperCase() || '?';
+    }
+
+    initialesUtilisateurId(id: string): string {
+        const u = this.utilisateurs.find((x) => x.id === id);
+        return u ? this.initialesUtilisateur(u) : '?';
     }
 
     /** Rapport envoyé pour ce contrôle, s'il existe — un contrôle terminé n'a pas
@@ -562,6 +574,14 @@ export class ChantierDetailComponent implements OnInit {
         };
     }
 
+    // --- Bandeau d'en-tête SUPER_ADMIN (voir prototype validé) : reprend tel quel le
+    // calcul déjà fait pour la carte "Statistiques" plus bas — aucune donnée de plus à
+    // charger, juste remontée en haut de page. ---
+
+    get prochainControleEnRetard(): boolean {
+        return !!this.chantier?.dateProchainControle && new Date(this.chantier.dateProchainControle) < new Date();
+    }
+
     get statsEntreprises(): { total: number; actif: number; inactif: number } {
         const entreprisesAffecteesIds = new Set(this.affectationsEntreprise.map((a) => a.entrepriseId));
         const entreprisesAffectees = this.entreprises.filter((e) => entreprisesAffecteesIds.has(e.id));
@@ -575,7 +595,22 @@ export class ChantierDetailComponent implements OnInit {
     // --- Contrôles ---
 
     chargerControles(chantierId: string) {
-        this.controleService.lister(chantierId).subscribe((controles) => (this.controles = controles));
+        this.controleService.lister(chantierId).subscribe((controles) => {
+            this.controles = controles.map((c) => ({ ...c, controleTiersNomCalcule: this.nomControleTiers(c.controleTiersId) }));
+        });
+    }
+
+    /** Statut à 3 couleurs (voir prototype v2 validé) : un contrôle non terminé dont la
+        date est déjà passée est "En retard", pas juste "Non" au même titre qu'un contrôle
+        simplement pas encore dû — distinction absente jusqu'ici. */
+    statutControle(controle: Controle): { label: string; severity: 'success' | 'danger' | 'info' } {
+        if (controle.termine) {
+            return { label: 'Terminé', severity: 'success' };
+        }
+        if (new Date(controle.dateControle) < new Date()) {
+            return { label: 'En retard', severity: 'danger' };
+        }
+        return { label: 'À venir', severity: 'info' };
     }
 
     submitControlesConfig() {
@@ -668,7 +703,17 @@ export class ChantierDetailComponent implements OnInit {
 
     chargerAffectationsEntreprise(chantierId: string) {
         this.affectationEntrepriseService.lister(chantierId).subscribe((affectations) => {
-            this.affectationsEntreprise = affectations.map((a) => ({ ...a, nomEntrepriseCalculee: this.nomEntreprise(a.entrepriseId) }));
+            this.affectationsEntreprise = affectations.map((a) => ({
+                ...a,
+                nomEntrepriseCalculee: this.nomEntreprise(a.entrepriseId),
+                // Colonne "Rattachée à" (voir prototype v2 validé) : écrit noir sur blanc le
+                // nom de l'entreprise parente plutôt qu'une indentation visuelle à deviner —
+                // résolu dans CE lot d'affectations, this.affectationsEntreprise n'est pas
+                // encore réassigné à ce stade de la fonction.
+                nomParenteCalculee: a.affectationParenteId
+                    ? this.nomEntreprise(affectations.find((p) => p.id === a.affectationParenteId)?.entrepriseId ?? '')
+                    : ''
+            }));
             this.recalculerEntreprisesDisponibles();
             this.recalculerParentsDisponibles();
         });
@@ -735,7 +780,8 @@ export class ChantierDetailComponent implements OnInit {
             this.affectationsSalarie = affectations.map((a) => ({
                 ...a,
                 nomSalarieCalculee: this.nomSalarie(a.salarieId),
-                contratCalculee: this.contratDuSalarie(a.salarieId)
+                contratCalculee: this.contratDuSalarie(a.salarieId),
+                nomEntrepriseCalculee: this.nomEntreprise(a.entrepriseId ?? '')
             }));
             this.recalculerSalariesDisponibles();
         });

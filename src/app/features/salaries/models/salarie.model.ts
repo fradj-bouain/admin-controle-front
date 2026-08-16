@@ -16,6 +16,7 @@ export interface Salarie {
     // aucun, affiché "Disponible") — à ne pas confondre avec `statut` ci-dessus, un
     // simple interrupteur administratif sans lien avec une affectation réelle.
     chantierActuel?: string | null;
+    createdAt: string;
 }
 
 export interface CreateSalarieRequest {

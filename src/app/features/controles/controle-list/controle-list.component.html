@@ -3,6 +3,86 @@
 
 <p-tabView>
     <p-tabPanel header="Contrôles">
+        <div class="stat-grid" *ngIf="!loadingRapports">
+            <div class="stat-card" style="cursor:default;">
+                <div class="stat-top">
+                    <div>
+                        <div class="stat-label">Rapports</div>
+                        <div class="stat-value-row"><span class="stat-value tabular-nums">{{ nbRapports }}</span></div>
+                    </div>
+                    <span class="stat-icon tint-info"><i class="pi pi-file"></i></span>
+                </div>
+                <span class="stat-caption">générés au total</span>
+            </div>
+
+            <div class="stat-card" style="cursor:default;">
+                <div class="stat-top">
+                    <div>
+                        <div class="stat-label">Conformité</div>
+                        <div class="stat-value-row">
+                            <span class="stat-value tabular-nums">{{ nbRapports > 0 ? tauxConformite + '%' : '—' }}</span>
+                            <span class="stat-value-suffix" *ngIf="nbRapports > 0">accords</span>
+                        </div>
+                    </div>
+                    <span class="stat-icon tint-success"><i class="pi pi-check-circle"></i></span>
+                </div>
+                <div class="stat-bar" *ngIf="totalAccords + totalRefus > 0">
+                    <span class="stat-bar-seg success" [style.width.%]="(totalAccords / (totalAccords + totalRefus)) * 100"></span>
+                    <span class="stat-bar-seg danger" [style.width.%]="(totalRefus / (totalAccords + totalRefus)) * 100"></span>
+                </div>
+                <div class="stat-legend" *ngIf="totalAccords + totalRefus > 0">
+                    <span class="stat-legend-item"><span class="stat-legend-dot success"></span>{{ totalAccords }} accords</span>
+                    <span class="stat-legend-item"><span class="stat-legend-dot danger"></span>{{ totalRefus }} refus</span>
+                </div>
+                <span class="stat-caption" *ngIf="nbRapports === 0">Aucun rapport pour le moment.</span>
+            </div>
+
+            <div class="stat-card" style="cursor:default;">
+                <div class="stat-top">
+                    <div>
+                        <div class="stat-label">Envoi</div>
+                        <div class="stat-value-row">
+                            <span class="stat-value tabular-nums">{{ nbRapports > 0 ? nbEnvoyes : '—' }}</span>
+                            <span class="stat-value-suffix" *ngIf="nbRapports > 0">/{{ nbRapports }} envoyés</span>
+                        </div>
+                    </div>
+                    <span class="stat-icon tint-warning"><i class="pi pi-envelope"></i></span>
+                </div>
+                <span class="stat-caption" *ngIf="nbRapports === 0">Aucun rapport pour le moment.</span>
+                <span class="stat-caption" *ngIf="nbRapports > 0 && nbNonEnvoyes > 0">{{ nbNonEnvoyes }} rapport{{ nbNonEnvoyes > 1 ? 's' : '' }} encore à envoyer</span>
+                <span class="stat-caption" *ngIf="nbRapports > 0 && nbNonEnvoyes === 0">Tous les rapports sont envoyés.</span>
+            </div>
+
+            <div class="stat-card" style="cursor:default;">
+                <div class="stat-top">
+                    <div>
+                        <div class="stat-label">Sur ce chantier</div>
+                        <div class="stat-value-row">
+                            <span class="stat-value tabular-nums">{{ chantierId ? nbControlesEnCoursChantier : '—' }}</span>
+                            <span class="stat-value-suffix" *ngIf="chantierId">en cours</span>
+                        </div>
+                    </div>
+                    <span class="stat-icon tint-accent"><i class="pi pi-map-marker"></i></span>
+                </div>
+                <span class="stat-caption" *ngIf="chantierId">{{ nbControlesChantier }} contrôle{{ nbControlesChantier > 1 ? 's' : '' }} au total</span>
+                <span class="stat-caption" *ngIf="!chantierId">Sélectionnez un chantier ci-dessous</span>
+            </div>
+        </div>
+
+        <div class="card mb-3" *ngIf="!loadingRapports && nbRapports > 0">
+            <div class="card-head">
+                <i class="pi pi-chart-bar"></i>
+                <h6 class="m-0">Résultats cumulés (tous rapports)</h6>
+            </div>
+            <div class="bar-chart">
+                <div class="bar-row" *ngFor="let r of cumulResultats">
+                    <span class="bar-label">{{ r.libelle }}</span>
+                    <span class="bar-track"><span class="bar-fill" [style.width.%]="(r.total / maxCumulResultats) * 100" [style.background]="r.couleur"></span></span>
+                    <span class="bar-count">{{ r.total }}</span>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <p-toolbar styleClass="mb-4">
                 <ng-template pTemplate="left">
@@ -31,7 +111,7 @@
                 </ng-template>
             </p-toolbar>
 
-            <p-table #dtControles [value]="controles" dataKey="id" [loading]="loadingControles" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
+            <p-table #dtControles [value]="controles" dataKey="id" [loading]="loadingControles" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Début</th>
@@ -60,7 +140,7 @@
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-controle>
-                    <tr class="cursor-pointer" [routerLink]="['/controles', controle.id]">
+                    <tr class="cursor-pointer row-stripe" [class.success]="controle.termine" [class.warning]="!controle.termine" [routerLink]="['/controles', controle.id]">
                         <td>{{ controle.dateControle }}</td>
                         <td>{{ controle.dateFin }}</td>
                         <td>{{ controle.remarques }}</td>
@@ -89,7 +169,7 @@
 
     <p-tabPanel header="Rapports">
         <div class="card">
-            <p-table #dtRapports [value]="rapports" dataKey="id" [loading]="loadingRapports" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]">
+            <p-table #dtRapports [value]="rapports" dataKey="id" [loading]="loadingRapports" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Salariés contrôlés</th>
@@ -118,7 +198,7 @@
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-rapport>
-                    <tr class="cursor-pointer" [routerLink]="['/controles/rapports', rapport.id]">
+                    <tr class="cursor-pointer row-stripe" [class.success]="rapport.dateEnvoi" [class.warning]="!rapport.dateEnvoi" [routerLink]="['/controles/rapports', rapport.id]">
                         <td>{{ rapport.nbSalariesControles }}</td>
                         <td>{{ rapport.nbAccords }}</td>
                         <td>{{ rapport.nbRefus }}</td>

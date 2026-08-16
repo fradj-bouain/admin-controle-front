@@ -1,8 +1,15 @@
 import { Component, OnInit } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { Entreprise } from '../models/entreprise.model';
 import { EntrepriseService } from '../services/entreprise.service';
+import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
+
+interface RepartitionCorpsMetier {
+    libelle: string;
+    total: number;
+}
 
 @Component({
     selector: 'app-entreprise-list',
@@ -19,8 +26,19 @@ export class EntrepriseListComponent implements OnInit {
     afficherFiltresAvances = false;
     menuItems: MenuItem[] = [];
 
+    // --- Indicateurs (voir prototype validé) : comptés côté client à partir de la
+    // liste déjà chargée pour cette page, pas de nouvel appel dédié.
+    nbActifs = 0;
+    nbInactifs = 0;
+    nbSurChantier = 0;
+    nbNouveauxCeMois = 0;
+    repartitionCorpsMetier: RepartitionCorpsMetier[] = [];
+    // Repliable, repliée par défaut (même convention que ClientListComponent.afficherRepartitionVilles).
+    afficherRepartitionCorpsMetier = false;
+
     constructor(
         private entrepriseService: EntrepriseService,
+        private referenceDataService: ReferenceDataService,
         private confirmation: ConfirmationService,
         private message: MessageService,
         public auth: AuthService
@@ -38,19 +56,61 @@ export class EntrepriseListComponent implements OnInit {
         return this.auth.hasRole('CLIENT');
     }
 
+    get maxRepartitionCorpsMetier(): number {
+        return Math.max(1, ...this.repartitionCorpsMetier.map((c) => c.total));
+    }
+
+    initiales(raisonSociale: string): string {
+        const mots = raisonSociale.trim().split(/\s+/).filter((m) => m.length > 0);
+        if (mots.length === 0) {
+            return '?';
+        }
+        return mots.length === 1 ? mots[0].substring(0, 2).toUpperCase() : (mots[0][0] + mots[1][0]).toUpperCase();
+    }
+
     ngOnInit(): void {
         this.charger();
     }
 
     charger() {
         this.loading = true;
-        this.entrepriseService.lister().subscribe({
-            next: (entreprises) => { this.entreprises = entreprises; this.loading = false; },
+        forkJoin({
+            entreprises: this.entrepriseService.lister(),
+            corpsDeMetiers: this.referenceDataService.listerCorpsDeMetier()
+        }).subscribe({
+            next: ({ entreprises, corpsDeMetiers }) => {
+                this.entreprises = entreprises;
+                this.calculerIndicateurs(entreprises, corpsDeMetiers);
+                this.loading = false;
+            },
             error: () => {
                 this.loading = false;
                 this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Impossible de charger les entreprises' });
             }
         });
+    }
+
+    private calculerIndicateurs(entreprises: Entreprise[], corpsDeMetiers: Array<{ id: string; libelle: string }>): void {
+        this.nbActifs = entreprises.filter((e) => e.actif).length;
+        this.nbInactifs = entreprises.length - this.nbActifs;
+        this.nbSurChantier = entreprises.filter((e) => !!e.chantierActuel).length;
+
+        const debutMois = new Date();
+        debutMois.setDate(1);
+        debutMois.setHours(0, 0, 0, 0);
+        this.nbNouveauxCeMois = entreprises.filter((e) => new Date(e.createdAt) >= debutMois).length;
+
+        const totalParCorpsMetier: Record<string, number> = {};
+        entreprises.forEach((e) => {
+            const libelle = corpsDeMetiers.find((c) => c.id === e.corpsDeMetierId)?.libelle;
+            if (libelle) {
+                totalParCorpsMetier[libelle] = (totalParCorpsMetier[libelle] ?? 0) + 1;
+            }
+        });
+        this.repartitionCorpsMetier = Object.entries(totalParCorpsMetier)
+            .map(([libelle, total]) => ({ libelle, total }))
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 4);
     }
 
     confirmerBasculeStatut(entreprise: Entreprise) {
