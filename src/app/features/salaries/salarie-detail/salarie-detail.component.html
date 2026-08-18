@@ -335,13 +335,13 @@
                 </span>
             </div>
 
-            <div class="ent-doc-row" [ngClass]="'missing'" *ngFor="let type of typesAFournir">
-                <span class="ent-doc-row-icon warn"><i class="pi pi-file"></i></span>
+            <div class="ent-doc-row" [ngClass]="'a-fournir'" *ngFor="let type of typesAFournir">
+                <span class="ent-doc-row-icon a-fournir"><i class="pi pi-file"></i></span>
                 <span class="ent-doc-row-body">
                     <span class="ent-doc-row-title">{{ type.libelle }}</span>
                     <span class="ent-doc-row-sub">Document manquant</span>
                 </span>
-                <span class="ent-doc-row-end"><p-tag severity="warning" value="À fournir"></p-tag></span>
+                <span class="ent-doc-row-end"><p-tag severity="danger" value="À fournir"></p-tag></span>
             </div>
 
             <div class="ent-doc-row" [ngClass]="documentSeverite(documentsByType[type.id])" *ngFor="let type of typesDejaFournis">
@@ -541,21 +541,10 @@
                 </ng-container>
             </ng-container>
 
-            <ng-container *ngIf="typesOptionnelsRestants.length > 0">
-                <div class="ent-doc-section-label muted">Documents optionnels</div>
-                <button type="button" class="ent-optional-toggle" *ngIf="!afficherOptionnels" (click)="afficherOptionnels = true">
-                    <span>{{ typesOptionnelsRestants.length }} document(s) optionnel(s)</span>
-                    <span class="link">Afficher <i class="pi pi-chevron-down text-xs"></i></span>
-                </button>
-                <ng-container *ngIf="afficherOptionnels">
-                    <button pButton type="button" label="Masquer les optionnels" icon="pi pi-chevron-up" class="p-button-text p-button-sm mb-2" (click)="afficherOptionnels = false"></button>
-                    <ng-container *ngFor="let type of typesOptionnelsRestants">
-                        <ng-container *ngTemplateOutlet="ligneDocumentEntreprise; context: { type: type }"></ng-container>
-                    </ng-container>
-                </ng-container>
-            </ng-container>
+            <!-- Documents optionnels retirés de cette vue Entreprise (demande client, voir audit
+                 point 6) — la vue Client ne les affichait déjà pas, seule cette vue restait à corriger. -->
 
-            <p class="text-500 text-center py-3" *ngIf="typesAFournir.length === 0 && typesDejaFournis.length === 0 && typesOptionnelsRestants.length === 0">Aucun type de document configuré pour les salariés.</p>
+            <p class="text-500 text-center py-3" *ngIf="typesAFournir.length === 0 && typesDejaFournis.length === 0">Aucun document obligatoire configuré pour les salariés.</p>
         </div>
 
         <!-- Historique : lignes simples -->
@@ -587,14 +576,14 @@
      les documents "à fournir" gardent le widget de dépôt existant (une zone de dépôt ne peut
      pas être un simple lien de navigation). -->
 <ng-template #ligneDocumentEntreprise let-type="type">
-    <div class="ent-doc-row ent-doc-row--upload missing" *ngIf="!documentsByType[type.id]">
+    <div class="ent-doc-row ent-doc-row--upload a-fournir" *ngIf="!documentsByType[type.id]">
         <div class="ent-doc-row-header">
-            <span class="ent-doc-row-icon warn"><i class="pi pi-file"></i></span>
+            <span class="ent-doc-row-icon a-fournir"><i class="pi pi-file"></i></span>
             <span class="ent-doc-row-body">
                 <span class="ent-doc-row-title" [pTooltip]="type.libelle" tooltipPosition="top">{{ type.libelle }}</span>
                 <span class="ent-doc-row-sub">Document manquant</span>
             </span>
-            <p-tag severity="warning" value="À fournir"></p-tag>
+            <p-tag severity="danger" value="À fournir"></p-tag>
         </div>
         <div class="ent-doc-row-dropzone">
             <app-document-upload-preview (fichierChange)="onFichierChoisi($event, type.id)"></app-document-upload-preview>
@@ -917,7 +906,7 @@
 
     <div *ngIf="isNew || afficherDocuments">
         <ng-container *ngIf="typesAFournir.length > 0">
-            <div class="flex align-items-center gap-2 text-sm font-semibold uppercase text-orange-600 mb-2 mt-2">
+            <div class="flex align-items-center gap-2 text-sm font-semibold uppercase text-red-600 mb-2 mt-2">
                 <i class="pi pi-exclamation-triangle"></i> À fournir ({{ typesAFournir.length }})
             </div>
             <ng-container *ngFor="let type of typesAFournir">

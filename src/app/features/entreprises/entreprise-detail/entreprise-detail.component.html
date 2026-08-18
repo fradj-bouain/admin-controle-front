@@ -866,13 +866,13 @@
                 </span>
             </div>
 
-            <div class="ent-doc-row" [ngClass]="'missing'" *ngFor="let type of typesAFournir">
-                <span class="ent-doc-row-icon warn"><i class="pi pi-file"></i></span>
+            <div class="ent-doc-row" [ngClass]="'a-fournir'" *ngFor="let type of typesAFournir">
+                <span class="ent-doc-row-icon a-fournir"><i class="pi pi-file"></i></span>
                 <span class="ent-doc-row-body">
                     <span class="ent-doc-row-title">{{ type.libelle }}</span>
                     <span class="ent-doc-row-sub">Document manquant</span>
                 </span>
-                <span class="ent-doc-row-end"><p-tag severity="warning" value="À fournir"></p-tag></span>
+                <span class="ent-doc-row-end"><p-tag severity="danger" value="À fournir"></p-tag></span>
             </div>
 
             <div class="ent-doc-row" [ngClass]="documentSeverite(documentsByType[type.id])" *ngFor="let type of typesDejaFournis">
@@ -918,14 +918,14 @@
 <ng-template #ligneDocumentEntreprise let-type="type">
     <!-- Document manquant : en-tête (icône+titre) sur sa propre ligne, zone de dépôt en
          pleine largeur en dessous — jamais écrasée dans une colonne étroite. -->
-    <div class="ent-doc-row ent-doc-row--upload missing" *ngIf="!documentsByType[type.id]">
+    <div class="ent-doc-row ent-doc-row--upload a-fournir" *ngIf="!documentsByType[type.id]">
         <div class="ent-doc-row-header">
-            <span class="ent-doc-row-icon warn"><i class="pi pi-file"></i></span>
+            <span class="ent-doc-row-icon a-fournir"><i class="pi pi-file"></i></span>
             <span class="ent-doc-row-body">
                 <span class="ent-doc-row-title" [pTooltip]="type.libelle" tooltipPosition="top">{{ type.libelle }}</span>
                 <span class="ent-doc-row-sub">Document manquant</span>
             </span>
-            <p-tag severity="warning" value="À fournir"></p-tag>
+            <p-tag severity="danger" value="À fournir"></p-tag>
         </div>
         <div class="ent-doc-row-dropzone">
             <app-document-upload-preview (fichierChange)="onFichierChoisi($event, type.id)"></app-document-upload-preview>
@@ -1634,7 +1634,7 @@
 
     <div *ngIf="isNew || afficherDocuments">
         <ng-container *ngIf="typesAFournir.length > 0">
-            <div class="flex align-items-center gap-2 text-sm font-semibold uppercase text-orange-600 mb-2 mt-2">
+            <div class="flex align-items-center gap-2 text-sm font-semibold uppercase text-red-600 mb-2 mt-2">
                 <i class="pi pi-exclamation-triangle"></i> À fournir ({{ typesAFournir.length }})
             </div>
             <ng-container *ngFor="let type of typesAFournir">

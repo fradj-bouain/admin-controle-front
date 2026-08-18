@@ -54,11 +54,19 @@ export class AppMenuComponent implements OnInit {
             // consultable depuis la fiche Chantier elle-même (voir ChantierDetailComponent,
             // vue Client) et ses raccourcis vers les fiches Entreprise/Salarié, plutôt que
             // dupliqué dans des listings globaux qui ne le concernent pas.
-            ...(!estClient ? [{
+            // Un compte Entreprise n'a, comme le Client ci-dessus, accès qu'à SA propre
+            // fiche (voir EntrepriseController.lister) : passer par le listing (une seule
+            // ligne à cliquer, toujours "soi-même") n'a aucun sens — même correctif que
+            // "menu.maFiche" pour Client (retour client : rubrique redondante).
+            ...(estClient ? [] : estEntreprise ? [{
+                label: 'menu.maFiche',
+                icon: 'pi pi-fw pi-briefcase',
+                routerLink: ['/entreprises', this.auth.entrepriseId]
+            }] : [{
                 label: 'menu.entreprises',
                 icon: 'pi pi-fw pi-briefcase',
                 routerLink: ['/entreprises']
-            }] : []),
+            }]),
             ...(!estClient ? [{
                 label: 'menu.salaries',
                 icon: 'pi pi-fw pi-users',

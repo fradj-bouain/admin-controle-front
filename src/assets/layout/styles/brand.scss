@@ -1554,7 +1554,7 @@ a { color: var(--brand-accent-ink); }
     text-transform: uppercase;
     margin: 1.1rem 0 0.6rem;
 }
-.ent-doc-section-label.warn { color: var(--brand-warning); }
+.ent-doc-section-label.warn { color: var(--brand-danger); }
 .ent-doc-section-label.ok { color: var(--brand-success); }
 .ent-doc-section-label.muted { color: var(--ink-faint, #9098A6); }
 
@@ -1583,6 +1583,11 @@ a { color: var(--brand-accent-ink); }
 .ent-doc-row.missing::before { background: var(--brand-warning); }
 .ent-doc-row.ok::before { background: var(--brand-success); }
 .ent-doc-row.danger::before { background: var(--brand-danger); }
+/* "À fournir" (aucun document déposé) — distinct de .missing ci-dessus, qui reste utilisé
+   pour un document déjà déposé mais pas encore validé / qui expire bientôt. Demande client :
+   ce qui doit être fourni en rouge, ce qui est validé en vert — .missing (ambre) garde son
+   sens propre, on ne le réutilise pas pour "rien n'a encore été déposé". */
+.ent-doc-row.a-fournir::before { background: var(--brand-danger); }
 /* Ligne "à fournir" repliée en colonne : en-tête (icône+titre) sur sa propre ligne, puis la
    zone de dépôt en pleine largeur en dessous — l'ancienne disposition en ligne l'écrasait
    dans une colonne étroite (voir retour client "pas comme proposé"). */
@@ -1620,7 +1625,8 @@ a { color: var(--brand-accent-ink); }
 .ent-doc-row-icon.warn,
 .ent-doc-row-icon.missing { background: var(--brand-warning-tint); color: var(--brand-warning); }
 .ent-doc-row-icon.ok { background: var(--brand-success-tint); color: var(--brand-success); }
-.ent-doc-row-icon.danger { background: var(--brand-danger-tint); color: var(--brand-danger); }
+.ent-doc-row-icon.danger,
+.ent-doc-row-icon.a-fournir { background: var(--brand-danger-tint); color: var(--brand-danger); }
 .ent-doc-row-body { min-width: 0; flex: 1 1 auto; }
 /* Les libellés legacy sont parfois très longs (voir .doc-row__title-text plus haut, même
    souci déjà rencontré côté admin) : une troncature une-ligne les coupait sans prévenir et

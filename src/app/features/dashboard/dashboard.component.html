@@ -214,8 +214,11 @@
         <button type="button" class="ent-stat" [routerLink]="['/chantiers']">
             <span class="ent-stat-icon tint-accent"><i class="pi pi-map-marker"></i></span>
             <span class="ent-stat-body">
-                <span class="ent-stat-value tabular-nums">{{ statChantiers?.actifs ?? 0 }}</span>
-                <span class="ent-stat-label">Chantiers actifs</span>
+                <!-- Un seul chantier actif : son nom est plus utile qu'un compteur à "1"
+                     (retour client) — le compteur ne reprend son sens qu'à partir de 2. -->
+                <span class="ent-stat-value" *ngIf="mesChantiersActifs.length === 1" [pTooltip]="mesChantiersActifs[0].nom" tooltipPosition="top">{{ mesChantiersActifs[0].nom }}</span>
+                <span class="ent-stat-value tabular-nums" *ngIf="mesChantiersActifs.length !== 1">{{ statChantiers?.actifs ?? 0 }}</span>
+                <span class="ent-stat-label">{{ mesChantiersActifs.length === 1 ? 'Chantier actif' : 'Chantiers actifs' }}</span>
             </span>
         </button>
         <button type="button" class="ent-stat" [routerLink]="['/salaries']">
