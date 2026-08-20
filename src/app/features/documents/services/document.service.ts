@@ -20,6 +20,13 @@ export class DocumentService {
         return this.http.get<DocumentItem[]>(this.baseUrl, { params: { entrepriseId } });
     }
 
+    /** Les documents d'une entreprise propres à UN chantier précis — instance indépendante
+        de ses documents globaux (chantierId absent) et de ses autres chantiers : valider/
+        refuser/supprimer une ligne obtenue ainsi ne touche jamais un autre chantier. */
+    listerParEntrepriseEtChantier(entrepriseId: string, chantierId: string): Observable<DocumentItem[]> {
+        return this.http.get<DocumentItem[]>(this.baseUrl, { params: { entrepriseId, chantierId } });
+    }
+
     creer(request: CreateDocumentRequest, fichier?: File | null): Observable<DocumentItem> {
         const formData = new FormData();
         formData.append('document', new Blob([JSON.stringify(request)], { type: 'application/json' }));

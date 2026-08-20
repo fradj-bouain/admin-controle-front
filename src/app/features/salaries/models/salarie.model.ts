@@ -33,11 +33,19 @@ export interface CreateSalarieRequest {
 export interface AffectationSalarieChantier {
     id: string;
     salarieId: string;
+    // Présents uniquement sur la liste transverse (GET /salaries/affectations), résolus
+    // côté backend — absents ailleurs (déjà connus du contexte : fiche Salarié ou Chantier).
+    nomSalarie?: string;
     chantierId: string;
+    nomChantier?: string;
     affectationEntrepriseChantierId: string;
     entrepriseId?: string;
+    nomEntreprise?: string;
     dateDebut: string;
     dateFin?: string;
+    // Statut d'ENGAGEMENT ("travaille encore sur ce chantier ?"), distinct de statutAcces
+    // ("son accès au site est-il en règle ?").
+    statut: string;
     statutAcces: StatutAcces;
     epiGants: boolean;
     epiCasque: boolean;

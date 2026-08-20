@@ -60,6 +60,9 @@ export type RoleEntreprise = 'PRINCIPALE' | 'STT1' | 'STT2';
 export interface AffectationEntrepriseChantier {
     id: string;
     chantierId: string;
+    // Nom du chantier, résolu côté backend — présent uniquement sur la liste transverse
+    // (GET /entreprises/affectations), absente ailleurs (le chantier est déjà connu du contexte).
+    nomChantier?: string;
     entrepriseId: string;
     // Raison sociale de l'entreprise affectée, résolue côté backend (une Entreprise n'a pas le
     // droit d'appeler /entreprises/{id} pour une autre entreprise) — absente sur les réponses

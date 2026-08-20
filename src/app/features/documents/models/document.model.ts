@@ -118,3 +118,12 @@ export interface ConformitePortefeuille {
     conformes: number;
     total: number;
 }
+
+/** Type de document demandé EN PLUS sur un chantier précis, au-delà des types obligatoires
+    globaux (TypeDocument.obligatoire, qui s'appliquent déjà partout sans ligne ici). Documents
+    applicables sur un chantier = {types obligatoire=true} ∪ {types listés ici pour ce chantier}. */
+export interface DocumentChantierSupplementaire {
+    id: string;
+    typeDocumentId: string;
+    chantierId: string;
+}

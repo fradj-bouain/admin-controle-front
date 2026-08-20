@@ -1134,4 +1134,33 @@
         <p class="text-500 text-sm m-0" *ngIf="affectationsSalarie.length === 0">Aucun salarié affecté.</p>
         </ng-container>
     </div>
+
+    <!-- Documents supplémentaires sur CE chantier, en plus des types obligatoires globaux
+         (qui s'appliquent déjà partout sans configuration ici) — voir modèle validé
+         "un document, une instance par chantier". -->
+    <div class="card mb-3" *ngIf="isSuperAdmin && !isNew">
+        <div class="card-head justify-content-between">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-file-plus"></i>
+                <h6 class="m-0">Documents supplémentaires sur ce chantier ({{ documentsSupplementaires.length }})</h6>
+            </div>
+        </div>
+        <p class="text-500 text-sm mt-0 mb-3">Ces types s'ajoutent aux documents obligatoires habituels de chaque entreprise, uniquement sur ce chantier.</p>
+
+        <div class="flex align-items-end gap-2 p-3 border-round mb-3" style="background:var(--brand-accent-tint);">
+            <div class="field flex-grow-1 m-0">
+                <label>Ajouter un type de document</label>
+                <p-dropdown [options]="typesSupplementairesDisponibles" [(ngModel)]="nouveauTypeSupplementaireId" optionLabel="libelle" optionValue="id" [filter]="true" filterBy="libelle" placeholder="-- Choisir --" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+            </div>
+            <button pButton type="button" icon="pi pi-plus" label="Ajouter" [disabled]="!nouveauTypeSupplementaireId" (click)="ajouterDocumentSupplementaire()"></button>
+        </div>
+
+        <div class="flex flex-column gap-2" *ngIf="documentsSupplementaires.length > 0">
+            <div class="flex align-items-center justify-content-between p-2 border-round" style="border:1px solid var(--surface-border);" *ngFor="let s of documentsSupplementaires">
+                <span>{{ libelleTypeDocument(s.typeDocumentId) }}</span>
+                <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" pTooltip="Retirer de ce chantier" (click)="retirerDocumentSupplementaire(s.id)"></button>
+            </div>
+        </div>
+        <p class="text-500 text-sm m-0" *ngIf="documentsSupplementaires.length === 0">Aucun document supplémentaire demandé sur ce chantier.</p>
+    </div>
 </ng-container>

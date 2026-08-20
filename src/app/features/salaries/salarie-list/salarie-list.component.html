@@ -88,38 +88,46 @@
         </ng-template>
     </p-toolbar>
 
+    <p class="text-500 text-sm mt-0 mb-3" *ngIf="isSuperAdmin">
+        Une ligne par salarié <b>et par chantier</b> — un salarié affecté à plusieurs chantiers apparaît plusieurs fois, chacune avec son propre statut d'engagement et d'accès. Un salarié sans aucune affectation apparaît une seule fois, sans chantier.
+    </p>
+
     <div class="flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
         <span class="p-input-icon-left w-full md:w-25rem">
             <i class="pi pi-search"></i>
             <input
                 type="text"
                 pInputText
-                placeholder="Rechercher un salarié (nom, prénom, entreprise...)"
+                placeholder="Rechercher (nom, entreprise, chantier...)"
                 class="w-full"
                 (input)="dt.filterGlobal($any($event.target).value, 'contains')"
             />
         </span>
         <button pButton type="button" [label]="afficherFiltresAvances ? 'Masquer les filtres avancés' : 'Filtres avancés'" [icon]="afficherFiltresAvances ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" class="p-button-text p-button-sm" (click)="afficherFiltresAvances = !afficherFiltresAvances"></button>
     </div>
-    <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? salaries).length }} résultat(s)</p>
+    <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? lignes).length }} résultat(s)</p>
 
-    <p-table #dt [value]="salaries" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="id" [globalFilterFields]="['nom','prenom','nomEntrepriseCalculee','libelleFonctionCalculee','chantierActuel']">
+    <p-table #dt [value]="lignes" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="rowKey" [globalFilterFields]="['nom','prenom','nomEntrepriseCalculee','libelleFonctionCalculee','nomChantier']">
         <ng-template pTemplate="header">
             <tr>
                 <th>Nom</th>
                 <th>Prénom</th>
                 <th>Entreprise employeur</th>
                 <th>Fonction</th>
-                <th *ngIf="!estClient">Chantier actuel</th>
-                <th>Statut</th>
-                <th style="width: 6rem"></th>
+                <th *ngIf="!estClient">Chantier</th>
+                <th *ngIf="!estClient">Statut sur ce chantier</th>
+                <th *ngIf="!estClient">Accès</th>
+                <th>Statut salarié</th>
+                <th style="width: 8rem"></th>
             </tr>
             <tr *ngIf="afficherFiltresAvances">
                 <th><p-columnFilter type="text" field="nom" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="prenom" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="nomEntrepriseCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="libelleFonctionCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                <th *ngIf="!estClient"><p-columnFilter type="text" field="chantierActuel" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th *ngIf="!estClient"><p-columnFilter type="text" field="nomChantier" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th *ngIf="!estClient"></th>
+                <th *ngIf="!estClient"></th>
                 <th>
                     <p-columnFilter field="statut" matchMode="equals" [showMenu]="false">
                         <ng-template pTemplate="filter" let-value let-filter="filterCallback">
@@ -135,33 +143,43 @@
                 <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
             </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-salarie>
-            <tr class="cursor-pointer" [routerLink]="['/salaries', salarie.id]">
+        <ng-template pTemplate="body" let-ligne>
+            <tr class="cursor-pointer" [routerLink]="['/salaries', ligne.salarieId]">
                 <td>
                     <div class="flex align-items-center gap-2">
-                        <span class="member-avatar">{{ initiales(salarie.nom, salarie.prenom) }}</span>
-                        {{ salarie.nom }}
+                        <span class="member-avatar">{{ initiales(ligne.nom, ligne.prenom) }}</span>
+                        {{ ligne.nom }}
                     </div>
                 </td>
-                <td>{{ salarie.prenom }}</td>
-                <td>{{ nomEntreprise(salarie.entrepriseEmployeurId) }}</td>
-                <td>{{ salarie.libelleFonctionCalculee }}</td>
+                <td>{{ ligne.prenom }}</td>
+                <td>{{ ligne.nomEntrepriseCalculee }}</td>
+                <td>{{ ligne.libelleFonctionCalculee }}</td>
                 <td *ngIf="!estClient">
-                    <p-tag *ngIf="salarie.chantierActuel" severity="info" [value]="salarie.chantierActuel">
+                    <p-tag *ngIf="ligne.nomChantier" severity="info" [value]="ligne.nomChantier">
                         <ng-template pTemplate="icon"><i class="pi pi-map-marker mr-1"></i></ng-template>
                     </p-tag>
-                    <p-tag *ngIf="!salarie.chantierActuel" value="Disponible"></p-tag>
+                    <span *ngIf="!ligne.nomChantier" class="text-500">Aucun chantier</span>
                 </td>
-                <td><p-tag [severity]="salarie.statut === 'ACTIF' ? 'success' : 'danger'" [value]="salarie.statut | etatLabel"></p-tag></td>
+                <td *ngIf="!estClient">
+                    <p-tag *ngIf="ligne.statutAffectation" [severity]="ligne.statutAffectation === 'ACTIF' ? 'success' : 'danger'" [value]="ligne.statutAffectation | etatLabel"></p-tag>
+                    <span *ngIf="!ligne.statutAffectation" class="text-500">—</span>
+                </td>
+                <td *ngIf="!estClient">
+                    <p-tag *ngIf="ligne.statutAcces" [severity]="ligne.statutAcces === 'ACCORDE' ? 'success' : (ligne.statutAcces === 'REFUSE' ? 'danger' : 'warning')" [value]="ligne.statutAcces | etatLabel"></p-tag>
+                    <span *ngIf="!ligne.statutAcces" class="text-500">—</span>
+                </td>
+                <td><p-tag [severity]="ligne.statut === 'ACTIF' ? 'success' : 'danger'" [value]="ligne.statut | etatLabel"></p-tag></td>
                 <td>
                     <div class="flex align-items-center gap-1 flex-nowrap">
+                        <button pButton type="button" icon="pi pi-ban" class="p-button-text p-button-rounded p-button-danger" pTooltip="Désactiver sur ce chantier" *ngIf="isSuperAdmin && ligne.statutAffectation === 'ACTIF'" (click)="desactiverAffectation(ligne); $event.stopPropagation()"></button>
+                        <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" pTooltip="Réactiver sur ce chantier" *ngIf="isSuperAdmin && ligne.statutAffectation === 'INACTIF'" (click)="reactiverAffectation(ligne); $event.stopPropagation()"></button>
                         <button
                             pButton
                             type="button"
                             icon="pi pi-qrcode"
                             class="p-button-text p-button-rounded"
                             pTooltip="Carte d'identité numérique"
-                            (click)="ouvrirQrCode(salarie); $event.stopPropagation()"
+                            (click)="ouvrirQrCode(ligne.salarie); $event.stopPropagation()"
                         ></button>
                         <button
                             pButton
@@ -169,7 +187,7 @@
                             icon="pi pi-ellipsis-v"
                             class="p-button-text p-button-rounded"
                             pTooltip="Actions"
-                            (click)="menuItems = construireMenu(salarie); menu.toggle($event); $event.stopPropagation()"
+                            (click)="menuItems = construireMenu(ligne); menu.toggle($event); $event.stopPropagation()"
                         ></button>
                     </div>
                 </td>
@@ -177,7 +195,7 @@
         </ng-template>
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="7" class="text-center text-500 py-4">Aucun salarié ne correspond à cette recherche.</td>
+                <td colspan="9" class="text-center text-500 py-4">Aucun salarié ne correspond à cette recherche.</td>
             </tr>
         </ng-template>
     </p-table>

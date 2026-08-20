@@ -19,9 +19,10 @@ import { EntrepriseService } from 'src/app/features/entreprises/services/entrepr
 import { AffectationEntrepriseChantierService } from 'src/app/features/entreprises/services/affectation-entreprise-chantier.service';
 import { Controle, RapportControle } from 'src/app/features/controles/models/controle.model';
 import { ControleService } from 'src/app/features/controles/services/controle.service';
-import { DocumentItem, TypeDocument } from 'src/app/features/documents/models/document.model';
+import { DocumentChantierSupplementaire, DocumentItem, TypeDocument } from 'src/app/features/documents/models/document.model';
 import { DocumentService } from 'src/app/features/documents/services/document.service';
 import { TypeDocumentService } from 'src/app/features/documents/services/type-document.service';
+import { DocumentChantierSupplementaireService } from 'src/app/features/documents/services/document-chantier-supplementaire.service';
 import { Message } from 'src/app/features/messagerie/models/message.model';
 import { MessageService } from 'src/app/features/messagerie/services/message.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
@@ -153,6 +154,13 @@ export class ChantierDetailComponent implements OnInit {
     messagesChantierClient: Message[] = [];
     rapportsChantierClient: RapportControle[] = [];
 
+    // --- Documents supplémentaires demandés EN PLUS sur ce chantier (au-delà des types
+    // obligatoires globaux, qui s'appliquent déjà partout sans configuration ici) — voir
+    // DocumentChantierSupplementaire, modèle validé pour que chaque chantier puisse avoir
+    // ses propres exigences documentaires en plus des communs.
+    documentsSupplementaires: DocumentChantierSupplementaire[] = [];
+    nouveauTypeSupplementaireId = '';
+
     constructor(
         private fb: FormBuilder,
         private route: ActivatedRoute,
@@ -169,6 +177,7 @@ export class ChantierDetailComponent implements OnInit {
         private controleService: ControleService,
         private documentService: DocumentService,
         private typeDocumentService: TypeDocumentService,
+        private documentChantierSupplementaireService: DocumentChantierSupplementaireService,
         private messagerieService: MessageService,
         private confirmation: ConfirmationService,
         private message: PrimeMessageService,
@@ -437,6 +446,9 @@ export class ChantierDetailComponent implements OnInit {
                     this.chargerDocumentsClient(id);
                     this.chargerMessagesClient(id);
                     this.chargerRapportsClient(id);
+                }
+                if (this.isSuperAdmin) {
+                    this.chargerDocumentsSupplementaires(id);
                 }
             } else {
                 const preselectionne = this.route.snapshot.queryParamMap.get('clientId');
@@ -852,23 +864,30 @@ export class ChantierDetailComponent implements OnInit {
         forkJoin({
             types: this.typeDocumentService.lister(),
             affEnt: this.affectationEntrepriseService.lister(chantierId),
-            affSal: this.affectationSalarieService.lister(chantierId)
+            affSal: this.affectationSalarieService.lister(chantierId),
+            supplementaires: this.documentChantierSupplementaireService.lister(chantierId)
         }).subscribe({
-            next: ({ types, affEnt, affSal }) => {
+            next: ({ types, affEnt, affSal, supplementaires }) => {
                 this.typesDocument = types;
                 const entrepriseIds = [...new Set(affEnt.filter((a) => a.statut === 'ACTIF').map((a) => a.entrepriseId))];
                 const salarieIds = [...new Set(affSal.map((a) => a.salarieId))];
+                // Documents demandés EN PLUS sur CE chantier, au-delà des types obligatoires
+                // globaux — voir DocumentChantierSupplementaire (modèle validé).
+                const typesSupplementairesIds = new Set(supplementaires.map((s) => s.typeDocumentId));
 
                 forkJoin({
+                    // Documents propres à CE chantier uniquement (instance indépendante des
+                    // documents globaux de l'entreprise et de ses autres chantiers) — plus
+                    // documentService.listerParEntreprise(id) qui mélangeait tous les chantiers.
                     docsEnt: entrepriseIds.length
-                        ? forkJoin(entrepriseIds.map((id) => this.documentService.listerParEntreprise(id)))
+                        ? forkJoin(entrepriseIds.map((id) => this.documentService.listerParEntrepriseEtChantier(id, chantierId)))
                         : of([] as DocumentItem[][]),
                     docsSal: salarieIds.length
                         ? forkJoin(salarieIds.map((id) => this.documentService.listerParSalarie(id)))
                         : of([] as DocumentItem[][])
                 }).subscribe({
                     next: ({ docsEnt, docsSal }) => {
-                        this.calculerConformiteClient(entrepriseIds, docsEnt, salarieIds, docsSal);
+                        this.calculerConformiteClient(entrepriseIds, docsEnt, salarieIds, docsSal, typesSupplementairesIds);
                         this.chargementDocumentsClient = false;
                     },
                     error: () => (this.chargementDocumentsClient = false)
@@ -881,10 +900,16 @@ export class ChantierDetailComponent implements OnInit {
     /** Même calcul que EntrepriseDetail.recalculerTypesPourEntreprise / SalarieDetail.
         recalculerTypesPourSalarie / Dashboard.chargerDashboardEntreprise, appliqué à
         chaque entreprise et chaque salarié de ce chantier puis fusionné : documents
-        obligatoires manquants d'abord (plus urgent), puis ceux qui expirent sous 30 jours. */
+        obligatoires manquants d'abord (plus urgent), puis ceux qui expirent sous 30 jours.
+        Côté entreprise, "obligatoire sur ce chantier" = type obligatoire=true globalement
+        OU listé dans document_chantier_supplementaire pour CE chantier (voir modèle validé) ;
+        côté salarié, chantierId n'est pas encore branché ici (documents salarié restent
+        globaux pour l'instant — un scoping par chantier symétrique reste possible plus
+        tard, hors du périmètre demandé ici). */
     private calculerConformiteClient(
         entrepriseIds: string[], docsEnt: DocumentItem[][],
-        salarieIds: string[], docsSal: DocumentItem[][]
+        salarieIds: string[], docsSal: DocumentItem[][],
+        typesSupplementairesIds: Set<string>
     ) {
         let totalObligatoires = 0;
         let totalFournis = 0;
@@ -914,7 +939,7 @@ export class ChantierDetailComponent implements OnInit {
                 }
                 return true;
             });
-            const obligatoires = typesPourEntreprise.filter((t) => t.obligatoire);
+            const obligatoires = typesPourEntreprise.filter((t) => t.obligatoire || typesSupplementairesIds.has(t.id));
             totalObligatoires += obligatoires.length;
             obligatoires.forEach((t) => {
                 const doc = documentsByType[t.id];
@@ -1000,6 +1025,53 @@ export class ChantierDetailComponent implements OnInit {
         const expiration = new Date(dateExpiration);
         expiration.setHours(0, 0, 0, 0);
         return Math.round((expiration.getTime() - aujourdHui.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    // --- Documents supplémentaires sur ce chantier (SUPER_ADMIN) ---
+
+    private chargerDocumentsSupplementaires(chantierId: string) {
+        forkJoin({
+            types: this.typeDocumentService.lister(),
+            supplementaires: this.documentChantierSupplementaireService.lister(chantierId)
+        }).subscribe(({ types, supplementaires }) => {
+            this.typesDocument = types;
+            this.documentsSupplementaires = supplementaires;
+        });
+    }
+
+    /** Types éligibles à ajouter : cible ENTREPRISE, pas déjà obligatoire partout (redondant),
+        pas déjà listé pour ce chantier. */
+    get typesSupplementairesDisponibles(): TypeDocument[] {
+        const dejaListes = new Set(this.documentsSupplementaires.map((s) => s.typeDocumentId));
+        return this.typesDocument.filter((t) => t.cible === 'ENTREPRISE' && !t.obligatoire && !dejaListes.has(t.id));
+    }
+
+    libelleTypeDocument(typeDocumentId: string): string {
+        return this.typesDocument.find((t) => t.id === typeDocumentId)?.libelle ?? typeDocumentId;
+    }
+
+    ajouterDocumentSupplementaire() {
+        if (!this.nouveauTypeSupplementaireId || !this.chantierId) {
+            return;
+        }
+        this.documentChantierSupplementaireService.ajouter(this.chantierId, this.nouveauTypeSupplementaireId).subscribe({
+            next: () => {
+                this.nouveauTypeSupplementaireId = '';
+                this.chargerDocumentsSupplementaires(this.chantierId!);
+                this.message.add({ severity: 'success', summary: 'Succès', detail: 'Document ajouté à ce chantier' });
+            },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Ajout impossible' })
+        });
+    }
+
+    retirerDocumentSupplementaire(id: string) {
+        if (!this.chantierId) {
+            return;
+        }
+        this.documentChantierSupplementaireService.retirer(this.chantierId, id).subscribe({
+            next: () => this.chargerDocumentsSupplementaires(this.chantierId!),
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Suppression impossible' })
+        });
     }
 
     private zoneDuPays(paysId?: string): string | undefined {

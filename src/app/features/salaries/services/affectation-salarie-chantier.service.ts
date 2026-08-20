@@ -17,6 +17,11 @@ export class AffectationSalarieChantierService {
         return this.http.get<AffectationSalarieChantier[]>(`${environment.apiUrl}/salaries/${salarieId}/chantiers`);
     }
 
+    // Liste transverse, tous chantiers confondus — une ligne par affectation (SUPER_ADMIN uniquement).
+    listerToutes(): Observable<AffectationSalarieChantier[]> {
+        return this.http.get<AffectationSalarieChantier[]>(`${environment.apiUrl}/salaries/affectations`);
+    }
+
     affecter(chantierId: string, request: AffecterSalarieRequest): Observable<AffectationSalarieChantier> {
         return this.http.post<AffectationSalarieChantier>(`${environment.apiUrl}/chantiers/${chantierId}/salaries`, request);
     }
@@ -34,5 +39,17 @@ export class AffectationSalarieChantierService {
     majSuivi(chantierId: string, affectationId: string, request: MajSuiviAffectationRequest): Observable<AffectationSalarieChantier> {
         return this.http.post<AffectationSalarieChantier>(
             `${environment.apiUrl}/chantiers/${chantierId}/salaries/${affectationId}/maj-suivi`, request);
+    }
+
+    // N'existait pas côté frontend jusqu'ici — l'endpoint backend (.../desactiver) était
+    // inatteignable depuis l'écran, seule la suppression complète était possible.
+    desactiver(chantierId: string, affectationId: string): Observable<AffectationSalarieChantier> {
+        return this.http.post<AffectationSalarieChantier>(
+            `${environment.apiUrl}/chantiers/${chantierId}/salaries/${affectationId}/desactiver`, {});
+    }
+
+    reactiver(chantierId: string, affectationId: string): Observable<AffectationSalarieChantier> {
+        return this.http.post<AffectationSalarieChantier>(
+            `${environment.apiUrl}/chantiers/${chantierId}/salaries/${affectationId}/reactiver`, {});
     }
 }

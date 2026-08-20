@@ -88,39 +88,43 @@
         </ng-template>
     </p-toolbar>
 
+    <p class="text-500 text-sm mt-0 mb-3" *ngIf="isSuperAdmin">
+        Une ligne par entreprise <b>et par chantier</b> — une entreprise affectée à plusieurs chantiers apparaît plusieurs fois, chacune avec son propre statut d'engagement. Une entreprise sans aucune affectation apparaît une seule fois, sans chantier.
+    </p>
+
     <div class="flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
         <span class="p-input-icon-left w-full md:w-25rem">
             <i class="pi pi-search"></i>
             <input
                 type="text"
                 pInputText
-                placeholder="Rechercher une entreprise (nom, SIRET, email...)"
+                placeholder="Rechercher (nom, SIRET, chantier...)"
                 class="w-full"
                 (input)="dt.filterGlobal($any($event.target).value, 'contains')"
             />
         </span>
         <button pButton type="button" [label]="afficherFiltresAvances ? 'Masquer les filtres avancés' : 'Filtres avancés'" [icon]="afficherFiltresAvances ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" class="p-button-text p-button-sm" (click)="afficherFiltresAvances = !afficherFiltresAvances"></button>
     </div>
-    <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? entreprises).length }} résultat(s)</p>
+    <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? lignes).length }} résultat(s)</p>
 
-    <p-table #dt [value]="entreprises" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="id" [globalFilterFields]="['raisonSociale','siret','telephone','email','ville','rangActuel']">
+    <p-table #dt [value]="lignes" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="rowKey" [globalFilterFields]="['raisonSociale','siret','telephone','ville','nomChantier','role']">
         <ng-template pTemplate="header">
             <tr>
                 <th>Raison sociale</th>
                 <th>SIRET</th>
                 <th>Téléphone</th>
-                <th>Ville</th>
-                <th>Rang</th>
-                <th *ngIf="!estClient">Chantier actuel</th>
-                <th>Statut</th>
-                <th style="width: 4rem"></th>
+                <th *ngIf="!estClient">Chantier</th>
+                <th *ngIf="!estClient">Rôle</th>
+                <th *ngIf="!estClient">Statut sur ce chantier</th>
+                <th>Statut entreprise</th>
+                <th style="width: 8rem"></th>
             </tr>
             <tr *ngIf="afficherFiltresAvances">
                 <th><p-columnFilter type="text" field="raisonSociale" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="siret" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="telephone" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                <th><p-columnFilter type="text" field="ville" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                <th><p-columnFilter type="text" field="rangActuel" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th *ngIf="!estClient"><p-columnFilter type="text" field="nomChantier" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th *ngIf="!estClient"></th>
                 <th *ngIf="!estClient"></th>
                 <th>
                     <p-columnFilter field="actif" matchMode="equals" [showMenu]="false">
@@ -137,37 +141,44 @@
                 <td colspan="12"><p-skeleton height="1.25rem"></p-skeleton></td>
             </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-entreprise>
-            <tr class="cursor-pointer" [routerLink]="['/entreprises', entreprise.id]">
+        <ng-template pTemplate="body" let-ligne>
+            <tr class="cursor-pointer" [routerLink]="['/entreprises', ligne.entrepriseId]">
                 <td>
                     <div class="flex align-items-center gap-2">
-                        <span class="member-avatar">{{ initiales(entreprise.raisonSociale) }}</span>
-                        {{ entreprise.raisonSociale }}
+                        <span class="member-avatar">{{ initiales(ligne.raisonSociale) }}</span>
+                        {{ ligne.raisonSociale }}
                     </div>
                 </td>
-                <td>{{ entreprise.siret }}</td>
-                <td>{{ entreprise.telephone }}</td>
-                <td>{{ entreprise.ville || '—' }}</td>
-                <td>
-                    <p-tag *ngIf="entreprise.rangActuel" severity="info" [value]="entreprise.rangActuel"></p-tag>
-                    <span *ngIf="!entreprise.rangActuel" class="text-500">—</span>
-                </td>
+                <td>{{ ligne.siret }}</td>
+                <td>{{ ligne.telephone }}</td>
                 <td *ngIf="!estClient">
-                    <p-tag *ngIf="entreprise.chantierActuel" severity="info" [value]="entreprise.chantierActuel">
+                    <p-tag *ngIf="ligne.nomChantier" severity="info" [value]="ligne.nomChantier">
                         <ng-template pTemplate="icon"><i class="pi pi-map-marker mr-1"></i></ng-template>
                     </p-tag>
-                    <p-tag *ngIf="!entreprise.chantierActuel" value="Disponible"></p-tag>
+                    <span *ngIf="!ligne.nomChantier" class="text-500">Aucun chantier</span>
                 </td>
-                <td><p-tag [severity]="entreprise.actif ? 'success' : 'danger'" [value]="entreprise.actif | etatLabel"></p-tag></td>
+                <td *ngIf="!estClient">
+                    <p-tag *ngIf="ligne.role" severity="info" [value]="ligne.role"></p-tag>
+                    <span *ngIf="!ligne.role" class="text-500">—</span>
+                </td>
+                <td *ngIf="!estClient">
+                    <p-tag *ngIf="ligne.statutAffectation" [severity]="ligne.statutAffectation === 'ACTIF' ? 'success' : 'danger'" [value]="ligne.statutAffectation | etatLabel"></p-tag>
+                    <span *ngIf="!ligne.statutAffectation" class="text-500">—</span>
+                </td>
+                <td><p-tag [severity]="ligne.actif ? 'success' : 'danger'" [value]="ligne.actif | etatLabel"></p-tag></td>
                 <td>
-                    <button
-                        pButton
-                        type="button"
-                        icon="pi pi-ellipsis-v"
-                        class="p-button-text p-button-rounded"
-                        pTooltip="Actions"
-                        (click)="menuItems = construireMenu(entreprise); menu.toggle($event); $event.stopPropagation()"
-                    ></button>
+                    <div class="flex align-items-center gap-1 flex-nowrap">
+                        <button pButton type="button" icon="pi pi-ban" class="p-button-text p-button-rounded p-button-danger" pTooltip="Désactiver sur ce chantier" *ngIf="isSuperAdmin && ligne.statutAffectation === 'ACTIF'" (click)="desactiverAffectation(ligne); $event.stopPropagation()"></button>
+                        <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" pTooltip="Réactiver sur ce chantier" *ngIf="isSuperAdmin && ligne.statutAffectation === 'INACTIF'" (click)="reactiverAffectation(ligne); $event.stopPropagation()"></button>
+                        <button
+                            pButton
+                            type="button"
+                            icon="pi pi-ellipsis-v"
+                            class="p-button-text p-button-rounded"
+                            pTooltip="Actions"
+                            (click)="menuItems = construireMenu(ligne); menu.toggle($event); $event.stopPropagation()"
+                        ></button>
+                    </div>
                 </td>
             </tr>
         </ng-template>

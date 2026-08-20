@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { forkJoin } from 'rxjs';
-import { Salarie } from '../models/salarie.model';
+import { AffectationSalarieChantier, Salarie, StatutAcces, StatutSalarie } from '../models/salarie.model';
 import { SalarieService } from '../services/salarie.service';
+import { AffectationSalarieChantierService } from '../services/affectation-salarie-chantier.service';
 import { Entreprise } from 'src/app/features/entreprises/models/entreprise.model';
 import { EntrepriseService } from 'src/app/features/entreprises/services/entreprise.service';
 import { SalarieFonction } from 'src/app/features/configuration/models/configuration.model';
@@ -12,6 +13,31 @@ import { AuthService } from 'src/app/core/auth/auth.service';
 interface RepartitionFonction {
     libelle: string;
     total: number;
+}
+
+/**
+ * Une ligne = un salarié, sur UN chantier précis (une par affectation) — pas une ligne par
+ * salarié. Un salarié sur 2 chantiers apparaît donc 2 fois, chaque fois avec son propre
+ * statut d'engagement et d'accès pour CE chantier. Un salarié sans aucune affectation
+ * apparaît quand même, une seule fois, sans chantier — voir le même principe déjà appliqué
+ * à EntrepriseListComponent. Champs à plat pour le filtre/tri natif de p-table, `salarie`
+ * embarqué en plus (objet complet) uniquement pour la boîte de dialogue QR code.
+ */
+interface LigneSalarieAffectation {
+    rowKey: string;
+    salarieId: string;
+    nom: string;
+    prenom: string;
+    nomEntrepriseCalculee: string;
+    libelleFonctionCalculee: string;
+    statut: StatutSalarie;
+    createdAt: string;
+    affectationId?: string;
+    chantierId?: string;
+    nomChantier?: string;
+    statutAffectation?: string;
+    statutAcces?: StatutAcces;
+    salarie: Salarie;
 }
 
 @Component({
@@ -26,6 +52,11 @@ export class SalarieListComponent implements OnInit {
     salaries: Array<Salarie & { nomEntrepriseCalculee: string; libelleFonctionCalculee: string }> = [];
     entreprises: Entreprise[] = [];
     fonctions: SalarieFonction[] = [];
+    // Réservé SUPER_ADMIN (voir GET /salaries/affectations) — reste vide pour les autres
+    // rôles, auquel cas lignes() retombe naturellement sur une ligne par salarié, sans
+    // colonne chantier renseignée (comportement inchangé pour ces rôles).
+    affectations: AffectationSalarieChantier[] = [];
+    lignes: LigneSalarieAffectation[] = [];
     loading = false;
     afficherFiltresAvances = false;
     menuItems: MenuItem[] = [];
@@ -33,8 +64,9 @@ export class SalarieListComponent implements OnInit {
     dialogQrCodeVisible = false;
     salarieSelectionne: Salarie | null = null;
 
-    // --- Indicateurs (voir prototype validé) : comptés côté client à partir de la
-    // liste déjà chargée pour cette page, pas de nouvel appel dédié.
+    // --- Indicateurs (voir prototype validé) : comptés côté client à partir de la liste de
+    // SALARIÉS (pas des lignes fusionnées, qui dupliqueraient un même salarié présent sur
+    // plusieurs chantiers).
     nbActifs = 0;
     nbInactifs = 0;
     nbSurChantier = 0;
@@ -45,6 +77,7 @@ export class SalarieListComponent implements OnInit {
 
     constructor(
         private salarieService: SalarieService,
+        private affectationSalarieChantierService: AffectationSalarieChantierService,
         private entrepriseService: EntrepriseService,
         private referenceDataService: ReferenceDataService,
         private confirmation: ConfirmationService,
@@ -77,6 +110,9 @@ export class SalarieListComponent implements OnInit {
 
     ngOnInit(): void {
         this.charger();
+        if (this.isSuperAdmin) {
+            this.chargerAffectations();
+        }
     }
 
     charger() {
@@ -95,6 +131,7 @@ export class SalarieListComponent implements OnInit {
                     libelleFonctionCalculee: this.nomFonction(s.fonctionId)
                 }));
                 this.calculerIndicateurs(salaries, fonctions);
+                this.recalculerLignes();
                 this.loading = false;
             },
             error: () => {
@@ -127,6 +164,91 @@ export class SalarieListComponent implements OnInit {
             .slice(0, 4);
     }
 
+    chargerAffectations() {
+        this.affectationSalarieChantierService.listerToutes().subscribe({
+            next: (affectations) => {
+                this.affectations = affectations;
+                this.recalculerLignes();
+            },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Impossible de charger les affectations' })
+        });
+    }
+
+    /** Fusionne salariés + affectations en lignes à plat, une par affectation — voir
+        LigneSalarieAffectation. Appelée après chaque chargement (salariés OU affectations),
+        tolérante si l'un des deux n'est pas encore arrivé. */
+    private recalculerLignes() {
+        if (this.affectations.length === 0) {
+            this.lignes = this.salaries.map((s) => this.ligneSansAffectation(s));
+            return;
+        }
+        const affectationsParSalarie = new Map<string, AffectationSalarieChantier[]>();
+        for (const a of this.affectations) {
+            const liste = affectationsParSalarie.get(a.salarieId) ?? [];
+            liste.push(a);
+            affectationsParSalarie.set(a.salarieId, liste);
+        }
+        this.lignes = this.salaries.flatMap((salarie) => {
+            const affs = affectationsParSalarie.get(salarie.id);
+            if (!affs || affs.length === 0) {
+                return [this.ligneSansAffectation(salarie)];
+            }
+            return affs.map((a) => ({
+                rowKey: a.id,
+                salarieId: salarie.id,
+                nom: salarie.nom,
+                prenom: salarie.prenom,
+                nomEntrepriseCalculee: salarie.nomEntrepriseCalculee,
+                libelleFonctionCalculee: salarie.libelleFonctionCalculee,
+                statut: salarie.statut,
+                createdAt: salarie.createdAt,
+                affectationId: a.id,
+                chantierId: a.chantierId,
+                nomChantier: a.nomChantier,
+                statutAffectation: a.statut,
+                statutAcces: a.statutAcces,
+                salarie
+            }));
+        });
+    }
+
+    private ligneSansAffectation(salarie: Salarie & { nomEntrepriseCalculee: string; libelleFonctionCalculee: string }): LigneSalarieAffectation {
+        return {
+            rowKey: salarie.id,
+            salarieId: salarie.id,
+            nom: salarie.nom,
+            prenom: salarie.prenom,
+            nomEntrepriseCalculee: salarie.nomEntrepriseCalculee,
+            libelleFonctionCalculee: salarie.libelleFonctionCalculee,
+            statut: salarie.statut,
+            createdAt: salarie.createdAt,
+            salarie
+        };
+    }
+
+    // Bascule l'engagement (statut ACTIF/INACTIF) SUR CE CHANTIER précis, sans toucher
+    // au statut global du salarié (Salarie.statut) ni à ses autres chantiers — voir le
+    // modèle "identité vs engagement" validé.
+    desactiverAffectation(ligne: LigneSalarieAffectation) {
+        if (!ligne.chantierId || !ligne.affectationId) {
+            return;
+        }
+        this.affectationSalarieChantierService.desactiver(ligne.chantierId, ligne.affectationId).subscribe({
+            next: () => this.chargerAffectations(),
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
+        });
+    }
+
+    reactiverAffectation(ligne: LigneSalarieAffectation) {
+        if (!ligne.chantierId || !ligne.affectationId) {
+            return;
+        }
+        this.affectationSalarieChantierService.reactiver(ligne.chantierId, ligne.affectationId).subscribe({
+            next: () => this.chargerAffectations(),
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
+        });
+    }
+
     ouvrirQrCode(salarie: Salarie) {
         this.salarieSelectionne = salarie;
         this.dialogQrCodeVisible = true;
@@ -140,14 +262,14 @@ export class SalarieListComponent implements OnInit {
         return this.fonctions.find((f) => f.id === fonctionId)?.libelle ?? '—';
     }
 
-    confirmerBasculeStatut(salarie: Salarie) {
+    confirmerBasculeStatut(ligne: LigneSalarieAffectation) {
         this.confirmation.confirm({
             header: 'Confirmation',
-            message: 'Voulez-vous ' + (salarie.statut === 'ACTIF' ? 'désactiver' : 'activer') + ' ce salarié ?',
+            message: 'Voulez-vous ' + (ligne.statut === 'ACTIF' ? 'désactiver' : 'activer') + ' ce salarié ?',
             accept: () => {
-                const obs = salarie.statut === 'ACTIF'
-                    ? this.salarieService.desactiver(salarie.id)
-                    : this.salarieService.activer(salarie.id);
+                const obs = ligne.statut === 'ACTIF'
+                    ? this.salarieService.desactiver(ligne.salarieId)
+                    : this.salarieService.activer(ligne.salarieId);
                 obs.subscribe({
                     next: () => this.charger(),
                     error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
@@ -156,13 +278,13 @@ export class SalarieListComponent implements OnInit {
         });
     }
 
-    confirmerSuppression(salarie: Salarie) {
+    confirmerSuppression(ligne: LigneSalarieAffectation) {
         this.confirmation.confirm({
             header: 'Confirmation',
-            message: `Voulez-vous supprimer le salarié "${salarie.prenom} ${salarie.nom}" ?`,
+            message: `Voulez-vous supprimer le salarié "${ligne.prenom} ${ligne.nom}" ?`,
             acceptButtonStyleClass: 'p-button-danger',
             accept: () => {
-                this.salarieService.supprimer(salarie.id).subscribe({
+                this.salarieService.supprimer(ligne.salarieId).subscribe({
                     next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Salarié supprimé' }); this.charger(); },
                     error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Suppression impossible' })
                 });
@@ -170,23 +292,23 @@ export class SalarieListComponent implements OnInit {
         });
     }
 
-    construireMenu(salarie: Salarie): MenuItem[] {
+    construireMenu(ligne: LigneSalarieAffectation): MenuItem[] {
         const items: MenuItem[] = [
-            { label: 'Modifier', icon: 'pi pi-pencil', routerLink: ['/salaries', salarie.id] }
+            { label: 'Modifier', icon: 'pi pi-pencil', routerLink: ['/salaries', ligne.salarieId] }
         ];
         if (this.isSuperAdmin || this.isEntreprise) {
             items.push(
                 {
-                    label: salarie.statut === 'ACTIF' ? 'Désactiver' : 'Activer',
-                    icon: salarie.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check',
-                    command: () => this.confirmerBasculeStatut(salarie)
+                    label: ligne.statut === 'ACTIF' ? 'Désactiver' : 'Activer',
+                    icon: ligne.statut === 'ACTIF' ? 'pi pi-ban' : 'pi pi-check',
+                    command: () => this.confirmerBasculeStatut(ligne)
                 },
                 { separator: true },
                 {
                     label: 'Supprimer',
                     icon: 'pi pi-trash',
                     styleClass: 'text-red-600',
-                    command: () => this.confirmerSuppression(salarie)
+                    command: () => this.confirmerSuppression(ligne)
                 }
             );
         }

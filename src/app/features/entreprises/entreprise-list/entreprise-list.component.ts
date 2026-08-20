@@ -1,14 +1,42 @@
 import { Component, OnInit } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
-import { Entreprise } from '../models/entreprise.model';
+import { AffectationEntrepriseChantier, Entreprise, RoleEntreprise } from '../models/entreprise.model';
 import { EntrepriseService } from '../services/entreprise.service';
+import { AffectationEntrepriseChantierService } from '../services/affectation-entreprise-chantier.service';
 import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
 
 interface RepartitionCorpsMetier {
     libelle: string;
     total: number;
+}
+
+/**
+ * Une ligne = une entreprise, sur UN chantier précis (une par affectation) — pas une ligne
+ * par entreprise. Une entreprise sur 3 chantiers apparaît donc 3 fois, chaque fois avec le
+ * statut d'engagement propre à ce chantier. Une entreprise sans aucune affectation apparaît
+ * quand même, une seule fois, avec les champs d'affectation absents — pour rester gérable
+ * (modifier/désactiver/supprimer) même avant sa première affectation. Champs à plat plutôt
+ * qu'un objet { entreprise, affectation } imbriqué, pour que le filtre/tri natif de p-table
+ * (globalFilterFields, p-columnFilter) fonctionne sans souci de chemin.
+ */
+interface LigneEntrepriseAffectation {
+    // Clé unique de ligne pour p-table (dataKey) : l'id d'affectation quand il y en a une,
+    // sinon l'id d'entreprise (une seule ligne "sans affectation" possible par entreprise).
+    rowKey: string;
+    entrepriseId: string;
+    raisonSociale: string;
+    siret?: string;
+    telephone?: string;
+    ville?: string;
+    actif: boolean;
+    createdAt: string;
+    affectationId?: string;
+    chantierId?: string;
+    nomChantier?: string;
+    role?: RoleEntreprise;
+    statutAffectation?: string;
 }
 
 @Component({
@@ -19,6 +47,11 @@ interface RepartitionCorpsMetier {
 export class EntrepriseListComponent implements OnInit {
 
     entreprises: Entreprise[] = [];
+    // Réservé SUPER_ADMIN (voir GET /entreprises/affectations) — reste vide pour les autres
+    // rôles, auquel cas lignes() retombe naturellement sur une ligne par entreprise, sans
+    // colonne chantier renseignée (comportement inchangé pour ces rôles).
+    affectations: AffectationEntrepriseChantier[] = [];
+    lignes: LigneEntrepriseAffectation[] = [];
     loading = false;
     // Filtres avancés (par colonne) repliés par défaut : la recherche unique
     // couvre le besoin courant, ceux-ci restent disponibles pour un besoin
@@ -26,8 +59,9 @@ export class EntrepriseListComponent implements OnInit {
     afficherFiltresAvances = false;
     menuItems: MenuItem[] = [];
 
-    // --- Indicateurs (voir prototype validé) : comptés côté client à partir de la
-    // liste déjà chargée pour cette page, pas de nouvel appel dédié.
+    // --- Indicateurs (voir prototype validé) : comptés côté client à partir de la liste
+    // d'ENTREPRISES (pas des lignes fusionnées, qui dupliqueraient une même entreprise
+    // présente sur plusieurs chantiers).
     nbActifs = 0;
     nbInactifs = 0;
     nbSurChantier = 0;
@@ -38,6 +72,7 @@ export class EntrepriseListComponent implements OnInit {
 
     constructor(
         private entrepriseService: EntrepriseService,
+        private affectationEntrepriseChantierService: AffectationEntrepriseChantierService,
         private referenceDataService: ReferenceDataService,
         private confirmation: ConfirmationService,
         private message: MessageService,
@@ -48,10 +83,9 @@ export class EntrepriseListComponent implements OnInit {
         return this.auth.hasRole('SUPER_ADMIN');
     }
 
-    // "Chantier actuel" n'a de sens que pour un usage transverse (SUPER_ADMIN/ENTREPRISE) :
-    // côté Client, cette liste est déjà limitée aux entreprises de SES chantiers, et le
-    // chantier "actuel" retourné par le backend n'est pas garanti être l'un d'eux (une
-    // entreprise peut intervenir ailleurs en parallèle) — donc pas pertinent à afficher ici.
+    // Côté Client, cette liste est déjà limitée aux entreprises de SES chantiers (filtrage
+    // serveur) — pas d'appel à GET /entreprises/affectations (réservé SUPER_ADMIN), donc pas
+    // de colonne Chantier/Rôle renseignée pour ce rôle (comportement inchangé).
     get estClient(): boolean {
         return this.auth.hasRole('CLIENT');
     }
@@ -70,6 +104,9 @@ export class EntrepriseListComponent implements OnInit {
 
     ngOnInit(): void {
         this.charger();
+        if (this.isSuperAdmin) {
+            this.chargerAffectations();
+        }
     }
 
     charger() {
@@ -81,6 +118,7 @@ export class EntrepriseListComponent implements OnInit {
             next: ({ entreprises, corpsDeMetiers }) => {
                 this.entreprises = entreprises;
                 this.calculerIndicateurs(entreprises, corpsDeMetiers);
+                this.recalculerLignes();
                 this.loading = false;
             },
             error: () => {
@@ -113,14 +151,97 @@ export class EntrepriseListComponent implements OnInit {
             .slice(0, 4);
     }
 
-    confirmerBasculeStatut(entreprise: Entreprise) {
+    chargerAffectations() {
+        this.affectationEntrepriseChantierService.listerToutes().subscribe({
+            next: (affectations) => {
+                this.affectations = affectations;
+                this.recalculerLignes();
+            },
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Impossible de charger les affectations' })
+        });
+    }
+
+    /** Fusionne entreprises + affectations en lignes à plat, une par affectation — voir
+        LigneEntrepriseAffectation. Appelée après chaque chargement (entreprises OU
+        affectations), tolérante si l'un des deux n'est pas encore arrivé. */
+    private recalculerLignes() {
+        if (this.affectations.length === 0) {
+            this.lignes = this.entreprises.map((e) => this.ligneSansAffectation(e));
+            return;
+        }
+        const affectationsParEntreprise = new Map<string, AffectationEntrepriseChantier[]>();
+        for (const a of this.affectations) {
+            const liste = affectationsParEntreprise.get(a.entrepriseId) ?? [];
+            liste.push(a);
+            affectationsParEntreprise.set(a.entrepriseId, liste);
+        }
+        this.lignes = this.entreprises.flatMap((entreprise) => {
+            const affs = affectationsParEntreprise.get(entreprise.id);
+            if (!affs || affs.length === 0) {
+                return [this.ligneSansAffectation(entreprise)];
+            }
+            return affs.map((a) => ({
+                rowKey: a.id,
+                entrepriseId: entreprise.id,
+                raisonSociale: entreprise.raisonSociale,
+                siret: entreprise.siret,
+                telephone: entreprise.telephone,
+                ville: entreprise.ville,
+                actif: entreprise.actif,
+                createdAt: entreprise.createdAt,
+                affectationId: a.id,
+                chantierId: a.chantierId,
+                nomChantier: a.nomChantier,
+                role: a.role,
+                statutAffectation: a.statut
+            }));
+        });
+    }
+
+    private ligneSansAffectation(entreprise: Entreprise): LigneEntrepriseAffectation {
+        return {
+            rowKey: entreprise.id,
+            entrepriseId: entreprise.id,
+            raisonSociale: entreprise.raisonSociale,
+            siret: entreprise.siret,
+            telephone: entreprise.telephone,
+            ville: entreprise.ville,
+            actif: entreprise.actif,
+            createdAt: entreprise.createdAt
+        };
+    }
+
+    // Bascule l'engagement (statut ACTIF/INACTIF) SUR CE CHANTIER précis, sans toucher
+    // au statut global de l'entreprise (Entreprise.actif) ni à ses autres chantiers —
+    // voir le modèle "identité vs engagement" validé.
+    desactiverAffectation(ligne: LigneEntrepriseAffectation) {
+        if (!ligne.chantierId || !ligne.affectationId) {
+            return;
+        }
+        this.affectationEntrepriseChantierService.desactiver(ligne.chantierId, ligne.affectationId).subscribe({
+            next: () => this.chargerAffectations(),
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
+        });
+    }
+
+    reactiverAffectation(ligne: LigneEntrepriseAffectation) {
+        if (!ligne.chantierId || !ligne.affectationId) {
+            return;
+        }
+        this.affectationEntrepriseChantierService.reactiver(ligne.chantierId, ligne.affectationId).subscribe({
+            next: () => this.chargerAffectations(),
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
+        });
+    }
+
+    confirmerBasculeStatut(ligne: LigneEntrepriseAffectation) {
         this.confirmation.confirm({
             header: 'Confirmation',
-            message: 'Voulez-vous ' + (entreprise.actif ? 'désactiver' : 'activer') + ' cette entreprise ?',
+            message: 'Voulez-vous ' + (ligne.actif ? 'désactiver' : 'activer') + ' cette entreprise ?',
             accept: () => {
-                const obs = entreprise.actif
-                    ? this.entrepriseService.desactiver(entreprise.id)
-                    : this.entrepriseService.activer(entreprise.id);
+                const obs = ligne.actif
+                    ? this.entrepriseService.desactiver(ligne.entrepriseId)
+                    : this.entrepriseService.activer(ligne.entrepriseId);
                 obs.subscribe({
                     next: () => this.charger(),
                     error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
@@ -129,13 +250,13 @@ export class EntrepriseListComponent implements OnInit {
         });
     }
 
-    confirmerSuppression(entreprise: Entreprise) {
+    confirmerSuppression(ligne: LigneEntrepriseAffectation) {
         this.confirmation.confirm({
             header: 'Confirmation',
-            message: `Voulez-vous supprimer l'entreprise "${entreprise.raisonSociale}" ?`,
+            message: `Voulez-vous supprimer l'entreprise "${ligne.raisonSociale}" ?`,
             acceptButtonStyleClass: 'p-button-danger',
             accept: () => {
-                this.entrepriseService.supprimer(entreprise.id).subscribe({
+                this.entrepriseService.supprimer(ligne.entrepriseId).subscribe({
                     next: () => { this.message.add({ severity: 'success', summary: 'Succès', detail: 'Entreprise supprimée' }); this.charger(); },
                     error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Suppression impossible' })
                 });
@@ -146,23 +267,23 @@ export class EntrepriseListComponent implements OnInit {
     // Regroupe modifier/activer-désactiver/supprimer dans un seul menu "⋯" au lieu
     // de plusieurs icônes nues côte à côte (voir audit UX) — reconstruit à chaque
     // ouverture pour refléter l'état (actif/inactif) de la ligne cliquée.
-    construireMenu(entreprise: Entreprise): MenuItem[] {
+    construireMenu(ligne: LigneEntrepriseAffectation): MenuItem[] {
         const items: MenuItem[] = [
-            { label: 'Modifier', icon: 'pi pi-pencil', routerLink: ['/entreprises', entreprise.id] }
+            { label: 'Modifier', icon: 'pi pi-pencil', routerLink: ['/entreprises', ligne.entrepriseId] }
         ];
         if (this.isSuperAdmin) {
             items.push(
                 {
-                    label: entreprise.actif ? 'Désactiver' : 'Activer',
-                    icon: entreprise.actif ? 'pi pi-ban' : 'pi pi-check',
-                    command: () => this.confirmerBasculeStatut(entreprise)
+                    label: ligne.actif ? 'Désactiver' : 'Activer',
+                    icon: ligne.actif ? 'pi pi-ban' : 'pi pi-check',
+                    command: () => this.confirmerBasculeStatut(ligne)
                 },
                 { separator: true },
                 {
                     label: 'Supprimer',
                     icon: 'pi pi-trash',
                     styleClass: 'text-red-600',
-                    command: () => this.confirmerSuppression(entreprise)
+                    command: () => this.confirmerSuppression(ligne)
                 }
             );
         }

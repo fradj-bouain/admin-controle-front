@@ -19,6 +19,11 @@ export class AffectationEntrepriseChantierService {
             `${environment.apiUrl}/entreprises/${entrepriseId}/chantiers`);
     }
 
+    // Liste transverse, tous chantiers confondus — une ligne par affectation (SUPER_ADMIN uniquement).
+    listerToutes(): Observable<AffectationEntrepriseChantier[]> {
+        return this.http.get<AffectationEntrepriseChantier[]>(`${environment.apiUrl}/entreprises/affectations`);
+    }
+
     affecter(chantierId: string, request: AffecterEntrepriseRequest): Observable<AffectationEntrepriseChantier> {
         return this.http.post<AffectationEntrepriseChantier>(
             `${environment.apiUrl}/chantiers/${chantierId}/entreprises`, request);
@@ -27,5 +32,10 @@ export class AffectationEntrepriseChantierService {
     desactiver(chantierId: string, affectationId: string): Observable<void> {
         return this.http.post<void>(
             `${environment.apiUrl}/chantiers/${chantierId}/entreprises/${affectationId}/desactiver`, {});
+    }
+
+    reactiver(chantierId: string, affectationId: string): Observable<void> {
+        return this.http.post<void>(
+            `${environment.apiUrl}/chantiers/${chantierId}/entreprises/${affectationId}/reactiver`, {});
     }
 }
