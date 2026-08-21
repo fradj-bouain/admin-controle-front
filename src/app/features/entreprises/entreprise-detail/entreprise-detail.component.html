@@ -15,7 +15,7 @@
                 icon="pi pi-envelope"
                 label="Nouveau message"
                 class="p-button-outlined"
-                (click)="afficherComposeur = true; documentDemandeEnCours = null"
+                (click)="ouvrirComposeur()"
             ></button>
             <p-tag [severity]="entreprise.actif ? 'success' : 'danger'" [value]="entreprise.actif | etatLabel"></p-tag>
         </div>
@@ -99,7 +99,7 @@
                 </div>
             </div>
             <div class="chantier-hero-actions">
-                <button pButton type="button" icon="pi pi-envelope" label="Nouveau message" class="p-button-text hero-btn-highlight" (click)="afficherComposeur = true; documentDemandeEnCours = null"></button>
+                <button pButton type="button" icon="pi pi-envelope" label="Nouveau message" class="p-button-text hero-btn-highlight" (click)="ouvrirComposeur()"></button>
                 <button
                     pButton
                     type="button"
@@ -362,7 +362,10 @@
             </form>
         </div>
 
-        <!-- Affectations : cliquables vers le chantier -->
+        <!-- Affectations : cliquables vers CETTE fiche, mais avec le chantier concerné en
+             contexte (voir contexteChantierId) — pas vers la fiche Chantier elle-même : c'est
+             ici, sur sa propre fiche, que l'Entreprise dépose ses documents (voir
+             renseignerDocument), désormais rattachés au bon chantier plutôt que globaux. -->
         <div class="card">
             <div class="card-head">
                 <i class="pi pi-map-marker"></i>
@@ -373,8 +376,9 @@
                     type="button"
                     class="ent-compact-row"
                     *ngFor="let affectation of mesAffectations"
-                    [routerLink]="['/chantiers', affectation.chantierId]"
-                    [pTooltip]="'Ouvrir le chantier ' + affectation.nomChantierCalculee"
+                    [routerLink]="['/entreprises', entrepriseId]"
+                    [queryParams]="{ chantierId: affectation.chantierId }"
+                    [pTooltip]="'Documents pour le chantier ' + affectation.nomChantierCalculee"
                 >
                     <span class="ent-compact-row-icon"><i class="pi pi-building"></i></span>
                     <span class="ent-compact-row-body">
@@ -1309,11 +1313,39 @@
     </div>
 </div>
 
+<!-- Contexte chantier : visible seulement quand on arrive sur cette fiche depuis une ligne
+     précise de la liste fusionnée (?chantierId=... dans l'URL, voir EntrepriseListComponent).
+     Remplace, pour le SUPER_ADMIN, l'ancienne carte "Affectation à un chantier" — porte
+     l'email de contact propre à CETTE relation (entreprise, chantier), distinct de l'email
+     principal de l'entreprise. Stocké uniquement pour l'instant : aucun envoi réel ne s'en
+     sert encore (voir MessageService.envoyer, pas branché sur EmailService/SMTP). -->
+<div class="card mb-3" *ngIf="isSuperAdmin && contexteChantierId && !isNew">
+    <div class="card-head">
+        <i class="pi pi-map-marker"></i>
+        <h6 class="m-0">Chantier : {{ contexteChantierNom }}</h6>
+    </div>
+    <div class="formgrid grid align-items-end">
+        <div class="field col-12 md:col-8">
+            <label for="emailContactChantier">Email de contact pour ce chantier</label>
+            <input id="emailContactChantier" type="email" pInputText [(ngModel)]="emailContactChantier" placeholder="Par défaut : email principal de l'entreprise" />
+            <small class="text-500">Optionnel — propre à cette relation (entreprise × chantier), sans toucher à l'email principal de l'entreprise. L'envoi réel n'est pas encore branché dessus.</small>
+        </div>
+        <div class="field col-12 md:col-4">
+            <button pButton type="button" label="Enregistrer" icon="pi pi-check" class="w-full" [loading]="enregistrementEmailContactEnCours" (click)="enregistrerEmailContact()"></button>
+        </div>
+    </div>
+</div>
+
 <!-- Affectation à un chantier : gestion (ajout/retrait) réservée au SUPER_ADMIN — le client
      décide qui intervient sur son chantier. Masquée pour l'Entreprise (sa propre carte
      compacte, vue deux colonnes plus bas) et absente à la création (rien à affecter tant
-     que l'entreprise n'existe pas), plutôt que montrée grisée — voir prototype validé. -->
-<div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isNew">
+     que l'entreprise n'existe pas), plutôt que montrée grisée — voir prototype validé.
+     Également masquée pour le SUPER_ADMIN désormais : la liste fusionnée Entreprises
+     (une ligne par affectation) sert déjà à voir/choisir le bon chantier, et affecter une
+     entreprise à un nouveau chantier se fait depuis la fiche Chantier elle-même
+     (affecterEntrepriseForm) — cette carte devenait une simple redite. Reste visible pour
+     le Contrôleur, qui n'a pas d'équivalent ailleurs. -->
+<div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isSuperAdmin && !isNew">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-map-marker"></i>
@@ -1848,8 +1880,10 @@
                 <div>
                     <div class="composeur-eyebrow">Nouveau message</div>
                     <div class="composeur-title">{{ entreprise?.raisonSociale || 'Entreprise' }}</div>
-                    <div class="composeur-sub" *ngIf="entreprise?.email">
-                        <span>{{ entreprise?.email }}</span>
+                    <div class="composeur-sub" *ngIf="entreprise?.email || contexteChantierNom">
+                        <span *ngIf="entreprise?.email">{{ entreprise?.email }}</span>
+                        <span *ngIf="entreprise?.email && contexteChantierNom">·</span>
+                        <span *ngIf="contexteChantierNom">Chantier {{ contexteChantierNom }}</span>
                     </div>
                 </div>
             </div>
@@ -1879,14 +1913,8 @@
         </div>
         <div class="field">
             <label for="messageContenu">Message *</label>
-            <p-editor formControlName="contenu" [style]="{ height: '360px' }" [class.ng-dirty]="messageForm.controls.contenu.touched" (onInit)="onEditorInit($event)"></p-editor>
+            <p-editor formControlName="contenu" [style]="{ height: '360px' }" [class.ng-dirty]="messageForm.controls.contenu.touched"></p-editor>
             <small class="p-error" *ngIf="messageForm.controls.contenu.invalid && messageForm.controls.contenu.touched">Ce champ est requis.</small>
-
-            <div class="composeur-tag-hint">Balises disponibles — cliquez pour insérer au curseur</div>
-            <div class="composeur-tag-chips">
-                <button type="button" class="composeur-tag-chip" (click)="insererBalise('[DATE]')">[DATE]</button>
-                <button type="button" class="composeur-tag-chip" (click)="insererBalise('[ENTREPRISE_NOM]')">[ENTREPRISE_NOM]</button>
-            </div>
         </div>
     </form>
 

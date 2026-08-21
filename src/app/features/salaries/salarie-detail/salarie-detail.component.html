@@ -18,7 +18,7 @@
                 icon="pi pi-envelope"
                 label="Nouveau message"
                 class="p-button-outlined"
-                (click)="afficherComposeur = true; documentDemandeEnCours = null"
+                (click)="ouvrirComposeur()"
             ></button>
             <button
                 type="button"
@@ -108,7 +108,7 @@
                 </div>
             </div>
             <div class="chantier-hero-actions">
-                <button pButton type="button" icon="pi pi-envelope" label="Nouveau message" class="p-button-text hero-btn-highlight" (click)="afficherComposeur = true; documentDemandeEnCours = null"></button>
+                <button pButton type="button" icon="pi pi-envelope" label="Nouveau message" class="p-button-text hero-btn-highlight" (click)="ouvrirComposeur()"></button>
                 <button
                     pButton
                     type="button"
@@ -433,58 +433,6 @@
             </form>
         </div>
 
-        <!-- Chantiers : liste compacte cliquable + même formulaire d'ajout -->
-        <div class="card" id="ent-chantiers">
-            <div class="card-head">
-                <i class="pi pi-map-marker"></i>
-                <h6 class="m-0">Chantiers</h6>
-            </div>
-            <div class="ent-compact-list" *ngIf="mesAffectations.length > 0">
-                <button
-                    type="button"
-                    class="ent-compact-row"
-                    *ngFor="let affectation of mesAffectations"
-                    [routerLink]="['/chantiers', affectation.chantierId]"
-                    [pTooltip]="'Ouvrir le chantier ' + affectation.nomChantierCalculee"
-                >
-                    <span class="ent-compact-row-icon"><i class="pi pi-building"></i></span>
-                    <span class="ent-compact-row-body">
-                        <span class="ent-compact-row-title">{{ affectation.nomChantierCalculee }}</span>
-                        <span class="ent-compact-row-sub">
-                            {{ affectation.dateDebut | date: 'dd/MM/yyyy' }} — {{ affectation.dateFin ? (affectation.dateFin | date: 'dd/MM/yyyy') : 'en cours' }}
-                        </span>
-                    </span>
-                    <span class="ent-compact-row-end">
-                        <p-tag
-                            [severity]="affectation.statutAcces === 'ACCORDE' ? 'success' : (affectation.statutAcces === 'REFUSE' ? 'danger' : 'warning')"
-                            [value]="affectation.statutAcces | etatLabel"
-                        ></p-tag>
-                    </span>
-                </button>
-            </div>
-            <p class="text-500 text-sm m-0" *ngIf="mesAffectations.length === 0">Aucun chantier affecté pour l'instant.</p>
-
-            <form [formGroup]="affectationForm" (ngSubmit)="submitAffectation()" class="mt-3 pt-3" style="border-top: 1px solid var(--brand-border);">
-                <div class="field">
-                    <label for="entChantierId">Chantier *</label>
-                    <p-dropdown id="entChantierId" [options]="chantiersDisponibles" formControlName="chantierId" optionLabel="nom" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Sélectionner un chantier --" styleClass="w-full" [class.ng-dirty]="affectationForm.controls.chantierId.touched"></p-dropdown>
-                    <small class="p-error" *ngIf="affectationForm.controls.chantierId.invalid && affectationForm.controls.chantierId.touched">Ce champ est requis.</small>
-                </div>
-                <div class="field">
-                    <label for="entAffectationEntreprise">Rôle de l'entreprise employeuse sur ce chantier *</label>
-                    <p-dropdown id="entAffectationEntreprise" [options]="affectationsEntrepriseDuChantier" formControlName="affectationEntrepriseChantierId" optionValue="id" placeholder="-- Sélectionner --" styleClass="w-full" [class.ng-dirty]="affectationForm.controls.affectationEntrepriseChantierId.touched">
-                        <ng-template let-a pTemplate="item">{{ nomEntreprise(a?.entrepriseId) }} ({{ a?.role }})</ng-template>
-                        <ng-template let-a pTemplate="selectedItem">{{ nomEntreprise(a?.entrepriseId) }} ({{ a?.role }})</ng-template>
-                    </p-dropdown>
-                    <small class="p-error" *ngIf="affectationForm.controls.affectationEntrepriseChantierId.invalid && affectationForm.controls.affectationEntrepriseChantierId.touched">Ce champ est requis.</small>
-                    <small class="text-500" *ngIf="affectationForm.value.chantierId && affectationsEntrepriseDuChantier.length === 0">
-                        L'entreprise employeuse de ce salarié n'est pas affectée à ce chantier.
-                    </small>
-                </div>
-                <button pButton type="submit" label="Affecter à ce chantier" icon="pi pi-plus" class="w-full"></button>
-            </form>
-        </div>
-
     </div>
 
     <div class="ent-col">
@@ -778,12 +726,15 @@
     </div>
 </div>
 
-<!-- Informations relatives au chantier : carte complète pour SUPER_ADMIN/Client/Contrôleur —
-     l'Entreprise a sa propre carte compacte (liste cliquable + même formulaire d'ajout).
-     Absente à la création (rien à affecter tant que le salarié n'existe pas) plutôt que
-     montrée grisée, et formulaire "Ajouter" remonté au-dessus du tableau — voir prototype
-     validé (même correctif que sur les fiches Chantier/Entreprise). -->
-<div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isNew">
+<!-- Informations relatives au chantier : carte complète pour Contrôleur (Client a sa propre
+     vue plus haut) — l'Entreprise a sa propre carte compacte (liste cliquable + même
+     formulaire d'ajout). Absente à la création (rien à affecter tant que le salarié
+     n'existe pas) plutôt que montrée grisée — voir prototype validé (même correctif que
+     sur les fiches Chantier/Entreprise). Également masquée pour le SUPER_ADMIN désormais :
+     la liste fusionnée Salariés (une ligne par affectation) sert déjà à voir/choisir le bon
+     chantier, et affecter un salarié à un nouveau chantier se fait depuis la fiche Chantier
+     elle-même (affecterSalarieForm) — cette carte devenait une simple redite. -->
+<div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isSuperAdmin && !isNew">
     <div class="card-head">
         <i class="pi pi-truck"></i>
         <h6 class="m-0">Informations relatives au chantier</h6>
@@ -1127,6 +1078,7 @@
                         <span *ngIf="entrepriseEmployeuse?.email">{{ entrepriseEmployeuse?.email }}</span>
                         <span *ngIf="entrepriseEmployeuse?.email && salarie">·</span>
                         <span *ngIf="salarie">Concerne {{ salarie.prenom }} {{ salarie.nom }}</span>
+                        <span *ngIf="contexteChantierNom">· Chantier {{ contexteChantierNom }}</span>
                     </div>
                 </div>
             </div>
@@ -1156,14 +1108,8 @@
         </div>
         <div class="field">
             <label for="messageContenu">Message *</label>
-            <p-editor formControlName="contenu" [style]="{ height: '360px' }" [class.ng-dirty]="messageForm.controls.contenu.touched" (onInit)="onEditorInit($event)"></p-editor>
+            <p-editor formControlName="contenu" [style]="{ height: '360px' }" [class.ng-dirty]="messageForm.controls.contenu.touched"></p-editor>
             <small class="p-error" *ngIf="messageForm.controls.contenu.invalid && messageForm.controls.contenu.touched">Ce champ est requis.</small>
-
-            <div class="composeur-tag-hint">Balises disponibles — cliquez pour insérer au curseur</div>
-            <div class="composeur-tag-chips">
-                <button type="button" class="composeur-tag-chip" (click)="insererBalise('[DATE]')">[DATE]</button>
-                <button type="button" class="composeur-tag-chip" (click)="insererBalise('[SALARIE_NOM]')">[SALARIE_NOM]</button>
-            </div>
         </div>
     </form>
 

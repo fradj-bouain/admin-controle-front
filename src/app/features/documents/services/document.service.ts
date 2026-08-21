@@ -16,6 +16,13 @@ export class DocumentService {
         return this.http.get<DocumentItem[]>(this.baseUrl, { params: { salarieId } });
     }
 
+    /** Les documents d'un salarié propres à UN chantier précis — instance indépendante de
+        ses documents globaux (chantierId absent) et de ses autres chantiers : valider/
+        refuser/supprimer une ligne obtenue ainsi ne touche jamais un autre chantier. */
+    listerParSalarieEtChantier(salarieId: string, chantierId: string): Observable<DocumentItem[]> {
+        return this.http.get<DocumentItem[]>(this.baseUrl, { params: { salarieId, chantierId } });
+    }
+
     listerParEntreprise(entrepriseId: string): Observable<DocumentItem[]> {
         return this.http.get<DocumentItem[]>(this.baseUrl, { params: { entrepriseId } });
     }
@@ -61,20 +68,28 @@ export class DocumentService {
         return this.http.delete<void>(`${this.baseUrl}/${id}`);
     }
 
-    historiqueParSalarie(salarieId: string): Observable<HistoriqueModification[]> {
-        return this.http.get<HistoriqueModification[]>(`${this.baseUrl}/historique`, { params: { salarieId } });
+    // chantierId : même principe que listerParEntrepriseEtChantier/listerParSalarieEtChantier
+    // — un chantier ne doit voir que l'historique/les relances de SES propres documents,
+    // pas ceux des autres chantiers du même salarié/de la même entreprise. Absent = tous
+    // chantiers confondus, comportement inchangé (ex: vue globale de la fiche).
+    historiqueParSalarie(salarieId: string, chantierId?: string): Observable<HistoriqueModification[]> {
+        return this.http.get<HistoriqueModification[]>(`${this.baseUrl}/historique`,
+            { params: chantierId ? { salarieId, chantierId } : { salarieId } });
     }
 
-    historiqueParEntreprise(entrepriseId: string): Observable<HistoriqueModification[]> {
-        return this.http.get<HistoriqueModification[]>(`${this.baseUrl}/historique`, { params: { entrepriseId } });
+    historiqueParEntreprise(entrepriseId: string, chantierId?: string): Observable<HistoriqueModification[]> {
+        return this.http.get<HistoriqueModification[]>(`${this.baseUrl}/historique`,
+            { params: chantierId ? { entrepriseId, chantierId } : { entrepriseId } });
     }
 
-    relancesParSalarie(salarieId: string): Observable<MessagePlanifie[]> {
-        return this.http.get<MessagePlanifie[]>(`${this.baseUrl}/relances`, { params: { salarieId } });
+    relancesParSalarie(salarieId: string, chantierId?: string): Observable<MessagePlanifie[]> {
+        return this.http.get<MessagePlanifie[]>(`${this.baseUrl}/relances`,
+            { params: chantierId ? { salarieId, chantierId } : { salarieId } });
     }
 
-    relancesParEntreprise(entrepriseId: string): Observable<MessagePlanifie[]> {
-        return this.http.get<MessagePlanifie[]>(`${this.baseUrl}/relances`, { params: { entrepriseId } });
+    relancesParEntreprise(entrepriseId: string, chantierId?: string): Observable<MessagePlanifie[]> {
+        return this.http.get<MessagePlanifie[]>(`${this.baseUrl}/relances`,
+            { params: chantierId ? { entrepriseId, chantierId } : { entrepriseId } });
     }
 
     listerEnAttente(): Observable<DocumentEnAttente[]> {

@@ -83,13 +83,6 @@ export class EntrepriseListComponent implements OnInit {
         return this.auth.hasRole('SUPER_ADMIN');
     }
 
-    // Côté Client, cette liste est déjà limitée aux entreprises de SES chantiers (filtrage
-    // serveur) — pas d'appel à GET /entreprises/affectations (réservé SUPER_ADMIN), donc pas
-    // de colonne Chantier/Rôle renseignée pour ce rôle (comportement inchangé).
-    get estClient(): boolean {
-        return this.auth.hasRole('CLIENT');
-    }
-
     get maxRepartitionCorpsMetier(): number {
         return Math.max(1, ...this.repartitionCorpsMetier.map((c) => c.total));
     }
@@ -104,9 +97,12 @@ export class EntrepriseListComponent implements OnInit {
 
     ngOnInit(): void {
         this.charger();
-        if (this.isSuperAdmin) {
-            this.chargerAffectations();
-        }
+        // GET /entreprises/affectations est ouvert à tout compte authentifié et filtré
+        // côté backend au périmètre de chacun (Client : ses chantiers accessibles ; SUPER_ADMIN
+        // /Contrôleur : vue complète) — voir EntrepriseController.listerAffectations. Toujours
+        // appelé ici : la liste fusionnée (une ligne par affectation) est désormais la vue
+        // standard, plus seulement celle du SUPER_ADMIN.
+        this.chargerAffectations();
     }
 
     charger() {

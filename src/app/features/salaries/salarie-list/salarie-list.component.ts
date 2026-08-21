@@ -93,13 +93,6 @@ export class SalarieListComponent implements OnInit {
         return this.auth.hasRole('ENTREPRISE');
     }
 
-    // Voir entreprise-list.component.ts : même raison, "Chantier actuel" n'est pas
-    // fiable pour un Client (le backend calcule cette valeur sur le périmètre global,
-    // pas limité aux chantiers de ce client).
-    get estClient(): boolean {
-        return this.auth.hasRole('CLIENT');
-    }
-
     get maxRepartitionFonctions(): number {
         return Math.max(1, ...this.repartitionFonctions.map((f) => f.total));
     }
@@ -110,9 +103,13 @@ export class SalarieListComponent implements OnInit {
 
     ngOnInit(): void {
         this.charger();
-        if (this.isSuperAdmin) {
-            this.chargerAffectations();
-        }
+        // GET /salaries/affectations est ouvert à tout compte authentifié et filtré côté
+        // backend au périmètre de chacun (Entreprise : ses salariés ; Client : ses chantiers
+        // accessibles ; SUPER_ADMIN/Contrôleur : vue complète) — voir
+        // SalarieController.listerAffectations. Toujours appelé ici : la liste fusionnée
+        // (une ligne par affectation) est désormais la vue standard, plus seulement celle
+        // du SUPER_ADMIN/de l'Entreprise.
+        this.chargerAffectations();
     }
 
     charger() {

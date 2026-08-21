@@ -28,14 +28,6 @@ interface LigneDocument {
     fichier: File | null;
 }
 
-// Sous-ensemble de l'API Quill utilisé par insererBalise — le p-editor n'expose pas de
-// typage officiel pour l'instance capturée via (onInit).
-interface QuillEditorInstance {
-    getSelection(focus?: boolean): { index: number } | null;
-    getLength(): number;
-    insertText(index: number, text: string, source?: string): void;
-    setSelection(index: number, length: number, source?: string): void;
-}
 
 @Component({
     selector: 'app-salarie-detail',
@@ -120,6 +112,17 @@ export class SalarieDetailComponent implements OnInit {
     afficherRelances = false;
     private relancesChargees = false;
 
+    // Chantier d'où vient l'admin, quand il a cliqué sur la ligne "salarié × chantier"
+    // précise depuis la liste fusionnée (voir SalarieListComponent) — renseigné via
+    // ?chantierId=... dans l'URL. Sert à ne plus jamais montrer "les autres chantiers"
+    // sur cette fiche (redondant avec la liste, qui sert déjà à choisir le bon) et à
+    // rattacher les messages envoyés d'ici à CE chantier précis.
+    contexteChantierId: string | null = null;
+
+    get contexteChantierNom(): string | undefined {
+        return this.contexteChantierId ? this.chantiers.find((c) => c.id === this.contexteChantierId)?.nom : undefined;
+    }
+
     // --- Envoyer un message (panneau latéral, voir prototype validé) ---
     afficherComposeur = false;
     envoiMessageEnCours = false;
@@ -136,9 +139,6 @@ export class SalarieDetailComponent implements OnInit {
         contenu: [this.modeleParDefaut(), Validators.required],
         copieAdmin: [false]
     });
-    // Instance Quill sous-jacente au p-editor (captée via (onInit)) — nécessaire pour
-    // insérer une balise au curseur plutôt que de forcer l'utilisateur à la retaper.
-    private quillEditor: QuillEditorInstance | null = null;
 
     get entrepriseEmployeuse(): Entreprise | undefined {
         return this.salarie ? this.entreprises.find((e) => e.id === this.salarie!.entrepriseEmployeurId) : undefined;
@@ -251,6 +251,38 @@ export class SalarieDetailComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        // Abonnement plutôt que snapshot ponctuel : deux lignes de la liste fusionnée peuvent
+        // pointer vers le MÊME salarieId (même salarié, chantiers différents) — Angular
+        // réutilise alors l'instance du composant sans relancer ngOnInit — seul un abonnement
+        // aux query params capte le changement de contexteChantierId et recharge
+        // documents/historique/relances pour le nouveau chantier.
+        this.route.queryParamMap.subscribe((params) => {
+            const nouveauChantierId = params.get('chantierId');
+            if (nouveauChantierId === this.contexteChantierId) {
+                return;
+            }
+            this.contexteChantierId = nouveauChantierId;
+            if (!this.salarieId) {
+                // Premier chargement : chargerDocuments()/historique le liront eux-mêmes
+                // plus bas via route.paramMap.subscribe, pas besoin de les redéclencher ici.
+                return;
+            }
+            this.chargerDocuments(this.salarieId);
+            this.historiqueCharge = false;
+            this.relancesChargees = false;
+            if (this.afficherHistorique) {
+                this.documentService.historiqueParSalarie(this.salarieId, this.contexteChantierId ?? undefined).subscribe((h) => {
+                    this.historique = h;
+                    this.historiqueCharge = true;
+                });
+            }
+            if (this.afficherRelances) {
+                this.documentService.relancesParSalarie(this.salarieId, this.contexteChantierId ?? undefined).subscribe((r) => {
+                    this.relances = r;
+                    this.relancesChargees = true;
+                });
+            }
+        });
         this.referenceDataService.listerPays().subscribe((pays) => (this.pays = pays));
         this.referenceDataService.listerSalarieFonction().subscribe((fonctions) => (this.fonctions = fonctions));
         this.referenceDataService.listerTypeContratSalarie().subscribe((types) => (this.typesContrat = types));
@@ -516,8 +548,16 @@ export class SalarieDetailComponent implements OnInit {
 
     // --- Documents ---
 
+    // Chantier en contexte (voir contexteChantierId) : la checklist devient celle de CE
+    // chantier précis (documents indépendants d'un chantier à l'autre), au lieu de la
+    // checklist globale du salarié — sinon deux chantiers différents affichaient et
+    // permettaient de valider/refuser la MÊME ligne, un même document apparaissant
+    // identique partout (bug signalé).
     chargerDocuments(salarieId: string) {
-        this.documentService.listerParSalarie(salarieId).subscribe((documents) => {
+        const documents$ = this.contexteChantierId
+            ? this.documentService.listerParSalarieEtChantier(salarieId, this.contexteChantierId)
+            : this.documentService.listerParSalarie(salarieId);
+        documents$.subscribe((documents) => {
             this.documents = documents;
             this.documentsByType = {};
             for (const d of documents) {
@@ -609,20 +649,14 @@ export class SalarieDetailComponent implements OnInit {
         this.afficherComposeur = true;
     }
 
-    // Capture l'instance Quill du p-editor pour permettre l'insertion des balises
-    // au curseur (voir insererBalise) — le composant n'expose pas d'API dédiée.
-    onEditorInit(event: { editor: QuillEditorInstance }) {
-        this.quillEditor = event.editor;
-    }
-
-    insererBalise(balise: string) {
-        if (!this.quillEditor) {
-            return;
-        }
-        const selection = this.quillEditor.getSelection(true);
-        const index = selection ? selection.index : this.quillEditor.getLength();
-        this.quillEditor.insertText(index, balise, 'user');
-        this.quillEditor.setSelection(index + balise.length, 0, 'user');
+    // Recalcule le modèle par défaut au moment de l'ouverture (pas seulement à la
+    // construction du composant, quand ni le salarié ni le contexte chantier ne sont
+    // encore connus) — remplace le "afficherComposeur = true" en dur sur le bouton
+    // "Nouveau message" pour que le sujet/contenu soient toujours à jour.
+    ouvrirComposeur() {
+        this.documentDemandeEnCours = null;
+        this.messageForm.patchValue({ sujet: '', contenu: this.modeleParDefaut() });
+        this.afficherComposeur = true;
     }
 
     // Appelé sur (onHide) du panneau — couvre toutes les façons de le fermer (bouton
@@ -631,11 +665,18 @@ export class SalarieDetailComponent implements OnInit {
         this.documentDemandeEnCours = null;
     }
 
+    // Date réelle du jour, pas le jeton [DATE] laissé tel quel — le destinataire ne doit
+    // jamais voir un placeholder non résolu dans un message envoyé.
+    private formaterDateAujourdhui(): string {
+        return new Date().toLocaleDateString('fr-FR');
+    }
+
     private modeleDemandeDocuments(listeDocumentsHtml: string): string {
         return `
 <p><img src="assets/layout/images/admincontrol-logo.png" alt="ADMIN-CONTROL'BTP" style="max-width:200px;" /></p>
-<p>Date :<br /><strong>[DATE]</strong></p>
+<p>Date :<br /><strong>${this.formaterDateAujourdhui()}</strong></p>
 <p>Salarié :<br /><strong>${this.salarie ? this.salarie.prenom + ' ' + this.salarie.nom : '[SALARIE_NOM]'}</strong></p>
+${this.contexteChantierNom ? `<p>Chantier :<br /><strong>${this.contexteChantierNom}</strong></p>` : ''}
 <p><br /></p>
 <p>Madame, Monsieur,</p>
 <p><br /></p>
@@ -672,7 +713,11 @@ export class SalarieDetailComponent implements OnInit {
         const ligne = this.lignesDocument[type.id];
         this.documentService.creer({
             typeDocumentId: type.id,
-            salarieId: this.salarieId!
+            salarieId: this.salarieId!,
+            // Chantier en contexte (voir contexteChantierId) : sans lui, le document reste
+            // global au salarié — c'est voulu uniquement pour les documents d'identité
+            // déposés hors de tout contexte chantier (ex: à la création du salarié).
+            chantierId: this.contexteChantierId ?? undefined
         }, ligne.fichier).subscribe({
             next: () => {
                 this.message.add({ severity: 'success', summary: 'Succès', detail: 'Document enregistré' });
@@ -743,7 +788,7 @@ export class SalarieDetailComponent implements OnInit {
     basculerHistorique() {
         this.afficherHistorique = !this.afficherHistorique;
         if (this.afficherHistorique && !this.historiqueCharge) {
-            this.documentService.historiqueParSalarie(this.salarieId!).subscribe((h) => {
+            this.documentService.historiqueParSalarie(this.salarieId!, this.contexteChantierId ?? undefined).subscribe((h) => {
                 this.historique = h;
                 this.historiqueCharge = true;
             });
@@ -784,7 +829,7 @@ export class SalarieDetailComponent implements OnInit {
     basculerRelances() {
         this.afficherRelances = !this.afficherRelances;
         if (this.afficherRelances && !this.relancesChargees) {
-            this.documentService.relancesParSalarie(this.salarieId!).subscribe((r) => {
+            this.documentService.relancesParSalarie(this.salarieId!, this.contexteChantierId ?? undefined).subscribe((r) => {
                 this.relances = r;
                 this.relancesChargees = true;
             });
@@ -799,8 +844,9 @@ export class SalarieDetailComponent implements OnInit {
     private modeleParDefaut(): string {
         return `
 <p><img src="assets/layout/images/admincontrol-logo.png" alt="ADMIN-CONTROL'BTP" style="max-width:200px;" /></p>
-<p>Date :<br /><strong>[DATE]</strong></p>
+<p>Date :<br /><strong>${this.formaterDateAujourdhui()}</strong></p>
 <p>Salarié :<br /><strong>${this.salarie ? this.salarie.prenom + ' ' + this.salarie.nom : '[SALARIE_NOM]'}</strong></p>
+${this.contexteChantierNom ? `<p>Chantier :<br /><strong>${this.contexteChantierNom}</strong></p>` : ''}
 <p><br /></p>
 <p>Madame, Monsieur,</p>
 <p><br /></p>
@@ -826,7 +872,11 @@ export class SalarieDetailComponent implements OnInit {
                 // La référence document n'a de sens que pour le vrai destinataire (l'entreprise
                 // qui doit déposer le fichier) — pas pour la copie informative à l'admin.
                 typeDocumentId: avecReferenceDocument ? this.documentDemandeEnCours ?? undefined : undefined,
-                salarieId: avecReferenceDocument && this.documentDemandeEnCours ? this.salarieId ?? undefined : undefined
+                salarieId: avecReferenceDocument && this.documentDemandeEnCours ? this.salarieId ?? undefined : undefined,
+                // Chantier d'où le message a été composé (voir contexteChantierId) — rattache
+                // le message à CE chantier précis dans l'historique, pas seulement à
+                // l'entreprise/au salarié en général.
+                chantierId: this.contexteChantierId ?? undefined
             });
         };
         ajouter('ENTREPRISE', this.salarie.entrepriseEmployeurId, true);

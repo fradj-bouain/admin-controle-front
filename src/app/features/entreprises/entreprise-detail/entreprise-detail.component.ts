@@ -27,14 +27,6 @@ interface LigneDocument {
     fichier: File | null;
 }
 
-// Sous-ensemble de l'API Quill utilisé par insererBalise — le p-editor n'expose pas de
-// typage officiel pour l'instance capturée via (onInit).
-interface QuillEditorInstance {
-    getSelection(focus?: boolean): { index: number } | null;
-    getLength(): number;
-    insertText(index: number, text: string, source?: string): void;
-    setSelection(index: number, length: number, source?: string): void;
-}
 
 @Component({
     selector: 'app-entreprise-detail',
@@ -175,6 +167,46 @@ export class EntrepriseDetailComponent implements OnInit {
     afficherRelances = false;
     private relancesChargees = false;
 
+    // Chantier d'où vient l'admin, quand il a cliqué sur la ligne "entreprise × chantier"
+    // précise depuis la liste fusionnée (voir EntrepriseListComponent) — renseigné via
+    // ?chantierId=... dans l'URL. Sert à ne plus jamais montrer "les autres chantiers"
+    // sur cette fiche (redondant avec la liste, qui sert déjà à choisir le bon) et à
+    // rattacher les messages envoyés d'ici à CE chantier précis.
+    contexteChantierId: string | null = null;
+
+    get contexteChantierNom(): string | undefined {
+        return this.contexteChantierId ? this.chantiers.find((c) => c.id === this.contexteChantierId)?.nom : undefined;
+    }
+
+    // L'affectation (entreprise × ce chantier précis) — porte l'email de contact propre
+    // à cette relation, distinct de l'email principal de l'entreprise (voir emailContact
+    // sur AffectationEntrepriseChantier, modèle validé).
+    get affectationContexte(): AffectationEntrepriseChantier | undefined {
+        return this.contexteChantierId ? this.mesAffectations.find((a) => a.chantierId === this.contexteChantierId) : undefined;
+    }
+
+    emailContactChantier = '';
+    enregistrementEmailContactEnCours = false;
+
+    enregistrerEmailContact() {
+        const affectation = this.affectationContexte;
+        if (!affectation) {
+            return;
+        }
+        this.enregistrementEmailContactEnCours = true;
+        this.affectationService.modifierEmailContact(affectation.chantierId, affectation.id, this.emailContactChantier).subscribe({
+            next: () => {
+                this.enregistrementEmailContactEnCours = false;
+                this.message.add({ severity: 'success', summary: 'Succès', detail: 'Email de contact enregistré' });
+                this.chargerMesAffectations();
+            },
+            error: () => {
+                this.enregistrementEmailContactEnCours = false;
+                this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Enregistrement impossible' });
+            }
+        });
+    }
+
     // --- Envoyer un message (panneau latéral, voir prototype validé sur la fiche Salarié) ---
     afficherComposeur = false;
     envoiMessageEnCours = false;
@@ -191,9 +223,6 @@ export class EntrepriseDetailComponent implements OnInit {
         contenu: [this.modeleParDefaut(), Validators.required],
         copieAdmin: [false]
     });
-    // Instance Quill sous-jacente au p-editor (captée via (onInit)) — nécessaire pour
-    // insérer une balise au curseur plutôt que de forcer l'utilisateur à la retaper.
-    private quillEditor: QuillEditorInstance | null = null;
 
     get libelleDocumentDemande(): string {
         return this.typesPourEntreprise.find((t) => t.id === this.documentDemandeEnCours)?.libelle ?? '';
@@ -362,6 +391,39 @@ export class EntrepriseDetailComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        // Abonnement plutôt que snapshot ponctuel : cliquer un autre chantier depuis la liste
+        // "Affectations" (voir template) revient sur CETTE MÊME fiche (même entrepriseId),
+        // Angular réutilise alors l'instance du composant sans relancer ngOnInit — seul un
+        // abonnement aux query params capte le changement de contexteChantierId et recharge
+        // documents/historique/relances pour le nouveau chantier.
+        this.route.queryParamMap.subscribe((params) => {
+            const nouveauChantierId = params.get('chantierId');
+            if (nouveauChantierId === this.contexteChantierId) {
+                return;
+            }
+            this.contexteChantierId = nouveauChantierId;
+            if (!this.entrepriseId) {
+                // Premier chargement : chargerDocuments()/historique le liront eux-mêmes
+                // plus bas via route.paramMap.subscribe, pas besoin de les redéclencher ici.
+                return;
+            }
+            this.chargerDocuments();
+            this.emailContactChantier = this.affectationContexte?.emailContact ?? '';
+            this.historiqueCharge = false;
+            this.relancesChargees = false;
+            if (this.afficherHistorique) {
+                this.documentService.historiqueParEntreprise(this.entrepriseId, this.contexteChantierId ?? undefined).subscribe((h) => {
+                    this.historique = h;
+                    this.historiqueCharge = true;
+                });
+            }
+            if (this.afficherRelances) {
+                this.documentService.relancesParEntreprise(this.entrepriseId, this.contexteChantierId ?? undefined).subscribe((r) => {
+                    this.relances = r;
+                    this.relancesChargees = true;
+                });
+            }
+        });
         this.referenceDataService.listerPays().subscribe((pays) => (this.pays = pays));
         this.referenceDataService.listerCorpsDeMetier().subscribe((c) => (this.corpsDeMetiers = c));
         this.referenceDataService.listerTypeContratSalarie().subscribe((types) => (this.typesContrat = types));
@@ -612,6 +674,9 @@ export class EntrepriseDetailComponent implements OnInit {
                 .map((a) => ({ ...a, nomChantierCalculee: this.nomChantier(a.chantierId) }));
             this.recalculerChantiersDisponibles();
             this.recalculerSousTraitants();
+            // Reflète l'email de contact déjà enregistré pour l'affectation du contexte
+            // chantier courant (voir affectationContexte / enregistrerEmailContact).
+            this.emailContactChantier = this.affectationContexte?.emailContact ?? '';
         });
     }
 
@@ -854,20 +919,14 @@ export class EntrepriseDetailComponent implements OnInit {
         this.afficherComposeur = true;
     }
 
-    // Capture l'instance Quill du p-editor pour permettre l'insertion des balises
-    // au curseur (voir insererBalise) — le composant n'expose pas d'API dédiée.
-    onEditorInit(event: { editor: QuillEditorInstance }) {
-        this.quillEditor = event.editor;
-    }
-
-    insererBalise(balise: string) {
-        if (!this.quillEditor) {
-            return;
-        }
-        const selection = this.quillEditor.getSelection(true);
-        const index = selection ? selection.index : this.quillEditor.getLength();
-        this.quillEditor.insertText(index, balise, 'user');
-        this.quillEditor.setSelection(index + balise.length, 0, 'user');
+    // Recalcule le modèle par défaut au moment de l'ouverture (pas seulement à la
+    // construction du composant, quand ni l'entreprise ni le contexte chantier ne sont
+    // encore connus) — remplace le "afficherComposeur = true" en dur sur le bouton
+    // "Nouveau message" pour que le sujet/contenu soient toujours à jour.
+    ouvrirComposeur() {
+        this.documentDemandeEnCours = null;
+        this.messageForm.patchValue({ sujet: '', contenu: this.modeleParDefaut() });
+        this.afficherComposeur = true;
     }
 
     // Appelé sur (onHide) du panneau — couvre toutes les façons de le fermer (bouton
@@ -876,11 +935,18 @@ export class EntrepriseDetailComponent implements OnInit {
         this.documentDemandeEnCours = null;
     }
 
+    // Date réelle du jour, pas le jeton [DATE] laissé tel quel — le destinataire ne doit
+    // jamais voir un placeholder non résolu dans un message envoyé.
+    private formaterDateAujourdhui(): string {
+        return new Date().toLocaleDateString('fr-FR');
+    }
+
     private modeleDemandeDocuments(listeDocumentsHtml: string): string {
         return `
 <p><img src="assets/layout/images/admincontrol-logo.png" alt="ADMIN-CONTROL'BTP" style="max-width:200px;" /></p>
-<p>Date :<br /><strong>[DATE]</strong></p>
+<p>Date :<br /><strong>${this.formaterDateAujourdhui()}</strong></p>
 <p>Entreprise :<br /><strong>${this.entreprise ? this.entreprise.raisonSociale : '[ENTREPRISE_NOM]'}</strong></p>
+${this.contexteChantierNom ? `<p>Chantier :<br /><strong>${this.contexteChantierNom}</strong></p>` : ''}
 <p><br /></p>
 <p>Madame, Monsieur,</p>
 <p><br /></p>
@@ -917,7 +983,11 @@ export class EntrepriseDetailComponent implements OnInit {
         const ligne = this.lignesDocument[type.id];
         this.documentService.creer({
             typeDocumentId: type.id,
-            entrepriseId: this.entrepriseId!
+            entrepriseId: this.entrepriseId!,
+            // Chantier en contexte (voir contexteChantierId) : sans lui, le document reste
+            // global à l'entreprise — voulu uniquement pour les documents d'identité déposés
+            // hors de tout contexte chantier (ex: à la création de l'entreprise).
+            chantierId: this.contexteChantierId ?? undefined
         }, ligne.fichier).subscribe({
             next: () => {
                 this.message.add({ severity: 'success', summary: 'Succès', detail: 'Document enregistré' });
@@ -1037,7 +1107,7 @@ export class EntrepriseDetailComponent implements OnInit {
     basculerHistorique() {
         this.afficherHistorique = !this.afficherHistorique;
         if (this.afficherHistorique && !this.historiqueCharge) {
-            this.documentService.historiqueParEntreprise(this.entrepriseId!).subscribe((h) => {
+            this.documentService.historiqueParEntreprise(this.entrepriseId!, this.contexteChantierId ?? undefined).subscribe((h) => {
                 this.historique = h;
                 this.historiqueCharge = true;
             });
@@ -1078,7 +1148,7 @@ export class EntrepriseDetailComponent implements OnInit {
     basculerRelances() {
         this.afficherRelances = !this.afficherRelances;
         if (this.afficherRelances && !this.relancesChargees) {
-            this.documentService.relancesParEntreprise(this.entrepriseId!).subscribe((r) => {
+            this.documentService.relancesParEntreprise(this.entrepriseId!, this.contexteChantierId ?? undefined).subscribe((r) => {
                 this.relances = r;
                 this.relancesChargees = true;
             });
@@ -1093,8 +1163,9 @@ export class EntrepriseDetailComponent implements OnInit {
     private modeleParDefaut(): string {
         return `
 <p><img src="assets/layout/images/admincontrol-logo.png" alt="ADMIN-CONTROL'BTP" style="max-width:200px;" /></p>
-<p>Date :<br /><strong>[DATE]</strong></p>
+<p>Date :<br /><strong>${this.formaterDateAujourdhui()}</strong></p>
 <p>Entreprise :<br /><strong>${this.entreprise ? this.entreprise.raisonSociale : '[ENTREPRISE_NOM]'}</strong></p>
+${this.contexteChantierNom ? `<p>Chantier :<br /><strong>${this.contexteChantierNom}</strong></p>` : ''}
 <p><br /></p>
 <p>Madame, Monsieur,</p>
 <p><br /></p>
@@ -1119,7 +1190,11 @@ export class EntrepriseDetailComponent implements OnInit {
                 destinataireType: type, destinataireId: id, sujet: value.sujet!, contenu: value.contenu!,
                 // La référence document n'a de sens que pour le vrai destinataire (l'entreprise
                 // qui doit déposer le fichier) — pas pour la copie informative à l'admin.
-                typeDocumentId: avecReferenceDocument ? this.documentDemandeEnCours ?? undefined : undefined
+                typeDocumentId: avecReferenceDocument ? this.documentDemandeEnCours ?? undefined : undefined,
+                // Chantier d'où le message a été composé (voir contexteChantierId) — rattache
+                // le message à CE chantier précis dans l'historique, pas seulement à
+                // l'entreprise en général.
+                chantierId: this.contexteChantierId ?? undefined
             });
         };
         ajouter('ENTREPRISE', this.entrepriseId, true);

@@ -88,7 +88,7 @@
         </ng-template>
     </p-toolbar>
 
-    <p class="text-500 text-sm mt-0 mb-3" *ngIf="isSuperAdmin">
+    <p class="text-500 text-sm mt-0 mb-3">
         Une ligne par entreprise <b>et par chantier</b> — une entreprise affectée à plusieurs chantiers apparaît plusieurs fois, chacune avec son propre statut d'engagement. Une entreprise sans aucune affectation apparaît une seule fois, sans chantier.
     </p>
 
@@ -113,9 +113,9 @@
                 <th>Raison sociale</th>
                 <th>SIRET</th>
                 <th>Téléphone</th>
-                <th *ngIf="!estClient">Chantier</th>
-                <th *ngIf="!estClient">Rôle</th>
-                <th *ngIf="!estClient">Statut sur ce chantier</th>
+                <th>Chantier</th>
+                <th>Rôle</th>
+                <th>Statut sur ce chantier</th>
                 <th>Statut entreprise</th>
                 <th style="width: 8rem"></th>
             </tr>
@@ -123,9 +123,9 @@
                 <th><p-columnFilter type="text" field="raisonSociale" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="siret" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="telephone" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                <th *ngIf="!estClient"><p-columnFilter type="text" field="nomChantier" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                <th *ngIf="!estClient"></th>
-                <th *ngIf="!estClient"></th>
+                <th><p-columnFilter type="text" field="nomChantier" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th></th>
+                <th></th>
                 <th>
                     <p-columnFilter field="actif" matchMode="equals" [showMenu]="false">
                         <ng-template pTemplate="filter" let-value let-filter="filterCallback">
@@ -142,7 +142,7 @@
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-ligne>
-            <tr class="cursor-pointer" [routerLink]="['/entreprises', ligne.entrepriseId]">
+            <tr class="cursor-pointer" [routerLink]="['/entreprises', ligne.entrepriseId]" [queryParams]="ligne.chantierId ? { chantierId: ligne.chantierId } : {}">
                 <td>
                     <div class="flex align-items-center gap-2">
                         <span class="member-avatar">{{ initiales(ligne.raisonSociale) }}</span>
@@ -151,17 +151,17 @@
                 </td>
                 <td>{{ ligne.siret }}</td>
                 <td>{{ ligne.telephone }}</td>
-                <td *ngIf="!estClient">
+                <td>
                     <p-tag *ngIf="ligne.nomChantier" severity="info" [value]="ligne.nomChantier">
                         <ng-template pTemplate="icon"><i class="pi pi-map-marker mr-1"></i></ng-template>
                     </p-tag>
                     <span *ngIf="!ligne.nomChantier" class="text-500">Aucun chantier</span>
                 </td>
-                <td *ngIf="!estClient">
+                <td>
                     <p-tag *ngIf="ligne.role" severity="info" [value]="ligne.role"></p-tag>
                     <span *ngIf="!ligne.role" class="text-500">—</span>
                 </td>
-                <td *ngIf="!estClient">
+                <td>
                     <p-tag *ngIf="ligne.statutAffectation" [severity]="ligne.statutAffectation === 'ACTIF' ? 'success' : 'danger'" [value]="ligne.statutAffectation | etatLabel"></p-tag>
                     <span *ngIf="!ligne.statutAffectation" class="text-500">—</span>
                 </td>
