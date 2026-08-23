@@ -1279,74 +1279,75 @@
         </form>
     </div>
 
-    <div class="col-12 lg:col-4" *ngIf="isNew && !loading">
-        <p class="text-500 text-xs font-bold uppercase mb-2" style="letter-spacing:.05em;">Aperçu de la fiche</p>
-        <div class="id-card mb-3">
-            <div class="id-card-band">
-                <div class="id-card-mark">{{ (coordonneesForm.get('raisonSociale')?.value || '?') | slice:0:2 | uppercase }}</div>
-                <div class="id-card-name-row">
-                    <span class="id-card-name">{{ coordonneesForm.get('raisonSociale')?.value || 'Nouvelle entreprise' }}</span>
-                    <div class="id-card-sub">
-                        <span class="status-pill success"><span class="status-pill-dot"></span>Actif</span>
-                        <span *ngIf="coordonneesForm.get('ville')?.value">· {{ coordonneesForm.get('ville')?.value }}</span>
+    <div class="col-12 lg:col-4" *ngIf="(isNew && !loading) || (isSuperAdmin && contexteChantierId && !isNew)">
+        <ng-container *ngIf="isNew && !loading">
+            <p class="text-500 text-xs font-bold uppercase mb-2" style="letter-spacing:.05em;">Aperçu de la fiche</p>
+            <div class="id-card mb-3">
+                <div class="id-card-band">
+                    <div class="id-card-mark">{{ (coordonneesForm.get('raisonSociale')?.value || '?') | slice:0:2 | uppercase }}</div>
+                    <div class="id-card-name-row">
+                        <span class="id-card-name">{{ coordonneesForm.get('raisonSociale')?.value || 'Nouvelle entreprise' }}</span>
+                        <div class="id-card-sub">
+                            <span class="status-pill success"><span class="status-pill-dot"></span>Actif</span>
+                            <span *ngIf="coordonneesForm.get('ville')?.value">· {{ coordonneesForm.get('ville')?.value }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="id-card-body">
+                    <div class="id-kv-grid">
+                        <div>
+                            <div class="id-kv-label">Corps de métier</div>
+                            <div class="id-kv-value">{{ nomCorpsDeMetier(coordonneesForm.get('corpsDeMetierId')?.value ?? undefined) }}</div>
+                        </div>
+                        <div>
+                            <div class="id-kv-label">Téléphone</div>
+                            <div class="id-kv-value">{{ coordonneesForm.get('telephone')?.value || '—' }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="id-card-body">
-                <div class="id-kv-grid">
-                    <div>
-                        <div class="id-kv-label">Corps de métier</div>
-                        <div class="id-kv-value">{{ nomCorpsDeMetier(coordonneesForm.get('corpsDeMetierId')?.value ?? undefined) }}</div>
-                    </div>
-                    <div>
-                        <div class="id-kv-label">Téléphone</div>
-                        <div class="id-kv-value">{{ coordonneesForm.get('telephone')?.value || '—' }}</div>
-                    </div>
-                </div>
+            <p class="text-500 text-sm mb-3" style="line-height:1.5;">Le corps de métier détermine quels documents obligatoires lui seront ensuite demandés.</p>
+
+            <div class="tip-card">
+                <h6><i class="pi pi-info-circle"></i>Bon à savoir</h6>
+                <ul>
+                    <li>Le Siren et le Siret figurent sur l'extrait Kbis de l'entreprise.</li>
+                    <li>Le statut est « Actif » par défaut à la création.</li>
+                    <li>Affectation à un chantier, sous-traitants, salariés et utilisateurs se règlent juste après l'enregistrement.</li>
+                </ul>
             </div>
-        </div>
-        <p class="text-500 text-sm mb-3" style="line-height:1.5;">Le corps de métier détermine quels documents obligatoires lui seront ensuite demandés.</p>
+        </ng-container>
 
-        <div class="tip-card">
-            <h6><i class="pi pi-info-circle"></i>Bon à savoir</h6>
-            <ul>
-                <li>Le Siren et le Siret figurent sur l'extrait Kbis de l'entreprise.</li>
-                <li>Le statut est « Actif » par défaut à la création.</li>
-                <li>Affectation à un chantier, sous-traitants, salariés et utilisateurs se règlent juste après l'enregistrement.</li>
-            </ul>
-        </div>
-    </div>
-</div>
-
-<!-- Contexte chantier : visible seulement quand on arrive sur cette fiche depuis une ligne
-     précise de la liste fusionnée (?chantierId=... dans l'URL, voir EntrepriseListComponent).
-     Remplace, pour le SUPER_ADMIN, l'ancienne carte "Affectation à un chantier" — porte les
-     coordonnées de contact (email/téléphone/adresse) propres à CETTE relation (entreprise,
-     chantier), distinctes des coordonnées principales de l'entreprise (raison sociale/SIRET/
-     informations légales restent une seule ligne, partagée par tous les chantiers). Stockées
-     uniquement pour l'instant : aucun envoi réel ne s'en sert encore (voir MessageService.envoyer,
-     pas branché sur EmailService/SMTP). -->
-<div class="card mb-3" *ngIf="isSuperAdmin && contexteChantierId && !isNew">
-    <div class="card-head">
-        <i class="pi pi-map-marker"></i>
-        <h6 class="m-0">Chantier : {{ contexteChantierNom }}</h6>
-    </div>
-    <p class="text-500 mt-0 mb-3">Coordonnées de contact propres à ce chantier — optionnelles, sans toucher aux informations légales de l'entreprise (raison sociale, SIRET, adresse du siège...), communes à tous ses chantiers.</p>
-    <div class="formgrid grid">
-        <div class="field col-12 md:col-4">
-            <label for="emailContactChantier">Email de contact</label>
-            <input id="emailContactChantier" type="email" pInputText [(ngModel)]="emailContactChantier" placeholder="Par défaut : email principal de l'entreprise" class="w-full" />
-        </div>
-        <div class="field col-12 md:col-4">
-            <label for="telephoneContactChantier">Téléphone de contact</label>
-            <input id="telephoneContactChantier" type="tel" pInputText [(ngModel)]="telephoneContactChantier" placeholder="Par défaut : téléphone principal de l'entreprise" class="w-full" />
-        </div>
-        <div class="field col-12 md:col-4">
-            <label for="adresseContactChantier">Adresse d'intervention</label>
-            <input id="adresseContactChantier" type="text" pInputText [(ngModel)]="adresseContactChantier" placeholder="Par défaut : adresse du siège" class="w-full" />
-        </div>
-        <div class="field col-12 flex justify-content-end mb-0">
-            <button pButton type="button" label="Enregistrer" icon="pi pi-check" [loading]="enregistrementCoordonneesContactEnCours" (click)="enregistrerCoordonneesContact()"></button>
+        <!-- Contexte chantier : visible seulement quand on arrive sur cette fiche depuis une
+             ligne précise de la liste fusionnée (?chantierId=... dans l'URL, voir
+             EntrepriseListComponent) — remplace, pour le SUPER_ADMIN, l'ancienne carte
+             "Affectation à un chantier". Porte les coordonnées de contact (email/téléphone/
+             adresse) propres à CETTE relation (entreprise, chantier), distinctes des
+             coordonnées principales de l'entreprise (raison sociale/SIRET/informations
+             légales restent une seule ligne, partagée par tous les chantiers). Stockées
+             uniquement pour l'instant : aucun envoi réel ne s'en sert encore (voir
+             MessageService.envoyer, pas branché sur EmailService/SMTP). Placée à côté
+             d'Identité/Coordonnées (demande explicite) plutôt qu'en carte pleine largeur
+             séparée — un champ par ligne, plus adapté à cette colonne étroite. -->
+        <div class="card mb-3" *ngIf="isSuperAdmin && contexteChantierId && !isNew">
+            <div class="card-head">
+                <i class="pi pi-map-marker"></i>
+                <h6 class="m-0">Chantier : {{ contexteChantierNom }}</h6>
+            </div>
+            <p class="text-500 text-sm mt-0 mb-3">Coordonnées de contact propres à ce chantier — optionnelles, sans toucher aux informations légales de l'entreprise, communes à tous ses chantiers.</p>
+            <div class="field">
+                <label for="emailContactChantier">Email de contact</label>
+                <input id="emailContactChantier" type="email" pInputText [(ngModel)]="emailContactChantier" placeholder="Par défaut : email principal de l'entreprise" class="w-full" />
+            </div>
+            <div class="field">
+                <label for="telephoneContactChantier">Téléphone de contact</label>
+                <input id="telephoneContactChantier" type="tel" pInputText [(ngModel)]="telephoneContactChantier" placeholder="Par défaut : téléphone principal de l'entreprise" class="w-full" />
+            </div>
+            <div class="field mb-0">
+                <label for="adresseContactChantier">Adresse d'intervention</label>
+                <input id="adresseContactChantier" type="text" pInputText [(ngModel)]="adresseContactChantier" placeholder="Par défaut : adresse du siège" class="w-full" />
+            </div>
+            <button pButton type="button" label="Enregistrer" icon="pi pi-check" class="w-full mt-3" [loading]="enregistrementCoordonneesContactEnCours" (click)="enregistrerCoordonneesContact()"></button>
         </div>
     </div>
 </div>
