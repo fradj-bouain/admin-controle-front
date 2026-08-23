@@ -264,8 +264,15 @@ export class EntrepriseListComponent implements OnInit {
     // de plusieurs icônes nues côte à côte (voir audit UX) — reconstruit à chaque
     // ouverture pour refléter l'état (actif/inactif) de la ligne cliquée.
     construireMenu(ligne: LigneEntrepriseAffectation): MenuItem[] {
+        // queryParams doit reprendre le chantierId de la ligne, comme le clic sur la ligne
+        // elle-même (voir template) — sans ça, "Modifier" perdait le contexte chantier et la
+        // carte "Coordonnées de contact pour ce chantier" de la fiche restait invisible.
         const items: MenuItem[] = [
-            { label: 'Modifier', icon: 'pi pi-pencil', routerLink: ['/entreprises', ligne.entrepriseId] }
+            {
+                label: 'Modifier', icon: 'pi pi-pencil',
+                routerLink: ['/entreprises', ligne.entrepriseId],
+                queryParams: ligne.chantierId ? { chantierId: ligne.chantierId } : {}
+            }
         ];
         if (this.isSuperAdmin) {
             items.push(

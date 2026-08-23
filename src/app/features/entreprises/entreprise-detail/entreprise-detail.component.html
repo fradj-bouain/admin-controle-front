@@ -425,7 +425,7 @@
             <div class="card-head justify-content-between">
                 <div class="flex align-items-center gap-2">
                     <i class="pi pi-users"></i>
-                    <h6 class="m-0">Salariés</h6>
+                    <h6 class="m-0">Salariés{{ contexteChantierNom ? ' sur ' + contexteChantierNom : '' }}</h6>
                 </div>
                 <button
                     pButton
@@ -448,14 +448,19 @@
                     <span class="ent-compact-row-icon"><i class="pi pi-user"></i></span>
                     <span class="ent-compact-row-body">
                         <span class="ent-compact-row-title">{{ salarie.identiteCalculee }}</span>
-                        <span class="ent-compact-row-sub" *ngIf="salarie.chantierActuel">{{ salarie.chantierActuel }}</span>
+                        <span class="ent-compact-row-sub" *ngIf="salarie.fonctionId || salarie.chantierActuel">
+                            <ng-container *ngIf="salarie.fonctionId">{{ libelleFonction(salarie.fonctionId) }}</ng-container>
+                            <ng-container *ngIf="salarie.fonctionId && salarie.chantierActuel"> · </ng-container>
+                            <ng-container *ngIf="salarie.chantierActuel">{{ salarie.chantierActuel }}</ng-container>
+                        </span>
                     </span>
-                    <span class="ent-compact-row-end">
+                    <span class="ent-compact-row-end flex align-items-center gap-2">
+                        <p-tag *ngIf="affectationParSalarieId[salarie.id] as aff" [severity]="aff.statutAcces === 'ACCORDE' ? 'success' : (aff.statutAcces === 'REFUSE' ? 'danger' : 'warning')" [value]="aff.statutAcces | etatLabel" [pTooltip]="'Accès chantier : ' + (aff.statutAcces | etatLabel)"></p-tag>
                         <p-tag [severity]="salarie.statut === 'ACTIF' ? 'success' : 'danger'" [value]="salarie.statut | etatLabel"></p-tag>
                     </span>
                 </button>
             </div>
-            <p class="text-500 text-sm m-0" *ngIf="salaries.length === 0">Aucun salarié pour cette entreprise.</p>
+            <p class="text-500 text-sm m-0" *ngIf="salaries.length === 0">{{ contexteChantierNom ? 'Aucun salarié de cette entreprise sur ' + contexteChantierNom + '.' : 'Aucun salarié pour cette entreprise.' }}</p>
         </div>
 
     </div>
@@ -1315,23 +1320,33 @@
 
 <!-- Contexte chantier : visible seulement quand on arrive sur cette fiche depuis une ligne
      précise de la liste fusionnée (?chantierId=... dans l'URL, voir EntrepriseListComponent).
-     Remplace, pour le SUPER_ADMIN, l'ancienne carte "Affectation à un chantier" — porte
-     l'email de contact propre à CETTE relation (entreprise, chantier), distinct de l'email
-     principal de l'entreprise. Stocké uniquement pour l'instant : aucun envoi réel ne s'en
-     sert encore (voir MessageService.envoyer, pas branché sur EmailService/SMTP). -->
+     Remplace, pour le SUPER_ADMIN, l'ancienne carte "Affectation à un chantier" — porte les
+     coordonnées de contact (email/téléphone/adresse) propres à CETTE relation (entreprise,
+     chantier), distinctes des coordonnées principales de l'entreprise (raison sociale/SIRET/
+     informations légales restent une seule ligne, partagée par tous les chantiers). Stockées
+     uniquement pour l'instant : aucun envoi réel ne s'en sert encore (voir MessageService.envoyer,
+     pas branché sur EmailService/SMTP). -->
 <div class="card mb-3" *ngIf="isSuperAdmin && contexteChantierId && !isNew">
     <div class="card-head">
         <i class="pi pi-map-marker"></i>
         <h6 class="m-0">Chantier : {{ contexteChantierNom }}</h6>
     </div>
-    <div class="formgrid grid align-items-end">
-        <div class="field col-12 md:col-8">
-            <label for="emailContactChantier">Email de contact pour ce chantier</label>
-            <input id="emailContactChantier" type="email" pInputText [(ngModel)]="emailContactChantier" placeholder="Par défaut : email principal de l'entreprise" />
-            <small class="text-500">Optionnel — propre à cette relation (entreprise × chantier), sans toucher à l'email principal de l'entreprise. L'envoi réel n'est pas encore branché dessus.</small>
+    <p class="text-500 mt-0 mb-3">Coordonnées de contact propres à ce chantier — optionnelles, sans toucher aux informations légales de l'entreprise (raison sociale, SIRET, adresse du siège...), communes à tous ses chantiers.</p>
+    <div class="formgrid grid">
+        <div class="field col-12 md:col-4">
+            <label for="emailContactChantier">Email de contact</label>
+            <input id="emailContactChantier" type="email" pInputText [(ngModel)]="emailContactChantier" placeholder="Par défaut : email principal de l'entreprise" class="w-full" />
         </div>
         <div class="field col-12 md:col-4">
-            <button pButton type="button" label="Enregistrer" icon="pi pi-check" class="w-full" [loading]="enregistrementEmailContactEnCours" (click)="enregistrerEmailContact()"></button>
+            <label for="telephoneContactChantier">Téléphone de contact</label>
+            <input id="telephoneContactChantier" type="tel" pInputText [(ngModel)]="telephoneContactChantier" placeholder="Par défaut : téléphone principal de l'entreprise" class="w-full" />
+        </div>
+        <div class="field col-12 md:col-4">
+            <label for="adresseContactChantier">Adresse d'intervention</label>
+            <input id="adresseContactChantier" type="text" pInputText [(ngModel)]="adresseContactChantier" placeholder="Par défaut : adresse du siège" class="w-full" />
+        </div>
+        <div class="field col-12 flex justify-content-end mb-0">
+            <button pButton type="button" label="Enregistrer" icon="pi pi-check" [loading]="enregistrementCoordonneesContactEnCours" (click)="enregistrerCoordonneesContact()"></button>
         </div>
     </div>
 </div>
@@ -1489,7 +1504,7 @@
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-users"></i>
-            <h6 class="m-0">Salariés</h6>
+            <h6 class="m-0">Salariés{{ contexteChantierNom ? ' sur ' + contexteChantierNom : '' }}</h6>
         </div>
         <div class="flex align-items-center gap-2">
             <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherSalaries" (click)="afficherSalaries = false"></button>
@@ -1509,15 +1524,29 @@
         <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="afficherSalaries = true"></button>
     </div>
 
+    <!-- Fonction/Contrat : sur le Salarié lui-même, toujours affichables. Accès chantier/
+         Terrain/Depuis : sur l'affectation pour LE chantier en contexte (affectationParSalarieId,
+         voir chargerAffectationsSalarieContexte) — restent à "—" hors contexte chantier, un
+         salarié pouvant avoir plusieurs affectations et aucune n'étant alors LA bonne réponse. -->
     <p-table [value]="salaries" dataKey="id" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="400px" *ngIf="afficherSalaries">
         <ng-template pTemplate="header">
             <tr>
                 <th>Identité</th>
+                <th>Fonction</th>
+                <th>Contrat</th>
                 <th>Statut</th>
+                <th>Accès chantier</th>
+                <th>Terrain</th>
+                <th>Depuis</th>
                 <th style="width: 4rem"></th>
             </tr>
             <tr>
                 <th><p-columnFilter type="text" field="identiteCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
                 <th></th>
                 <th></th>
             </tr>
@@ -1525,16 +1554,30 @@
         <ng-template pTemplate="body" let-salarie>
             <tr>
                 <td>{{ salarie.identiteCalculee }}</td>
+                <td>{{ libelleFonction(salarie.fonctionId) }}</td>
+                <td>{{ libelleContrat(salarie.typeContratId) }}</td>
                 <td><p-tag [severity]="salarie.statut === 'ACTIF' ? 'success' : 'danger'" [value]="salarie.statut | etatLabel"></p-tag></td>
+                <td>
+                    <p-tag *ngIf="affectationParSalarieId[salarie.id] as aff; else pasDeContexte" [severity]="aff.statutAcces === 'ACCORDE' ? 'success' : (aff.statutAcces === 'REFUSE' ? 'danger' : 'warning')" [value]="aff.statutAcces | etatLabel"></p-tag>
+                </td>
+                <td>
+                    <div class="flex align-items-center gap-2" *ngIf="affectationParSalarieId[salarie.id] as aff; else pasDeContexte">
+                        <i class="pi" [class.pi-check-circle]="aff.badgeEdite" [class.pi-circle]="!aff.badgeEdite" [class.text-green-600]="aff.badgeEdite" [class.text-300]="!aff.badgeEdite" pTooltip="Badge édité"></i>
+                        <i class="pi" [class.pi-check-circle]="aff.epiGants && aff.epiCasque && aff.epiChaussures" [class.pi-circle]="!(aff.epiGants && aff.epiCasque && aff.epiChaussures)" [class.text-green-600]="aff.epiGants && aff.epiCasque && aff.epiChaussures" [class.text-300]="!(aff.epiGants && aff.epiCasque && aff.epiChaussures)" pTooltip="EPI complet (gants, casque, chaussures)"></i>
+                        <i class="pi" [class.pi-check-circle]="aff.present" [class.pi-circle]="!aff.present" [class.text-green-600]="aff.present" [class.text-300]="!aff.present" pTooltip="Présent sur site"></i>
+                    </div>
+                </td>
+                <td>{{ affectationParSalarieId[salarie.id] ? (affectationParSalarieId[salarie.id].dateDebut | date: 'dd/MM/yyyy') : '—' }}</td>
                 <td>
                     <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/salaries', salarie.id]"></button>
                 </td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
-            <tr><td colspan="3" class="text-center text-500">Aucun salarié pour cette entreprise.</td></tr>
+            <tr><td colspan="8" class="text-center text-500">Aucun salarié pour cette entreprise.</td></tr>
         </ng-template>
     </p-table>
+    <ng-template #pasDeContexte><span class="text-500">—</span></ng-template>
 </div>
 
 <!-- Utilisateurs (comptes rattachés à cette entreprise) : table complète pour

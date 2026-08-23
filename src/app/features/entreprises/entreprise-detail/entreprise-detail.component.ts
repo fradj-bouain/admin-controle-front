@@ -8,13 +8,13 @@ import { EntrepriseService } from '../services/entreprise.service';
 import { AffectationEntrepriseChantierService } from '../services/affectation-entreprise-chantier.service';
 import { Chantier } from 'src/app/features/chantiers/models/chantier.model';
 import { ChantierService } from 'src/app/features/chantiers/services/chantier.service';
-import { CorpsDeMetier, Pays, TypeContratSalarie, Utilisateur } from 'src/app/features/configuration/models/configuration.model';
+import { CorpsDeMetier, Pays, SalarieFonction, TypeContratSalarie, Utilisateur } from 'src/app/features/configuration/models/configuration.model';
 import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
 import { DocumentEtat, DocumentItem, HistoriqueModification, TypeDocument } from 'src/app/features/documents/models/document.model';
 import { DocumentService } from 'src/app/features/documents/services/document.service';
 import { TypeDocumentService } from 'src/app/features/documents/services/type-document.service';
 import { DocumentEtatService } from 'src/app/features/documents/services/document-etat.service';
-import { Salarie, StatutAcces } from 'src/app/features/salaries/models/salarie.model';
+import { AffectationSalarieChantier, Salarie, StatutAcces } from 'src/app/features/salaries/models/salarie.model';
 import { SalarieService } from 'src/app/features/salaries/services/salarie.service';
 import { AffectationSalarieChantierService } from 'src/app/features/salaries/services/affectation-salarie-chantier.service';
 import { UtilisateurService } from 'src/app/features/configuration/services/utilisateur.service';
@@ -139,6 +139,14 @@ export class EntrepriseDetailComponent implements OnInit {
     // les affectations (statutAcces n'existe que là, pas sur Salarie) : un aller par
     // chantier en commun (voir chargerSalariesClient), déjà scopés côté backend.
     typesContrat: TypeContratSalarie[] = [];
+    fonctions: SalarieFonction[] = [];
+
+    // Affectation (chantier courant, statut d'accès/EPI/badge/date de début) par salarié —
+    // uniquement quand un chantier est en contexte (contexteChantierId) : sans lui, un
+    // salarié peut avoir plusieurs affectations (un chantier chacune), aucune n'est LA bonne
+    // réponse. Résolue via GET /chantiers/{id}/salaries (déjà scopé backend), filtrée à
+    // cette entreprise — même requête que chargerSalariesClient, sans le multi-chantier.
+    affectationParSalarieId: Record<string, AffectationSalarieChantier> = {};
     salariesSurMesChantiersClient: Array<{ salarieId: string; nom: string; contrat: string; chantierNom: string; statutAcces: StatutAcces }> = [];
     chargementSalariesClient = false;
 
@@ -186,22 +194,28 @@ export class EntrepriseDetailComponent implements OnInit {
     }
 
     emailContactChantier = '';
-    enregistrementEmailContactEnCours = false;
+    telephoneContactChantier = '';
+    adresseContactChantier = '';
+    enregistrementCoordonneesContactEnCours = false;
 
-    enregistrerEmailContact() {
+    enregistrerCoordonneesContact() {
         const affectation = this.affectationContexte;
         if (!affectation) {
             return;
         }
-        this.enregistrementEmailContactEnCours = true;
-        this.affectationService.modifierEmailContact(affectation.chantierId, affectation.id, this.emailContactChantier).subscribe({
+        this.enregistrementCoordonneesContactEnCours = true;
+        this.affectationService.modifierCoordonneesContact(affectation.chantierId, affectation.id, {
+            emailContact: this.emailContactChantier,
+            telephoneContact: this.telephoneContactChantier,
+            adresseContact: this.adresseContactChantier
+        }).subscribe({
             next: () => {
-                this.enregistrementEmailContactEnCours = false;
-                this.message.add({ severity: 'success', summary: 'Succès', detail: 'Email de contact enregistré' });
+                this.enregistrementCoordonneesContactEnCours = false;
+                this.message.add({ severity: 'success', summary: 'Succès', detail: 'Coordonnées de contact enregistrées' });
                 this.chargerMesAffectations();
             },
             error: () => {
-                this.enregistrementEmailContactEnCours = false;
+                this.enregistrementCoordonneesContactEnCours = false;
                 this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Enregistrement impossible' });
             }
         });
@@ -390,6 +404,10 @@ export class EntrepriseDetailComponent implements OnInit {
         return this.typesContrat.find((t) => t.id === id)?.libelle ?? '—';
     }
 
+    libelleFonction(id?: string): string {
+        return this.fonctions.find((f) => f.id === id)?.libelle ?? '—';
+    }
+
     ngOnInit(): void {
         // Abonnement plutôt que snapshot ponctuel : cliquer un autre chantier depuis la liste
         // "Affectations" (voir template) revient sur CETTE MÊME fiche (même entrepriseId),
@@ -408,7 +426,10 @@ export class EntrepriseDetailComponent implements OnInit {
                 return;
             }
             this.chargerDocuments();
+            this.chargerSalaries(this.entrepriseId);
             this.emailContactChantier = this.affectationContexte?.emailContact ?? '';
+            this.telephoneContactChantier = this.affectationContexte?.telephoneContact ?? '';
+            this.adresseContactChantier = this.affectationContexte?.adresseContact ?? '';
             this.historiqueCharge = false;
             this.relancesChargees = false;
             if (this.afficherHistorique) {
@@ -427,6 +448,7 @@ export class EntrepriseDetailComponent implements OnInit {
         this.referenceDataService.listerPays().subscribe((pays) => (this.pays = pays));
         this.referenceDataService.listerCorpsDeMetier().subscribe((c) => (this.corpsDeMetiers = c));
         this.referenceDataService.listerTypeContratSalarie().subscribe((types) => (this.typesContrat = types));
+        this.referenceDataService.listerSalarieFonction().subscribe((fonctions) => (this.fonctions = fonctions));
         this.chantierService.lister().subscribe((chantiers) => {
             this.chantiers = chantiers;
             this.recalculerChantiersDisponibles();
@@ -501,9 +523,31 @@ export class EntrepriseDetailComponent implements OnInit {
         });
     }
 
+    // contexteChantierId (voir ngOnInit) borne la liste au contexte "Entreprise + Chantier" —
+    // sans lui (arrivée sans ?chantierId=... dans l'URL), tous les salariés de l'entreprise
+    // s'affichent, tous chantiers confondus (comportement inchangé pour ce cas-là).
     chargerSalaries(entrepriseId: string) {
-        this.salarieService.lister(entrepriseId).subscribe((salaries) => {
+        this.salarieService.lister(entrepriseId, this.contexteChantierId ?? undefined).subscribe((salaries) => {
             this.salaries = salaries.map((s) => ({ ...s, identiteCalculee: `${s.prenom} ${s.nom}` }));
+        });
+        this.chargerAffectationsSalarieContexte();
+    }
+
+    /** Statut d'accès/EPI/badge/date de début par salarié, pour LE chantier en contexte —
+        voir affectationParSalarieId. Vide (aucune donnée "terrain" affichée) tant qu'aucun
+        chantier n'est en contexte : sans lui, plusieurs affectations pourraient exister pour
+        un même salarié et aucune ne serait LA bonne réponse. */
+    private chargerAffectationsSalarieContexte() {
+        this.affectationParSalarieId = {};
+        if (!this.contexteChantierId || !this.entrepriseId) {
+            return;
+        }
+        const chantierId = this.contexteChantierId;
+        const entrepriseId = this.entrepriseId;
+        this.affectationSalarieService.lister(chantierId).subscribe((affectations) => {
+            const map: Record<string, AffectationSalarieChantier> = {};
+            affectations.filter((a) => a.entrepriseId === entrepriseId).forEach((a) => (map[a.salarieId] = a));
+            this.affectationParSalarieId = map;
         });
     }
 
@@ -674,9 +718,11 @@ export class EntrepriseDetailComponent implements OnInit {
                 .map((a) => ({ ...a, nomChantierCalculee: this.nomChantier(a.chantierId) }));
             this.recalculerChantiersDisponibles();
             this.recalculerSousTraitants();
-            // Reflète l'email de contact déjà enregistré pour l'affectation du contexte
-            // chantier courant (voir affectationContexte / enregistrerEmailContact).
+            // Reflète les coordonnées de contact déjà enregistrées pour l'affectation du
+            // contexte chantier courant (voir affectationContexte / enregistrerCoordonneesContact).
             this.emailContactChantier = this.affectationContexte?.emailContact ?? '';
+            this.telephoneContactChantier = this.affectationContexte?.telephoneContact ?? '';
+            this.adresseContactChantier = this.affectationContexte?.adresseContact ?? '';
         });
     }
 

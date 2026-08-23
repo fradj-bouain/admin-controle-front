@@ -118,6 +118,20 @@ export class ChantierDetailComponent implements OnInit {
         affectationParenteId: ['']
     });
 
+    // --- Coordonnées de contact par affectation (email/téléphone/adresse propres à CE
+    // chantier, distincts des coordonnées principales de l'entreprise) — édition directe
+    // depuis cette page (bouton dans la table ci-dessus) plutôt que d'obliger à ouvrir la
+    // fiche Entreprise avec le bon ?chantierId=... dans l'URL pour la retrouver (voir
+    // retour utilisateur : trop de détours pour un besoin courant).
+    dialogCoordonneesVisible = false;
+    affectationCoordonneesEnEdition: AffectationEntrepriseChantier | null = null;
+    enregistrementCoordonneesEnCours = false;
+    coordonneesContactForm = this.fb.group({
+        emailContact: [''],
+        telephoneContact: [''],
+        adresseContact: ['']
+    });
+
     // --- Salariés affectés ---
     // nomSalarieCalculee/contratCalculee/nomEntrepriseCalculee ajoutés au chargement, pour
     // permettre des p-columnFilter simples et afficher l'entreprise employeuse en colonne
@@ -781,6 +795,41 @@ export class ChantierDetailComponent implements OnInit {
         });
     }
 
+    ouvrirCoordonneesContact(affectation: AffectationEntrepriseChantier) {
+        this.affectationCoordonneesEnEdition = affectation;
+        this.coordonneesContactForm.setValue({
+            emailContact: affectation.emailContact ?? '',
+            telephoneContact: affectation.telephoneContact ?? '',
+            adresseContact: affectation.adresseContact ?? ''
+        });
+        this.dialogCoordonneesVisible = true;
+    }
+
+    submitCoordonneesContact() {
+        const affectation = this.affectationCoordonneesEnEdition;
+        if (!affectation) {
+            return;
+        }
+        const value = this.coordonneesContactForm.getRawValue();
+        this.enregistrementCoordonneesEnCours = true;
+        this.affectationEntrepriseService.modifierCoordonneesContact(this.chantierId!, affectation.id, {
+            emailContact: value.emailContact ?? '',
+            telephoneContact: value.telephoneContact ?? '',
+            adresseContact: value.adresseContact ?? ''
+        }).subscribe({
+            next: () => {
+                this.enregistrementCoordonneesEnCours = false;
+                this.dialogCoordonneesVisible = false;
+                this.message.add({ severity: 'success', summary: 'Succès', detail: 'Coordonnées de contact enregistrées' });
+                this.chargerAffectationsEntreprise(this.chantierId!);
+            },
+            error: () => {
+                this.enregistrementCoordonneesEnCours = false;
+                this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Enregistrement impossible' });
+            }
+        });
+    }
+
     entrepriseStatSalaries(affectationEntrepriseChantierId: string): number {
         return this.affectationsSalarie.filter((a) => a.affectationEntrepriseChantierId === affectationEntrepriseChantierId).length;
     }
@@ -1029,6 +1078,16 @@ export class ChantierDetailComponent implements OnInit {
 
     // --- Documents supplémentaires sur ce chantier (SUPER_ADMIN) ---
 
+    /** Types éligibles à ajouter : cible ENTREPRISE, pas déjà obligatoire partout (redondant),
+        pas déjà listé pour ce chantier. Champ recalculé explicitement (jamais une getter, voir
+        utilisateursClientDuChantier ci-dessus pour la même raison) : lié à un p-dropdown
+        FILTRABLE — une getter réévaluée à chaque cycle de détection de changement y produit
+        une nouvelle référence de tableau en continu, ce qui a bloqué le navigateur en boucle
+        infinie sur cette même fiche (plantage signalé sur "Ajouter un chantier" : le
+        formulaire de création lui-même était intact, c'est cette carte, affichée juste après
+        la redirection vers la fiche du chantier créé, qui gelait la page). */
+    typesSupplementairesDisponibles: TypeDocument[] = [];
+
     private chargerDocumentsSupplementaires(chantierId: string) {
         forkJoin({
             types: this.typeDocumentService.lister(),
@@ -1036,14 +1095,13 @@ export class ChantierDetailComponent implements OnInit {
         }).subscribe(({ types, supplementaires }) => {
             this.typesDocument = types;
             this.documentsSupplementaires = supplementaires;
+            this.recalculerTypesSupplementairesDisponibles();
         });
     }
 
-    /** Types éligibles à ajouter : cible ENTREPRISE, pas déjà obligatoire partout (redondant),
-        pas déjà listé pour ce chantier. */
-    get typesSupplementairesDisponibles(): TypeDocument[] {
+    private recalculerTypesSupplementairesDisponibles() {
         const dejaListes = new Set(this.documentsSupplementaires.map((s) => s.typeDocumentId));
-        return this.typesDocument.filter((t) => t.cible === 'ENTREPRISE' && !t.obligatoire && !dejaListes.has(t.id));
+        this.typesSupplementairesDisponibles = this.typesDocument.filter((t) => t.cible === 'ENTREPRISE' && !t.obligatoire && !dejaListes.has(t.id));
     }
 
     libelleTypeDocument(typeDocumentId: string): string {

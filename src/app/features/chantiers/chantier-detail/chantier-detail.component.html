@@ -374,7 +374,7 @@
                 >Voir tout ({{ entreprisesActivesClient.length }})</a>
             </div>
             <div class="ent-compact-list" *ngIf="entreprisesActivesClientApercu.length > 0">
-                <button type="button" class="ent-compact-row" [routerLink]="['/entreprises', a.entrepriseId]" *ngFor="let a of entreprisesActivesClientApercu">
+                <button type="button" class="ent-compact-row" [routerLink]="['/entreprises', a.entrepriseId]" [queryParams]="{ chantierId: chantierId }" *ngFor="let a of entreprisesActivesClientApercu">
                     <span class="ent-compact-row-icon"><i class="pi pi-briefcase"></i></span>
                     <span class="ent-compact-row-body">
                         <span class="ent-compact-row-title">{{ a.nomEntrepriseCalculee }}</span>
@@ -467,6 +467,7 @@
                     [ngClass]="d.severite === 'danger' ? 'danger' : 'missing'"
                     *ngFor="let d of documentsATraiterClientApercu"
                     [routerLink]="d.entrepriseId ? ['/entreprises', d.entrepriseId] : ['/salaries', d.salarieId]"
+                    [queryParams]="{ chantierId: chantierId }"
                     [pTooltip]="d.entrepriseId ? 'Ouvrir la fiche entreprise' : 'Ouvrir la fiche salarié'"
                 >
                     <span class="ent-doc-row-icon" [ngClass]="d.severite === 'danger' ? 'danger' : 'warn'">
@@ -886,14 +887,14 @@
 
         <ng-container *ngIf="afficherUtilisateurs">
         <div class="flex align-items-end gap-2 p-3 border-round mb-3" style="background:var(--brand-accent-tint);" *ngIf="isSuperAdmin">
-            <div class="flex-1">
+            <div class="flex-1" style="min-width:0;">
                 <label class="text-500 text-sm block mb-1">Utilisateur</label>
                 <p-dropdown [options]="utilisateurs" [(ngModel)]="nouvelUtilisateurId" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Sélectionner parmi les utilisateurs --" styleClass="w-full">
                     <ng-template let-u pTemplate="item">{{ u?.prenom }} {{ u?.nom }}</ng-template>
                     <ng-template let-u pTemplate="selectedItem">{{ u?.prenom }} {{ u?.nom }}</ng-template>
                 </p-dropdown>
             </div>
-            <button pButton type="button" label="Affecter" (click)="affecterUtilisateur()"></button>
+            <button pButton type="button" label="Affecter" class="flex-shrink-0" (click)="affecterUtilisateur()"></button>
         </div>
 
         <div class="member-list" *ngIf="chantierUtilisateurIds.length > 0">
@@ -931,7 +932,7 @@
         </small>
 
         <div class="flex align-items-end gap-2 p-3 border-round mb-3" style="background:var(--brand-accent-tint);">
-            <div class="flex-1">
+            <div class="flex-1" style="min-width:0;">
                 <label class="text-500 text-sm block mb-1">Utilisateur du client</label>
                 <p-dropdown [options]="utilisateursClientDuChantier" [(ngModel)]="nouvelUtilisateurClientId" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Sélectionner parmi les utilisateurs du client --" styleClass="w-full">
                     <ng-template let-u pTemplate="item">{{ u?.prenom }} {{ u?.nom }}</ng-template>
@@ -939,7 +940,7 @@
                 </p-dropdown>
                 <small class="text-500" *ngIf="utilisateursClientDuChantier.length === 0">Ce client n'a pas encore de compte utilisateur (voir Mon Équipe / Configuration).</small>
             </div>
-            <button pButton type="button" label="Assigner" (click)="affecterUtilisateurClient()"></button>
+            <button pButton type="button" label="Assigner" class="flex-shrink-0" (click)="affecterUtilisateurClient()"></button>
         </div>
 
         <div class="member-list" *ngIf="utilisateursClientAssignes.length > 0">
@@ -1006,7 +1007,7 @@
                     <th>Rattachée à</th>
                     <th>Statut</th>
                     <th class="text-center">Nb salariés</th>
-                    <th style="width: 6rem"></th>
+                    <th style="width: 7rem"></th>
                 </tr>
                 <tr>
                     <th><p-columnFilter type="text" field="nomEntrepriseCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
@@ -1036,7 +1037,8 @@
                     <td>{{ affectation.nomParenteCalculee || '—' }}</td>
                     <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut | etatLabel"></p-tag></td>
                     <td class="text-center">{{ entrepriseStatSalaries(affectation.id) }}</td>
-                    <td>
+                    <td class="white-space-nowrap">
+                        <button pButton type="button" icon="pi pi-id-card" class="p-button-text p-button-rounded" *ngIf="isSuperAdmin" pTooltip="Coordonnées de contact pour ce chantier" (click)="ouvrirCoordonneesContact(affectation)"></button>
                         <button pButton type="button" icon="pi pi-ban" class="p-button-text p-button-rounded" *ngIf="affectation.statut === 'ACTIF' && (isSuperAdmin || isEntreprise)" (click)="desactiverAffectationEntreprise(affectation)"></button>
                     </td>
                 </tr>
@@ -1045,6 +1047,33 @@
         <p class="text-500 text-sm m-0" *ngIf="affectationsEntreprise.length === 0">Aucune entreprise affectée.</p>
         </ng-container>
     </div>
+
+    <!-- Coordonnées de contact d'une affectation (email/téléphone/adresse propres à CE
+         chantier, distincts des coordonnées principales de l'entreprise — raison sociale/
+         SIRET/informations légales restent une seule ligne, partagée par tous ses chantiers).
+         Édition directe depuis cette page (icône "pi pi-id-card" dans la table ci-dessus)
+         plutôt que d'obliger à ouvrir la fiche Entreprise. -->
+    <p-dialog header="Coordonnées de contact — {{ affectationCoordonneesEnEdition ? nomEntreprise(affectationCoordonneesEnEdition.entrepriseId) : '' }}" [(visible)]="dialogCoordonneesVisible" [modal]="true" [style]="{ width: '480px' }">
+        <form [formGroup]="coordonneesContactForm" (ngSubmit)="submitCoordonneesContact()" class="p-fluid">
+            <p class="text-500 text-sm mt-0">Optionnelles, propres à ce chantier — sans toucher aux informations légales de l'entreprise.</p>
+            <div class="field">
+                <label for="dlgEmailContact">Email de contact</label>
+                <input id="dlgEmailContact" type="email" pInputText formControlName="emailContact" placeholder="Par défaut : email principal de l'entreprise" />
+            </div>
+            <div class="field">
+                <label for="dlgTelephoneContact">Téléphone de contact</label>
+                <input id="dlgTelephoneContact" type="tel" pInputText formControlName="telephoneContact" placeholder="Par défaut : téléphone principal de l'entreprise" />
+            </div>
+            <div class="field">
+                <label for="dlgAdresseContact">Adresse d'intervention</label>
+                <input id="dlgAdresseContact" type="text" pInputText formControlName="adresseContact" placeholder="Par défaut : adresse du siège" />
+            </div>
+            <div class="flex justify-content-end gap-2 mt-4">
+                <button pButton type="button" label="Annuler" class="p-button-text" (click)="dialogCoordonneesVisible = false"></button>
+                <button pButton type="submit" label="Enregistrer" icon="pi pi-check" [loading]="enregistrementCoordonneesEnCours"></button>
+            </div>
+        </form>
+    </p-dialog>
 
     <!-- Salariés affectés : gestion + vue globale (tous salariés confondus) — masquée pour
          l'Entreprise, qui a sa propre carte "Mes salariés sur ce chantier" plus haut. -->
@@ -1148,17 +1177,22 @@
         <p class="text-500 text-sm mt-0 mb-3">Ces types s'ajoutent aux documents obligatoires habituels de chaque entreprise, uniquement sur ce chantier.</p>
 
         <div class="flex align-items-end gap-2 p-3 border-round mb-3" style="background:var(--brand-accent-tint);">
-            <div class="field flex-grow-1 m-0">
-                <label>Ajouter un type de document</label>
-                <p-dropdown [options]="typesSupplementairesDisponibles" [(ngModel)]="nouveauTypeSupplementaireId" optionLabel="libelle" optionValue="id" [filter]="true" filterBy="libelle" placeholder="-- Choisir --" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+            <div class="flex-1" style="min-width:0;">
+                <label class="text-500 text-sm block mb-1">Ajouter un type de document</label>
+                <p-dropdown [options]="typesSupplementairesDisponibles" [(ngModel)]="nouveauTypeSupplementaireId" optionLabel="libelle" optionValue="id" [filter]="true" filterBy="libelle" placeholder="-- Choisir --" styleClass="w-full"></p-dropdown>
             </div>
-            <button pButton type="button" icon="pi pi-plus" label="Ajouter" [disabled]="!nouveauTypeSupplementaireId" (click)="ajouterDocumentSupplementaire()"></button>
+            <button pButton type="button" icon="pi pi-plus" label="Ajouter" class="flex-shrink-0" [disabled]="!nouveauTypeSupplementaireId" (click)="ajouterDocumentSupplementaire()"></button>
         </div>
 
         <div class="flex flex-column gap-2" *ngIf="documentsSupplementaires.length > 0">
-            <div class="flex align-items-center justify-content-between p-2 border-round" style="border:1px solid var(--surface-border);" *ngFor="let s of documentsSupplementaires">
-                <span>{{ libelleTypeDocument(s.typeDocumentId) }}</span>
-                <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" pTooltip="Retirer de ce chantier" (click)="retirerDocumentSupplementaire(s.id)"></button>
+            <div class="flex align-items-center justify-content-between gap-3 p-2 border-round" style="border:1px solid var(--surface-border);" *ngFor="let s of documentsSupplementaires">
+                <span
+                    class="white-space-nowrap overflow-hidden text-overflow-ellipsis"
+                    style="min-width:0;"
+                    [pTooltip]="libelleTypeDocument(s.typeDocumentId)"
+                    tooltipPosition="top"
+                >{{ libelleTypeDocument(s.typeDocumentId) }}</span>
+                <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger flex-shrink-0" pTooltip="Retirer de ce chantier" (click)="retirerDocumentSupplementaire(s.id)"></button>
             </div>
         </div>
         <p class="text-500 text-sm m-0" *ngIf="documentsSupplementaires.length === 0">Aucun document supplémentaire demandé sur ce chantier.</p>

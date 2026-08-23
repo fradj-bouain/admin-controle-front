@@ -39,9 +39,10 @@ export class AffectationEntrepriseChantierService {
             `${environment.apiUrl}/chantiers/${chantierId}/entreprises/${affectationId}/reactiver`, {});
     }
 
-    // Stocké pour l'instant, aucun envoi réel ne l'utilise encore (voir modèle validé).
-    modifierEmailContact(chantierId: string, affectationId: string, emailContact: string): Observable<AffectationEntrepriseChantier> {
+    // Stockées pour l'instant, aucun envoi réel ne les utilise encore (voir modèle validé).
+    modifierCoordonneesContact(chantierId: string, affectationId: string,
+        coordonnees: { emailContact: string; telephoneContact: string; adresseContact: string }): Observable<AffectationEntrepriseChantier> {
         return this.http.patch<AffectationEntrepriseChantier>(
-            `${environment.apiUrl}/chantiers/${chantierId}/entreprises/${affectationId}/email-contact`, { emailContact });
+            `${environment.apiUrl}/chantiers/${chantierId}/entreprises/${affectationId}/coordonnees-contact`, coordonnees);
     }
 }

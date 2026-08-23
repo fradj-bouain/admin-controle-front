@@ -290,8 +290,15 @@ export class SalarieListComponent implements OnInit {
     }
 
     construireMenu(ligne: LigneSalarieAffectation): MenuItem[] {
+        // queryParams doit reprendre le chantierId de la ligne, comme le clic sur la ligne
+        // elle-même (voir template) — sans ça, "Modifier" perdait le contexte chantier et
+        // documents/historique/relances de la fiche ne se filtraient plus sur le bon chantier.
         const items: MenuItem[] = [
-            { label: 'Modifier', icon: 'pi pi-pencil', routerLink: ['/salaries', ligne.salarieId] }
+            {
+                label: 'Modifier', icon: 'pi pi-pencil',
+                routerLink: ['/salaries', ligne.salarieId],
+                queryParams: ligne.chantierId ? { chantierId: ligne.chantierId } : {}
+            }
         ];
         if (this.isSuperAdmin || this.isEntreprise) {
             items.push(

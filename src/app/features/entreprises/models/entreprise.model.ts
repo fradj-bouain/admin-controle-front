@@ -73,10 +73,12 @@ export interface AffectationEntrepriseChantier {
     dateDebut: string;
     dateFin?: string;
     statut: string;
-    // Email de contact propre à CETTE relation (entreprise, chantier), distinct de
-    // l'email principal de l'entreprise — stocké seulement pour l'instant, aucun envoi
-    // réel ne l'utilise encore (voir modèle validé).
+    // Email/téléphone/adresse de contact propres à CETTE relation (entreprise, chantier),
+    // distincts des coordonnées principales de l'entreprise — stockés seulement pour
+    // l'instant, aucun envoi réel ne les utilise encore (voir modèle validé).
     emailContact?: string;
+    telephoneContact?: string;
+    adresseContact?: string;
 }
 
 export interface AffecterEntrepriseRequest {

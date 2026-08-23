@@ -1,9 +1,10 @@
 import { HttpClientModule } from '@angular/common/http';
-import { NgModule, Optional, SkipSelf } from '@angular/core';
+import { ErrorHandler, NgModule, Optional, SkipSelf } from '@angular/core';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { HttpClient } from '@angular/common/http';
 
 import { translateHttpLoaderFactory } from './i18n/translate-http-loader.factory';
+import { GlobalErrorHandler } from './global-error-handler';
 
 /**
  * Regroupe tout ce qui n'existe qu'une seule fois dans l'application
@@ -20,6 +21,9 @@ import { translateHttpLoaderFactory } from './i18n/translate-http-loader.factory
             },
             defaultLanguage: 'fr'
         })
+    ],
+    providers: [
+        { provide: ErrorHandler, useClass: GlobalErrorHandler }
     ],
     exports: [TranslateModule]
 })

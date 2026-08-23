@@ -11,10 +11,17 @@ export class SalarieService {
 
     constructor(private http: HttpClient) { }
 
-    lister(entrepriseId?: string): Observable<Salarie[]> {
+    // chantierId optionnel : filtre au contexte "Entreprise + Chantier" (règle validée) —
+    // sans lui, entrepriseId seul renvoie tous les salariés de l'entreprise, tous chantiers
+    // confondus (comportement historique, toujours utilisé là où aucun chantier n'est en
+    // contexte : tableau de bord, formulaires de rapport...).
+    lister(entrepriseId?: string, chantierId?: string): Observable<Salarie[]> {
         const params: Record<string, string> = {};
         if (entrepriseId) {
             params['entrepriseId'] = entrepriseId;
+        }
+        if (chantierId) {
+            params['chantierId'] = chantierId;
         }
         return this.http.get<Salarie[]>(this.baseUrl, { params });
     }
