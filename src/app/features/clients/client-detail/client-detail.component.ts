@@ -12,6 +12,8 @@ import { Chantier } from 'src/app/features/chantiers/models/chantier.model';
 import { ChantierService } from 'src/app/features/chantiers/services/chantier.service';
 import { ControleService } from 'src/app/features/controles/services/controle.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
+import { Message } from 'src/app/features/messagerie/models/message.model';
+import { MessageService as MessagerieMessageService } from 'src/app/features/messagerie/services/message.service';
 
 @Component({
     selector: 'app-client-detail',
@@ -56,6 +58,20 @@ export class ClientDetailComponent implements OnInit {
         responsableSignataireAgrement: ['']
     });
 
+    // --- Envoyer un message (panneau latéral, même modèle que les fiches Entreprise/Salarié) ---
+    afficherComposeur = false;
+    envoiMessageEnCours = false;
+    messageForm = this.fb.group({
+        sujet: ['', Validators.required],
+        contenu: [this.modeleParDefaut(), Validators.required]
+    });
+
+    // --- Historique des messages envoyés à ce client (repliée par défaut, chargée à la
+    // demande) — jusqu'ici cette fiche n'avait aucune intégration messagerie du tout. ---
+    messagesHistorique: Message[] = [];
+    afficherMessagesHistorique = false;
+    private messagesHistoriqueCharges = false;
+
     // --- Compte utilisateur créé en même temps que le client (gain de temps :
     // plus besoin d'un aller-retour par Configuration > Utilisateurs) ---
     creerCompteUtilisateur = false;
@@ -78,6 +94,7 @@ export class ClientDetailComponent implements OnInit {
         private controleService: ControleService,
         private confirmation: ConfirmationService,
         private message: MessageService,
+        private messagerieService: MessagerieMessageService,
         public auth: AuthService
     ) { }
 
@@ -357,5 +374,74 @@ export class ClientDetailComponent implements OnInit {
 
     retour() {
         this.router.navigate(['/clients']);
+    }
+
+    // --- Envoyer un message ---
+
+    // Parité avec le modèle de courrier des fiches Entreprise/Salarié (voir
+    // EntrepriseDetailComponent.modeleParDefaut) : contenu de départ éditable, pas une
+    // valeur figée envoyée telle quelle.
+    private modeleParDefaut(): string {
+        return `
+<p><img src="assets/layout/images/admincontrol-logo.png" alt="ADMIN-CONTROL'BTP" style="max-width:200px;" /></p>
+<p>Client :<br /><strong>${this.client ? this.client.raisonSociale : '[CLIENT_NOM]'}</strong></p>
+<p><br /></p>
+<p>Madame, Monsieur,</p>
+<p><br /></p>
+<p>Cordialement.</p>
+<p>L'équipe ADMIN-CONTROL'BTP</p>
+<p><br /></p>
+<p>Service gestion et traitement centralisé : +33 (0)5 35 54 23 58<br />E-mail : suivi.chantier.control.btp@gmail.com</p>
+<p>Réception des appels : du lundi au vendredi de 08h30 à 12h00</p>
+`.trim();
+    }
+
+    ouvrirComposeur() {
+        this.messageForm.patchValue({ sujet: '', contenu: this.modeleParDefaut() });
+        this.afficherComposeur = true;
+    }
+
+    envoyerMessage() {
+        if (this.messageForm.invalid || !this.clientId) {
+            this.messageForm.markAllAsTouched();
+            return;
+        }
+        const value = this.messageForm.getRawValue();
+        this.envoiMessageEnCours = true;
+        this.messagerieService.envoyer({
+            destinataireType: 'CLIENT', destinataireId: this.clientId, sujet: value.sujet!, contenu: value.contenu!
+        }).subscribe({
+            next: () => {
+                this.envoiMessageEnCours = false;
+                this.message.add({ severity: 'success', summary: 'Succès', detail: 'Message envoyé' });
+                this.messageForm.reset({ sujet: '', contenu: this.modeleParDefaut() });
+                this.afficherComposeur = false;
+                // Rafraîchit l'historique s'il est déjà ouvert, pour que le message qu'on
+                // vient d'envoyer y apparaisse sans devoir masquer/réafficher la carte.
+                this.messagesHistoriqueCharges = false;
+                if (this.afficherMessagesHistorique && this.clientId) {
+                    this.messagerieService.historique('CLIENT', this.clientId).subscribe((m) => {
+                        this.messagesHistorique = m;
+                        this.messagesHistoriqueCharges = true;
+                    });
+                }
+            },
+            error: () => {
+                this.envoiMessageEnCours = false;
+                this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Envoi impossible' });
+            }
+        });
+    }
+
+    // --- Historique des messages ---
+
+    basculerMessagesHistorique() {
+        this.afficherMessagesHistorique = !this.afficherMessagesHistorique;
+        if (this.afficherMessagesHistorique && !this.messagesHistoriqueCharges && this.clientId) {
+            this.messagerieService.historique('CLIENT', this.clientId).subscribe((m) => {
+                this.messagesHistorique = m;
+                this.messagesHistoriqueCharges = true;
+            });
+        }
     }
 }

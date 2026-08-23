@@ -64,7 +64,7 @@
         <button type="button" class="ent-stat" (click)="scrollVersSection('ent-chantiers')" *ngIf="affectationEnCours">
             <span class="ent-stat-icon tint-success"><i class="pi pi-verified"></i></span>
             <span class="ent-stat-body">
-                <span class="ent-stat-value">{{ affectationEnCours!.statutAcces | etatLabel }}</span>
+                <span class="ent-stat-value">{{ accesChantierActuelCalcule | etatLabel }}</span>
                 <span class="ent-stat-label">Accès au chantier actuel</span>
             </span>
         </button>
@@ -103,7 +103,7 @@
                         <span>·</span>
                         <span>{{ nomFonction(salarie.fonctionId) }}</span>
                         <span>·</span>
-                        <span>{{ nomEntreprise(salarie.entrepriseEmployeurId) }}</span>
+                        <span>{{ nomEntreprise(salarie.entrepriseEmployeurId) }}<ng-container *ngIf="rangSocieteActuel"> ({{ rangSocieteActuel }})</ng-container></span>
                     </div>
                 </div>
             </div>
@@ -147,7 +147,7 @@
             <div class="chantier-hstat" *ngIf="affectationEnCours">
                 <span class="chantier-hstat-icon"><i class="pi pi-verified"></i></span>
                 <span class="chantier-hstat-body">
-                    <span class="chantier-hstat-value">{{ affectationEnCours!.statutAcces | etatLabel }}</span>
+                    <span class="chantier-hstat-value">{{ accesChantierActuelCalcule | etatLabel }}</span>
                     <span class="chantier-hstat-label">Accès au chantier actuel</span>
                 </span>
             </div>
@@ -1046,6 +1046,49 @@
         </ng-template>
         <ng-template pTemplate="emptymessage">
             <tr><td colspan="3" class="text-center text-500">Aucune relance envoyée.</td></tr>
+        </ng-template>
+    </p-table>
+</div>
+
+<!-- Historique des messages : trace des échanges à propos de ce salarié précis, parmi tous
+     ceux envoyés à son entreprise employeuse (voir salarieId toujours renseigné dans
+     envoyerMessage). Jusqu'ici seul le formulaire "Nouveau message" ci-dessous permettait
+     d'envoyer, sans aucun moyen de retrouver ce qui avait déjà été échangé. -->
+<div class="card mb-3" *ngIf="!isNew && !isEntreprise && !isClient">
+    <div class="card-head justify-content-between">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-envelope"></i>
+            <h6 class="m-0">Historique des messages</h6>
+        </div>
+        <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherMessagesHistorique" (click)="afficherMessagesHistorique = false"></button>
+    </div>
+
+    <div *ngIf="!afficherMessagesHistorique" class="flex align-items-center justify-content-between">
+        <a class="cursor-pointer text-primary" (click)="basculerMessagesHistorique()">Voir l'historique des messages</a>
+        <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="basculerMessagesHistorique()"></button>
+    </div>
+
+    <p-table [value]="messagesHistorique" dataKey="id" *ngIf="afficherMessagesHistorique" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Date</th>
+                <th>Sujet</th>
+                <th>Statut</th>
+                <th style="width: 4rem"></th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-msg>
+            <tr>
+                <td>{{ msg.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ msg.sujet }}</td>
+                <td><p-tag [severity]="msg.lu ? 'success' : 'info'" [value]="msg.lu ? 'Lu' : 'Non lu'"></p-tag></td>
+                <td>
+                    <button pButton type="button" icon="pi pi-eye" class="p-button-text p-button-rounded" pTooltip="Ouvrir" [routerLink]="['/messages', msg.id]"></button>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr><td colspan="4" class="text-center text-500">Aucun message envoyé à propos de ce salarié.</td></tr>
         </ng-template>
     </p-table>
 </div>

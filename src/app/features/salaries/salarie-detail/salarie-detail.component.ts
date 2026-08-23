@@ -3,7 +3,7 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Observable, forkJoin, of } from 'rxjs';
-import { AffectationSalarieChantier, Salarie } from '../models/salarie.model';
+import { AffectationSalarieChantier, Salarie, StatutAcces } from '../models/salarie.model';
 import { SalarieService } from '../services/salarie.service';
 import { AffectationSalarieChantierService } from '../services/affectation-salarie-chantier.service';
 import { Entreprise, AffectationEntrepriseChantier } from 'src/app/features/entreprises/models/entreprise.model';
@@ -17,7 +17,7 @@ import { DocumentEtat, DocumentItem, HistoriqueModification, TypeDocument } from
 import { DocumentService } from 'src/app/features/documents/services/document.service';
 import { TypeDocumentService } from 'src/app/features/documents/services/type-document.service';
 import { DocumentEtatService } from 'src/app/features/documents/services/document-etat.service';
-import { MessagePlanifie, SendMessageRequest } from 'src/app/features/messagerie/models/message.model';
+import { Message, MessagePlanifie, SendMessageRequest } from 'src/app/features/messagerie/models/message.model';
 import { MessageService as MessagerieMessageService } from 'src/app/features/messagerie/services/message.service';
 import { Utilisateur } from 'src/app/features/configuration/models/configuration.model';
 import { UtilisateurService } from 'src/app/features/configuration/services/utilisateur.service';
@@ -111,6 +111,28 @@ export class SalarieDetailComponent implements OnInit {
     relances: MessagePlanifie[] = [];
     afficherRelances = false;
     private relancesChargees = false;
+
+    // --- Historique des messages envoyés à l'entreprise employeuse à propos de ce salarié
+    // (repliée par défaut, chargée à la demande) — voir MessageService.historique côté
+    // backend, filtré par salarieId (toujours renseigné depuis envoyerMessage ci-dessous). ---
+    messagesHistorique: Message[] = [];
+    afficherMessagesHistorique = false;
+    private messagesHistoriqueCharges = false;
+
+    // --- Rang de l'entreprise (Principale/STT1/STT2) sur le chantier actuel (affectationEnCours)
+    // — résolu via AffectationEntrepriseChantier.role, absent de AffectationSalarieChantier
+    // (qui ne référence qu'un affectationEntrepriseChantierId, voir modèle). ---
+    rangSocieteActuel: string | null = null;
+
+    // --- Accès réel au chantier actuel (voir carte "Accès au chantier actuel") : recalculé
+    // à partir des documents obligatoires de CE salarié VALIDÉS PAR L'ADMIN, spécifiquement
+    // pour affectationEnCours.chantierId — indépendant de contexteChantierId (qui suit la
+    // navigation de l'admin, pas forcément le même chantier que l'affectation en cours).
+    // Un refus explicite (statutAcces === REFUSE) reste prioritaire : l'admin garde la main
+    // pour bloquer un accès même si les documents sont conformes. Ancien comportement :
+    // la carte reflétait tel quel le bouton Accorder/Refuser cliqué manuellement, sans lien
+    // avec les documents — pouvait afficher "Accordé" alors que rien n'était fourni/validé. ---
+    accesChantierActuelCalcule: StatutAcces | null = null;
 
     // Chantier d'où vient l'admin, quand il a cliqué sur la ligne "salarié × chantier"
     // précise depuis la liste fusionnée (voir SalarieListComponent) — renseigné via
@@ -270,6 +292,7 @@ export class SalarieDetailComponent implements OnInit {
             this.chargerDocuments(this.salarieId);
             this.historiqueCharge = false;
             this.relancesChargees = false;
+            this.messagesHistoriqueCharges = false;
             if (this.afficherHistorique) {
                 this.documentService.historiqueParSalarie(this.salarieId, this.contexteChantierId ?? undefined).subscribe((h) => {
                     this.historique = h;
@@ -280,6 +303,13 @@ export class SalarieDetailComponent implements OnInit {
                 this.documentService.relancesParSalarie(this.salarieId, this.contexteChantierId ?? undefined).subscribe((r) => {
                     this.relances = r;
                     this.relancesChargees = true;
+                });
+            }
+            if (this.afficherMessagesHistorique && this.salarie) {
+                this.messagerieService.historique('ENTREPRISE', this.salarie.entrepriseEmployeurId,
+                    { chantierId: this.contexteChantierId ?? undefined, salarieId: this.salarieId ?? undefined }).subscribe((m) => {
+                    this.messagesHistorique = m;
+                    this.messagesHistoriqueCharges = true;
                 });
             }
         });
@@ -295,6 +325,7 @@ export class SalarieDetailComponent implements OnInit {
         this.typeDocumentService.lister().subscribe((types) => {
             this.types = types;
             this.recalculerTypesPourSalarie();
+            this.recalculerAccesChantierActuel();
         });
         this.documentEtatService.lister().subscribe((etats) => {
             this.etats = etats;
@@ -325,6 +356,7 @@ export class SalarieDetailComponent implements OnInit {
                 this.salarie = s;
                 this.coordonneesForm.patchValue(s);
                 this.recalculerTypesPourSalarie();
+                this.recalculerAccesChantierActuel();
                 this.loading = false;
             },
             error: () => this.loading = false
@@ -474,6 +506,50 @@ export class SalarieDetailComponent implements OnInit {
                 .sort((a, b) => b.dateDebut.localeCompare(a.dateDebut))
                 .map((a) => ({ ...a, nomChantierCalculee: this.nomChantier(a.chantierId) }));
             this.recalculerChantiersDisponibles();
+            this.recalculerRangSociete();
+            this.recalculerAccesChantierActuel();
+        });
+    }
+
+    /** Rang de l'entreprise (Principale/STT1/STT2) sur le chantier actuel — voir
+        rangSocieteActuel. Résolu via GET /chantiers/{id}/entreprises (déjà existant),
+        en cherchant l'affectation dont l'id correspond à affectationEnCours.affectationEntrepriseChantierId
+        (AffectationSalarieChantier ne porte que cet id, jamais le rôle directement). */
+    private recalculerRangSociete() {
+        const affectation = this.affectationEnCours;
+        if (!affectation) {
+            this.rangSocieteActuel = null;
+            return;
+        }
+        this.affectationEntrepriseService.lister(affectation.chantierId).subscribe((affectationsEntreprise) => {
+            this.rangSocieteActuel = affectationsEntreprise
+                .find((a) => a.id === affectation.affectationEntrepriseChantierId)?.role ?? null;
+        });
+    }
+
+    /** Voir accesChantierActuelCalcule. Un refus explicite reste prioritaire ; sinon Accordé
+        seulement si tous les documents obligatoires de ce salarié sont VALIDÉS (pas seulement
+        déposés) pour affectationEnCours.chantierId précisément. */
+    private recalculerAccesChantierActuel() {
+        const affectation = this.affectationEnCours;
+        if (!affectation || !this.salarieId) {
+            this.accesChantierActuelCalcule = null;
+            return;
+        }
+        if (affectation.statutAcces === 'REFUSE') {
+            this.accesChantierActuelCalcule = 'REFUSE';
+            return;
+        }
+        const paysId = this.salarie?.nationalitePaysId;
+        const zone = this.zoneDuPays(paysId);
+        const typesObligatoires = this.types.filter((t) =>
+            t.cible === 'SALARIE' && t.obligatoire
+            && (!t.paysId || t.paysId === paysId)
+            && (!t.zoneRequise || t.zoneRequise === zone));
+        this.documentService.listerParSalarieEtChantier(this.salarieId, affectation.chantierId).subscribe((documents) => {
+            const idsValides = new Set(documents.filter((d) => d.statutValidation === 'VALIDE').map((d) => d.typeDocumentId));
+            const tousValides = typesObligatoires.every((t) => idsValides.has(t.id));
+            this.accesChantierActuelCalcule = tousValides ? 'ACCORDE' : 'EN_ATTENTE';
         });
     }
 
@@ -836,6 +912,19 @@ ${this.contexteChantierNom ? `<p>Chantier :<br /><strong>${this.contexteChantier
         }
     }
 
+    // --- Historique des messages ---
+
+    basculerMessagesHistorique() {
+        this.afficherMessagesHistorique = !this.afficherMessagesHistorique;
+        if (this.afficherMessagesHistorique && !this.messagesHistoriqueCharges && this.salarie) {
+            this.messagerieService.historique('ENTREPRISE', this.salarie.entrepriseEmployeurId,
+                { chantierId: this.contexteChantierId ?? undefined, salarieId: this.salarieId ?? undefined }).subscribe((m) => {
+                this.messagesHistorique = m;
+                this.messagesHistoriqueCharges = true;
+            });
+        }
+    }
+
     // --- Envoyer un message (composeur inline, même modèle que Messagerie > Nouveau message) ---
 
     // Parité d'affichage avec le modèle de courrier du site legacy (logo,
@@ -872,7 +961,11 @@ ${this.contexteChantierNom ? `<p>Chantier :<br /><strong>${this.contexteChantier
                 // La référence document n'a de sens que pour le vrai destinataire (l'entreprise
                 // qui doit déposer le fichier) — pas pour la copie informative à l'admin.
                 typeDocumentId: avecReferenceDocument ? this.documentDemandeEnCours ?? undefined : undefined,
-                salarieId: avecReferenceDocument && this.documentDemandeEnCours ? this.salarieId ?? undefined : undefined,
+                // Toujours renseigné (pas seulement pour une demande de document) — sert à
+                // l'historique des messages de la fiche Salarié (voir basculerMessagesHistorique),
+                // qui filtre par salarieId pour ne montrer que les messages de CE salarié précis
+                // parmi tous ceux envoyés à son entreprise employeuse.
+                salarieId: this.salarieId ?? undefined,
                 // Chantier d'où le message a été composé (voir contexteChantierId) — rattache
                 // le message à CE chantier précis dans l'historique, pas seulement à
                 // l'entreprise/au salarié en général.

@@ -36,6 +36,7 @@
                 </div>
             </div>
             <div class="chantier-hero-actions" *ngIf="isSuperAdmin">
+                <button pButton type="button" icon="pi pi-envelope" label="Nouveau message" class="p-button-text hero-btn-highlight" (click)="ouvrirComposeur()"></button>
                 <button
                     pButton
                     type="button"
@@ -618,5 +619,92 @@
             </div>
             <p class="text-500 text-sm m-0" *ngIf="chantiersApercu.length === 0">Aucun chantier pour ce client.</p>
         </div>
+
+        <!-- Historique des messages : trace des échanges avec ce client — jusqu'ici cette
+             fiche n'avait aucune intégration messagerie (ni envoi, ni historique). -->
+        <div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isNew">
+            <div class="card-head justify-content-between">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-envelope"></i>
+                    <h6 class="m-0">Historique des messages</h6>
+                </div>
+                <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherMessagesHistorique" (click)="afficherMessagesHistorique = false"></button>
+            </div>
+
+            <div *ngIf="!afficherMessagesHistorique" class="flex align-items-center justify-content-between">
+                <a class="cursor-pointer text-primary" (click)="basculerMessagesHistorique()">Voir l'historique des messages</a>
+                <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="basculerMessagesHistorique()"></button>
+            </div>
+
+            <p-table [value]="messagesHistorique" dataKey="id" *ngIf="afficherMessagesHistorique" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="400px">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Date</th>
+                        <th>Sujet</th>
+                        <th>Statut</th>
+                        <th style="width: 4rem"></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-msg>
+                    <tr>
+                        <td>{{ msg.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                        <td>{{ msg.sujet }}</td>
+                        <td><p-tag [severity]="msg.lu ? 'success' : 'info'" [value]="msg.lu ? 'Lu' : 'Non lu'"></p-tag></td>
+                        <td>
+                            <button pButton type="button" icon="pi pi-eye" class="p-button-text p-button-rounded" pTooltip="Ouvrir" [routerLink]="['/messages', msg.id]"></button>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="4" class="text-center text-500">Aucun message envoyé à ce client.</td></tr>
+                </ng-template>
+            </p-table>
+        </div>
     </div>
 </div>
+
+<!-- Envoyer un message : panneau latéral (même modèle que les fiches Entreprise/Salarié). -->
+<p-sidebar
+    *ngIf="!isNew && !isEntreprise && !isClient"
+    [(visible)]="afficherComposeur"
+    position="right"
+    [style]="{ width: '46vw', minWidth: '640px', maxWidth: '820px' }"
+    styleClass="composeur-sidebar"
+    [showCloseIcon]="false"
+>
+    <ng-template pTemplate="header">
+        <div class="composeur-head">
+            <button type="button" class="composeur-close" pTooltip="Fermer" tooltipPosition="left" (click)="afficherComposeur = false">
+                <i class="pi pi-times"></i>
+            </button>
+            <div class="composeur-head-top">
+                <div class="composeur-icon"><i class="pi pi-envelope"></i></div>
+                <div>
+                    <div class="composeur-eyebrow">Nouveau message</div>
+                    <div class="composeur-title">{{ client?.raisonSociale || 'Client' }}</div>
+                    <div class="composeur-sub" *ngIf="client?.email">{{ client?.email }}</div>
+                </div>
+            </div>
+        </div>
+    </ng-template>
+
+    <form id="composeurFormClient" [formGroup]="messageForm" (ngSubmit)="envoyerMessage()" class="p-fluid">
+        <div class="field">
+            <label for="messageSujetClient">Sujet *</label>
+            <input id="messageSujetClient" type="text" pInputText formControlName="sujet" [class.ng-dirty]="messageForm.controls.sujet.touched" />
+            <small class="p-error" *ngIf="messageForm.controls.sujet.invalid && messageForm.controls.sujet.touched">Ce champ est requis.</small>
+        </div>
+        <div class="field">
+            <label for="messageContenuClient">Message *</label>
+            <p-editor formControlName="contenu" [style]="{ height: '360px' }" [class.ng-dirty]="messageForm.controls.contenu.touched"></p-editor>
+            <small class="p-error" *ngIf="messageForm.controls.contenu.invalid && messageForm.controls.contenu.touched">Ce champ est requis.</small>
+        </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+        <div class="flex justify-content-end gap-2">
+            <button pButton type="button" label="Annuler" class="p-button-text" (click)="afficherComposeur = false"></button>
+            <button pButton type="submit" form="composeurFormClient" label="Envoyer" icon="pi pi-send" [loading]="envoiMessageEnCours"></button>
+        </div>
+    </ng-template>
+</p-sidebar>

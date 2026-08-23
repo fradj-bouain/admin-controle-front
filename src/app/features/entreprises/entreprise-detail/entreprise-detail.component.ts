@@ -18,7 +18,7 @@ import { AffectationSalarieChantier, Salarie, StatutAcces } from 'src/app/featur
 import { SalarieService } from 'src/app/features/salaries/services/salarie.service';
 import { AffectationSalarieChantierService } from 'src/app/features/salaries/services/affectation-salarie-chantier.service';
 import { UtilisateurService } from 'src/app/features/configuration/services/utilisateur.service';
-import { MessagePlanifie, SendMessageRequest } from 'src/app/features/messagerie/models/message.model';
+import { Message, MessagePlanifie, SendMessageRequest } from 'src/app/features/messagerie/models/message.model';
 import { MessageService as MessagerieMessageService } from 'src/app/features/messagerie/services/message.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
 
@@ -174,6 +174,13 @@ export class EntrepriseDetailComponent implements OnInit {
     relances: MessagePlanifie[] = [];
     afficherRelances = false;
     private relancesChargees = false;
+
+    // --- Historique des messages envoyés à cette entreprise (repliée par défaut, chargée à
+    // la demande) — jusqu'ici seul un formulaire d'envoi existait sur cette fiche, aucune trace
+    // consultable des messages déjà échangés. -->
+    messagesHistorique: Message[] = [];
+    afficherMessagesHistorique = false;
+    private messagesHistoriqueCharges = false;
 
     // Chantier d'où vient l'admin, quand il a cliqué sur la ligne "entreprise × chantier"
     // précise depuis la liste fusionnée (voir EntrepriseListComponent) — renseigné via
@@ -408,6 +415,32 @@ export class EntrepriseDetailComponent implements OnInit {
         return this.fonctions.find((f) => f.id === id)?.libelle ?? '—';
     }
 
+    // Colonne "Terrain" du tableau Salariés : badge + EPI regroupés en un seul badge
+    // "Équipé"/"Incomplet" (remplace 3 cercles identiques distingués seulement par tooltip,
+    // signalé confus) — le détail de ce qui manque reste consultable au survol. La présence
+    // reste un indicateur séparé (icône + libellé) : c'est un état "en direct" du jour, pas
+    // une readiness administrative comme le badge/l'EPI, les mélanger aurait été trompeur.
+    equipementComplet(aff: AffectationSalarieChantier): boolean {
+        return aff.badgeEdite && aff.epiGants && aff.epiCasque && aff.epiChaussures;
+    }
+
+    tooltipEquipement(aff: AffectationSalarieChantier): string {
+        const manquants: string[] = [];
+        if (!aff.badgeEdite) {
+            manquants.push('badge');
+        }
+        if (!aff.epiGants) {
+            manquants.push('gants');
+        }
+        if (!aff.epiCasque) {
+            manquants.push('casque');
+        }
+        if (!aff.epiChaussures) {
+            manquants.push('chaussures');
+        }
+        return manquants.length === 0 ? 'Badge édité, EPI complet' : 'Manquant : ' + manquants.join(', ');
+    }
+
     ngOnInit(): void {
         // Abonnement plutôt que snapshot ponctuel : cliquer un autre chantier depuis la liste
         // "Affectations" (voir template) revient sur CETTE MÊME fiche (même entrepriseId),
@@ -432,6 +465,7 @@ export class EntrepriseDetailComponent implements OnInit {
             this.adresseContactChantier = this.affectationContexte?.adresseContact ?? '';
             this.historiqueCharge = false;
             this.relancesChargees = false;
+            this.messagesHistoriqueCharges = false;
             if (this.afficherHistorique) {
                 this.documentService.historiqueParEntreprise(this.entrepriseId, this.contexteChantierId ?? undefined).subscribe((h) => {
                     this.historique = h;
@@ -442,6 +476,13 @@ export class EntrepriseDetailComponent implements OnInit {
                 this.documentService.relancesParEntreprise(this.entrepriseId, this.contexteChantierId ?? undefined).subscribe((r) => {
                     this.relances = r;
                     this.relancesChargees = true;
+                });
+            }
+            if (this.afficherMessagesHistorique) {
+                this.messagerieService.historique('ENTREPRISE', this.entrepriseId,
+                    { chantierId: this.contexteChantierId ?? undefined }).subscribe((m) => {
+                    this.messagesHistorique = m;
+                    this.messagesHistoriqueCharges = true;
                 });
             }
         });
@@ -1197,6 +1238,19 @@ ${this.contexteChantierNom ? `<p>Chantier :<br /><strong>${this.contexteChantier
             this.documentService.relancesParEntreprise(this.entrepriseId!, this.contexteChantierId ?? undefined).subscribe((r) => {
                 this.relances = r;
                 this.relancesChargees = true;
+            });
+        }
+    }
+
+    // --- Historique des messages ---
+
+    basculerMessagesHistorique() {
+        this.afficherMessagesHistorique = !this.afficherMessagesHistorique;
+        if (this.afficherMessagesHistorique && !this.messagesHistoriqueCharges) {
+            this.messagerieService.historique('ENTREPRISE', this.entrepriseId!,
+                { chantierId: this.contexteChantierId ?? undefined }).subscribe((m) => {
+                this.messagesHistorique = m;
+                this.messagesHistoriqueCharges = true;
             });
         }
     }
