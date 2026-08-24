@@ -31,10 +31,12 @@ export class MessageDetailPageComponent implements OnInit {
     entreprises: Entreprise[] = [];
     types: TypeDocument[] = [];
 
-    // --- Dépôt direct du document demandé (voir salarie/entreprise-detail demanderDocument) ---
-    fichierDemande: File | null = null;
-    envoiDocumentEnCours = false;
-    documentEnvoye = false;
+    // --- Dépôt direct du/des document(s) demandé(s) (voir salarie/entreprise-detail
+    // demanderDocuments) — un message peut viser plusieurs documents à la fois (sélection
+    // groupée), chacun se dépose indépendamment des autres (fichier + envoi + état propres). ---
+    fichiersDemande: Record<string, File | null> = {};
+    depotsEnCours = new Set<string>();
+    documentsEnvoyes = new Set<string>();
 
     constructor(
         private route: ActivatedRoute,
@@ -107,34 +109,51 @@ export class MessageDetailPageComponent implements OnInit {
         }
     }
 
-    get typeDocumentDemande(): TypeDocument | undefined {
-        return this.message?.typeDocumentId ? this.types.find((t) => t.id === this.message!.typeDocumentId) : undefined;
+    get typesDocumentsDemandes(): TypeDocument[] {
+        if (!this.message?.typeDocumentIds?.length) {
+            return [];
+        }
+        return this.message.typeDocumentIds
+            .map((id) => this.types.find((t) => t.id === id))
+            .filter((t): t is TypeDocument => !!t);
     }
 
-    /** Seul le vrai destinataire (l'entreprise à qui le document a été demandé) voit
-        ce dépôt direct — pas l'expéditeur, pas une éventuelle copie à un autre compte. */
+    /** Seul le vrai destinataire (l'entreprise à qui le(s) document(s) a/ont été demandé(s))
+        voit ce dépôt direct — pas l'expéditeur, pas une éventuelle copie à un autre compte. */
     get peutDeposerDocument(): boolean {
-        return !!this.message && !!this.message.typeDocumentId
+        return !!this.message && !!this.message.typeDocumentIds?.length
             && this.message.destinataireType === 'ENTREPRISE' && this.estDestinataire(this.message);
     }
 
-    envoyerDocumentDemande() {
-        if (!this.message || !this.fichierDemande || !this.message.typeDocumentId) {
+    get tousDocumentsEnvoyes(): boolean {
+        return this.typesDocumentsDemandes.length > 0
+            && this.typesDocumentsDemandes.every((t) => this.documentsEnvoyes.has(t.id));
+    }
+
+    onFichierChoisi(typeId: string, fichier: File | null) {
+        this.fichiersDemande[typeId] = fichier;
+    }
+
+    // typeId : chaque document demandé se dépose indépendamment des autres — un fichier
+    // envoyé avec succès pour l'un ne bloque ni ne valide les autres (voir documentsEnvoyes).
+    envoyerDocumentDemande(typeId: string) {
+        const fichier = this.fichiersDemande[typeId];
+        if (!this.message || !fichier) {
             return;
         }
-        this.envoiDocumentEnCours = true;
+        this.depotsEnCours.add(typeId);
         this.documentService.creer({
-            typeDocumentId: this.message.typeDocumentId,
+            typeDocumentId: typeId,
             salarieId: this.message.salarieId,
             entrepriseId: this.message.salarieId ? undefined : this.message.destinataireId
-        }, this.fichierDemande).subscribe({
+        }, fichier).subscribe({
             next: () => {
-                this.envoiDocumentEnCours = false;
-                this.documentEnvoye = true;
+                this.depotsEnCours.delete(typeId);
+                this.documentsEnvoyes.add(typeId);
                 this.toast.add({ severity: 'success', summary: 'Succès', detail: 'Document envoyé' });
             },
             error: () => {
-                this.envoiDocumentEnCours = false;
+                this.depotsEnCours.delete(typeId);
                 this.toast.add({ severity: 'error', summary: 'Erreur', detail: 'Envoi impossible' });
             }
         });

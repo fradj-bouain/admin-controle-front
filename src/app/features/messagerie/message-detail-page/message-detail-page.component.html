@@ -58,22 +58,30 @@
     </div>
 </div>
 
-<div class="card mb-3 no-print" *ngIf="peutDeposerDocument && !documentEnvoye">
+<div class="card mb-3 no-print" *ngIf="peutDeposerDocument && !tousDocumentsEnvoyes">
     <div class="card-head">
         <i class="pi pi-upload"></i>
-        <h6 class="m-0">Déposer le document demandé</h6>
+        <h6 class="m-0">{{ typesDocumentsDemandes.length === 1 ? 'Déposer le document demandé' : 'Déposer les documents demandés (' + typesDocumentsDemandes.length + ')' }}</h6>
     </div>
-    <p class="text-500 mt-0 mb-3" *ngIf="typeDocumentDemande">{{ typeDocumentDemande.libelle }}</p>
-    <app-document-upload-preview (fichierChange)="fichierDemande = $event"></app-document-upload-preview>
-    <div class="flex justify-content-end mt-3">
-        <button pButton type="button" label="Envoyer" icon="pi pi-send" [disabled]="!fichierDemande" [loading]="envoiDocumentEnCours" (click)="envoyerDocumentDemande()"></button>
-    </div>
+    <ng-container *ngFor="let type of typesDocumentsDemandes; let last = last">
+        <div class="flex align-items-center gap-2 py-2" *ngIf="documentsEnvoyes.has(type.id)">
+            <i class="pi pi-check-circle text-green-600"></i>
+            <span class="text-green-600 font-medium">{{ type.libelle }} — envoyé</span>
+        </div>
+        <div [class.mb-4]="!last" [class.pb-3]="!last" [style.border-bottom]="!last ? '1px solid var(--brand-border)' : 'none'" *ngIf="!documentsEnvoyes.has(type.id)">
+            <p class="text-500 mt-0 mb-2 font-medium">{{ type.libelle }}</p>
+            <app-document-upload-preview (fichierChange)="onFichierChoisi(type.id, $event)"></app-document-upload-preview>
+            <div class="flex justify-content-end mt-3">
+                <button pButton type="button" label="Envoyer" icon="pi pi-send" [disabled]="!fichiersDemande[type.id]" [loading]="depotsEnCours.has(type.id)" (click)="envoyerDocumentDemande(type.id)"></button>
+            </div>
+        </div>
+    </ng-container>
 </div>
 
-<div class="card mb-3 no-print" *ngIf="documentEnvoye">
+<div class="card mb-3 no-print" *ngIf="tousDocumentsEnvoyes">
     <div class="flex align-items-center gap-2 text-green-600">
         <i class="pi pi-check-circle text-xl"></i>
-        <span>Document envoyé avec succès.</span>
+        <span>{{ typesDocumentsDemandes.length === 1 ? 'Document envoyé avec succès.' : 'Tous les documents ont été envoyés avec succès.' }}</span>
     </div>
 </div>
 

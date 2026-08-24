@@ -130,7 +130,19 @@ export class EntrepriseDetailComponent implements OnInit {
     // --- Salariés (raccourci vers les salariés de cette entreprise) ---
     // identiteCalculee ajouté au chargement, pour permettre un p-columnFilter
     // texte simple sur "Prénom Nom" (colonne Identité affichée regroupée).
+    // TOUJOURS l'ensemble complet de l'entreprise, jamais filtré par chantier — sert aux
+    // indicateurs d'en-tête (nombre total de salariés, "N actifs") et à résoudre les noms
+    // dans chargerSalariesClient (qui agrège PLUSIEURS chantiers à la fois, pas seulement
+    // celui en contexte). Pour la liste affichée dans les cartes "Salariés", voir
+    // salariesListeAffichee ci-dessous — bien distincte de celle-ci depuis la correction du
+    // bug "salariés d'un autre chantier visibles ici" (voir chargerAffectationsSalarieContexte).
     salaries: Array<Salarie & { identiteCalculee: string }> = [];
+    // Liste réellement affichée dans les cartes "Salariés" (compacte + tableau) — filtrée au
+    // chantier en contexte quand il y en a un (règle validée "Entreprise + Chantier = contexte
+    // d'affectation"), identique à `salaries` sinon. Ne jamais utiliser à la place de `salaries`
+    // pour un total/comptage entreprise-wide (en-tête, chargerSalariesClient) : elle ne
+    // représenterait alors qu'un seul chantier, silencieusement.
+    salariesListeAffichee: Array<Salarie & { identiteCalculee: string }> = [];
     afficherSalaries = false;
 
     // --- Vue Client (lecture seule) : salariés DE CETTE ENTREPRISE affectés à MES
@@ -231,10 +243,14 @@ export class EntrepriseDetailComponent implements OnInit {
     // --- Envoyer un message (panneau latéral, voir prototype validé sur la fiche Salarié) ---
     afficherComposeur = false;
     envoiMessageEnCours = false;
-    // Renseigné uniquement quand le composeur a été ouvert via "Demander" sur une
-    // ligne de document précise — permet au destinataire de déposer le fichier
-    // directement depuis le message reçu (voir message-detail-page).
-    documentDemandeEnCours: string | null = null;
+    // Renseigné uniquement quand le composeur a été ouvert via "Demander" sur une ou
+    // plusieurs lignes de document (sélection groupée, voir demanderDocuments) — permet
+    // au destinataire de déposer un fichier pour chacun directement depuis le message reçu
+    // (voir message-detail-page).
+    documentsDemandesEnCours: string[] = [];
+    // Cases cochées dans la liste "À fournir" (voir ligneDocument), avant d'appuyer sur
+    // "Demander la sélection" — se vide après l'envoi.
+    documentsSelectionnesDemande = new Set<string>();
     tousUtilisateurs: Utilisateur[] = [];
     // Parité d'affichage avec le site legacy (logo, balises, bloc coordonnées) :
     // pas de colonne backend correspondante, rien n'est envoyé au serveur pour ce champ.
@@ -245,8 +261,38 @@ export class EntrepriseDetailComponent implements OnInit {
         copieAdmin: [false]
     });
 
-    get libelleDocumentDemande(): string {
-        return this.typesPourEntreprise.find((t) => t.id === this.documentDemandeEnCours)?.libelle ?? '';
+    get libellesDocumentsDemandes(): string[] {
+        return this.documentsDemandesEnCours.map((id) => this.typesPourEntreprise.find((t) => t.id === id)?.libelle ?? id);
+    }
+
+    // Retirer un document de la demande en cours d'écriture — n'annule pas l'envoi, juste
+    // cette référence-là (le message reste envoyable, sans ce document en moins dans la liste).
+    retirerDocumentDemande(typeId: string) {
+        this.documentsDemandesEnCours = this.documentsDemandesEnCours.filter((id) => id !== typeId);
+    }
+
+    toggleSelectionDocument(typeId: string) {
+        if (this.documentsSelectionnesDemande.has(typeId)) {
+            this.documentsSelectionnesDemande.delete(typeId);
+        } else {
+            this.documentsSelectionnesDemande.add(typeId);
+        }
+    }
+
+    get toutSelectionneDemande(): boolean {
+        return this.typesAFournir.length > 0 && this.typesAFournir.every((t) => this.documentsSelectionnesDemande.has(t.id));
+    }
+
+    toggleToutSelectionnerDemande() {
+        if (this.toutSelectionneDemande) {
+            this.documentsSelectionnesDemande.clear();
+        } else {
+            this.typesAFournir.forEach((t) => this.documentsSelectionnesDemande.add(t.id));
+        }
+    }
+
+    demanderSelection() {
+        this.demanderDocuments(this.typesAFournir.filter((t) => this.documentsSelectionnesDemande.has(t.id)));
     }
 
     // --- Compte utilisateur créé en même temps que l'entreprise (gain de temps
@@ -415,32 +461,6 @@ export class EntrepriseDetailComponent implements OnInit {
         return this.fonctions.find((f) => f.id === id)?.libelle ?? '—';
     }
 
-    // Colonne "Terrain" du tableau Salariés : badge + EPI regroupés en un seul badge
-    // "Équipé"/"Incomplet" (remplace 3 cercles identiques distingués seulement par tooltip,
-    // signalé confus) — le détail de ce qui manque reste consultable au survol. La présence
-    // reste un indicateur séparé (icône + libellé) : c'est un état "en direct" du jour, pas
-    // une readiness administrative comme le badge/l'EPI, les mélanger aurait été trompeur.
-    equipementComplet(aff: AffectationSalarieChantier): boolean {
-        return aff.badgeEdite && aff.epiGants && aff.epiCasque && aff.epiChaussures;
-    }
-
-    tooltipEquipement(aff: AffectationSalarieChantier): string {
-        const manquants: string[] = [];
-        if (!aff.badgeEdite) {
-            manquants.push('badge');
-        }
-        if (!aff.epiGants) {
-            manquants.push('gants');
-        }
-        if (!aff.epiCasque) {
-            manquants.push('casque');
-        }
-        if (!aff.epiChaussures) {
-            manquants.push('chaussures');
-        }
-        return manquants.length === 0 ? 'Badge édité, EPI complet' : 'Manquant : ' + manquants.join(', ');
-    }
-
     ngOnInit(): void {
         // Abonnement plutôt que snapshot ponctuel : cliquer un autre chantier depuis la liste
         // "Affectations" (voir template) revient sur CETTE MÊME fiche (même entrepriseId),
@@ -564,13 +584,24 @@ export class EntrepriseDetailComponent implements OnInit {
         });
     }
 
-    // contexteChantierId (voir ngOnInit) borne la liste au contexte "Entreprise + Chantier" —
-    // sans lui (arrivée sans ?chantierId=... dans l'URL), tous les salariés de l'entreprise
-    // s'affichent, tous chantiers confondus (comportement inchangé pour ce cas-là).
+    // Charge TOUJOURS l'ensemble complet (salaries) — en-têtes/chargerSalariesClient en ont
+    // besoin non filtré. En plus, quand un chantier est en contexte (voir contexteChantierId),
+    // charge séparément salariesListeAffichee filtrée à CE chantier pour les cartes "Salariés" —
+    // deux appels distincts (pas de filtrage côté client à partir de `salaries`) car un salarié
+    // de cette entreprise sur un AUTRE chantier ne doit jamais transiter, même un instant, par
+    // le navigateur de quelqu'un qui n'est censé voir que ce chantier-ci.
     chargerSalaries(entrepriseId: string) {
-        this.salarieService.lister(entrepriseId, this.contexteChantierId ?? undefined).subscribe((salaries) => {
+        this.salarieService.lister(entrepriseId).subscribe((salaries) => {
             this.salaries = salaries.map((s) => ({ ...s, identiteCalculee: `${s.prenom} ${s.nom}` }));
+            if (!this.contexteChantierId) {
+                this.salariesListeAffichee = this.salaries;
+            }
         });
+        if (this.contexteChantierId) {
+            this.salarieService.lister(entrepriseId, this.contexteChantierId).subscribe((salaries) => {
+                this.salariesListeAffichee = salaries.map((s) => ({ ...s, identiteCalculee: `${s.prenom} ${s.nom}` }));
+            });
+        }
         this.chargerAffectationsSalarieContexte();
     }
 
@@ -992,17 +1023,24 @@ export class EntrepriseDetailComponent implements OnInit {
     // l'empêcher de voir ce qui est réellement requis. Voir typesAFournir/typesDejaFournis
     // /typesOptionnelsRestants, recalculés dans recalculerTypesPourEntreprise().
 
-    // Un seul point d'entrée pour demander un document manquant : un bouton
-    // directement sur sa ligne dans la checklist (voir ligneDocument), plus de
-    // sélecteur séparé plus haut sur la carte qui faisait double emploi avec la
-    // liste juste en dessous — l'utilisateur voyait deux fois le même document et
-    // devait le rechercher une seconde fois (signalé comme redondance inutile).
-    demanderDocument(type: TypeDocument) {
+    // Point d'entrée pour demander un ou plusieurs documents manquants : un bouton
+    // directement sur chaque ligne de la checklist (voir ligneDocument) pour une demande
+    // rapide, ou une sélection groupée via les cases à cocher + "Demander la sélection"
+    // (voir toggleSelectionDocument/demanderSelection) — un seul message pour plusieurs
+    // documents à la fois, plutôt qu'un message par document.
+    demanderDocuments(types: TypeDocument[]) {
+        if (types.length === 0) {
+            return;
+        }
+        const nomEntreprise = this.entreprise ? this.entreprise.raisonSociale : '';
         this.messageForm.patchValue({
-            sujet: `Document à fournir — ${this.entreprise ? this.entreprise.raisonSociale : ''}`,
-            contenu: this.modeleDemandeDocuments(`<li>${type.libelle}</li>`)
+            sujet: types.length === 1
+                ? `Document à fournir — ${nomEntreprise}`
+                : `${types.length} documents à fournir — ${nomEntreprise}`,
+            contenu: this.modeleDemandeDocuments(types.map((t) => `<li>${t.libelle}</li>`).join(''))
         });
-        this.documentDemandeEnCours = type.id;
+        this.documentsDemandesEnCours = types.map((t) => t.id);
+        this.documentsSelectionnesDemande.clear();
         this.afficherComposeur = true;
     }
 
@@ -1011,7 +1049,7 @@ export class EntrepriseDetailComponent implements OnInit {
     // encore connus) — remplace le "afficherComposeur = true" en dur sur le bouton
     // "Nouveau message" pour que le sujet/contenu soient toujours à jour.
     ouvrirComposeur() {
-        this.documentDemandeEnCours = null;
+        this.documentsDemandesEnCours = [];
         this.messageForm.patchValue({ sujet: '', contenu: this.modeleParDefaut() });
         this.afficherComposeur = true;
     }
@@ -1019,7 +1057,7 @@ export class EntrepriseDetailComponent implements OnInit {
     // Appelé sur (onHide) du panneau — couvre toutes les façons de le fermer (bouton
     // Annuler, croix, Échap, clic en dehors), pas seulement le bouton Annuler.
     fermerComposeur() {
-        this.documentDemandeEnCours = null;
+        this.documentsDemandesEnCours = [];
     }
 
     // Date réelle du jour, pas le jeton [DATE] laissé tel quel — le destinataire ne doit
@@ -1289,8 +1327,8 @@ ${this.contexteChantierNom ? `<p>Chantier :<br /><strong>${this.contexteChantier
             cibles.set(`${type}:${id}`, {
                 destinataireType: type, destinataireId: id, sujet: value.sujet!, contenu: value.contenu!,
                 // La référence document n'a de sens que pour le vrai destinataire (l'entreprise
-                // qui doit déposer le fichier) — pas pour la copie informative à l'admin.
-                typeDocumentId: avecReferenceDocument ? this.documentDemandeEnCours ?? undefined : undefined,
+                // qui doit déposer le(s) fichier(s)) — pas pour la copie informative à l'admin.
+                typeDocumentIds: avecReferenceDocument && this.documentsDemandesEnCours.length > 0 ? this.documentsDemandesEnCours : undefined,
                 // Chantier d'où le message a été composé (voir contexteChantierId) — rattache
                 // le message à CE chantier précis dans l'historique, pas seulement à
                 // l'entreprise en général.
@@ -1309,7 +1347,7 @@ ${this.contexteChantierNom ? `<p>Chantier :<br /><strong>${this.contexteChantier
                 this.message.add({ severity: 'success', summary: 'Succès', detail: 'Message envoyé' });
                 this.messageForm.reset({ sujet: '', contenu: this.modeleParDefaut(), copieAdmin: false });
                 this.afficherComposeur = false;
-                this.documentDemandeEnCours = null;
+                this.documentsDemandesEnCours = [];
             },
             error: () => {
                 this.envoiMessageEnCours = false;

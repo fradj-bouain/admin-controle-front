@@ -148,10 +148,14 @@ export class SalarieDetailComponent implements OnInit {
     // --- Envoyer un message (panneau latéral, voir prototype validé) ---
     afficherComposeur = false;
     envoiMessageEnCours = false;
-    // Renseigné uniquement quand le composeur a été ouvert via "Demander" sur une
-    // ligne de document précise — permet au destinataire de déposer le fichier
-    // directement depuis le message reçu (voir message-detail-page).
-    documentDemandeEnCours: string | null = null;
+    // Renseigné uniquement quand le composeur a été ouvert via "Demander" sur une ou
+    // plusieurs lignes de document (sélection groupée, voir demanderDocuments) — permet
+    // au destinataire de déposer un fichier pour chacun directement depuis le message reçu
+    // (voir message-detail-page).
+    documentsDemandesEnCours: string[] = [];
+    // Cases cochées dans la liste "À fournir" (voir ligneDocument), avant d'appuyer sur
+    // "Demander la sélection" — se vide après l'envoi.
+    documentsSelectionnesDemande = new Set<string>();
     utilisateurs: Utilisateur[] = [];
     // Parité d'affichage avec le site legacy (logo, balises, bloc coordonnées) :
     // pas de colonne backend correspondante, rien n'est envoyé au serveur pour ce champ.
@@ -166,8 +170,38 @@ export class SalarieDetailComponent implements OnInit {
         return this.salarie ? this.entreprises.find((e) => e.id === this.salarie!.entrepriseEmployeurId) : undefined;
     }
 
-    get libelleDocumentDemande(): string {
-        return this.typesPourSalarie.find((t) => t.id === this.documentDemandeEnCours)?.libelle ?? '';
+    get libellesDocumentsDemandes(): string[] {
+        return this.documentsDemandesEnCours.map((id) => this.typesPourSalarie.find((t) => t.id === id)?.libelle ?? id);
+    }
+
+    // Retirer un document de la demande en cours d'écriture — n'annule pas l'envoi, juste
+    // cette référence-là (le message reste envoyable, sans ce document en moins dans la liste).
+    retirerDocumentDemande(typeId: string) {
+        this.documentsDemandesEnCours = this.documentsDemandesEnCours.filter((id) => id !== typeId);
+    }
+
+    toggleSelectionDocument(typeId: string) {
+        if (this.documentsSelectionnesDemande.has(typeId)) {
+            this.documentsSelectionnesDemande.delete(typeId);
+        } else {
+            this.documentsSelectionnesDemande.add(typeId);
+        }
+    }
+
+    get toutSelectionneDemande(): boolean {
+        return this.typesAFournir.length > 0 && this.typesAFournir.every((t) => this.documentsSelectionnesDemande.has(t.id));
+    }
+
+    toggleToutSelectionnerDemande() {
+        if (this.toutSelectionneDemande) {
+            this.documentsSelectionnesDemande.clear();
+        } else {
+            this.typesAFournir.forEach((t) => this.documentsSelectionnesDemande.add(t.id));
+        }
+    }
+
+    demanderSelection() {
+        this.demanderDocuments(this.typesAFournir.filter((t) => this.documentsSelectionnesDemande.has(t.id)));
     }
 
     constructor(
@@ -711,17 +745,24 @@ export class SalarieDetailComponent implements OnInit {
         this.dialogApercuVisible = true;
     }
 
-    // Un seul point d'entrée pour demander un document manquant : un bouton
-    // directement sur sa ligne dans la checklist (voir ligneDocument), plus de
-    // sélecteur séparé plus haut sur la carte qui faisait double emploi avec la
-    // liste juste en dessous — l'utilisateur voyait deux fois le même document et
-    // devait le rechercher une seconde fois (signalé comme redondance inutile).
-    demanderDocument(type: TypeDocument) {
+    // Point d'entrée pour demander un ou plusieurs documents manquants : un bouton
+    // directement sur chaque ligne de la checklist (voir ligneDocument) pour une demande
+    // rapide, ou une sélection groupée via les cases à cocher + "Demander la sélection"
+    // (voir toggleSelectionDocument/demanderSelection) — un seul message pour plusieurs
+    // documents à la fois, plutôt qu'un message par document.
+    demanderDocuments(types: TypeDocument[]) {
+        if (types.length === 0) {
+            return;
+        }
+        const nomSalarie = this.salarie ? this.salarie.prenom + ' ' + this.salarie.nom : '';
         this.messageForm.patchValue({
-            sujet: `Document à fournir — ${this.salarie ? this.salarie.prenom + ' ' + this.salarie.nom : ''}`,
-            contenu: this.modeleDemandeDocuments(`<li>${type.libelle}</li>`)
+            sujet: types.length === 1
+                ? `Document à fournir — ${nomSalarie}`
+                : `${types.length} documents à fournir — ${nomSalarie}`,
+            contenu: this.modeleDemandeDocuments(types.map((t) => `<li>${t.libelle}</li>`).join(''))
         });
-        this.documentDemandeEnCours = type.id;
+        this.documentsDemandesEnCours = types.map((t) => t.id);
+        this.documentsSelectionnesDemande.clear();
         this.afficherComposeur = true;
     }
 
@@ -730,7 +771,7 @@ export class SalarieDetailComponent implements OnInit {
     // encore connus) — remplace le "afficherComposeur = true" en dur sur le bouton
     // "Nouveau message" pour que le sujet/contenu soient toujours à jour.
     ouvrirComposeur() {
-        this.documentDemandeEnCours = null;
+        this.documentsDemandesEnCours = [];
         this.messageForm.patchValue({ sujet: '', contenu: this.modeleParDefaut() });
         this.afficherComposeur = true;
     }
@@ -738,7 +779,7 @@ export class SalarieDetailComponent implements OnInit {
     // Appelé sur (onHide) du panneau — couvre toutes les façons de le fermer (bouton
     // Annuler, croix, Échap, clic en dehors), pas seulement le bouton Annuler.
     fermerComposeur() {
-        this.documentDemandeEnCours = null;
+        this.documentsDemandesEnCours = [];
     }
 
     // Date réelle du jour, pas le jeton [DATE] laissé tel quel — le destinataire ne doit
@@ -959,8 +1000,8 @@ ${this.contexteChantierNom ? `<p>Chantier :<br /><strong>${this.contexteChantier
             cibles.set(`${type}:${id}`, {
                 destinataireType: type, destinataireId: id, sujet: value.sujet!, contenu: value.contenu!,
                 // La référence document n'a de sens que pour le vrai destinataire (l'entreprise
-                // qui doit déposer le fichier) — pas pour la copie informative à l'admin.
-                typeDocumentId: avecReferenceDocument ? this.documentDemandeEnCours ?? undefined : undefined,
+                // qui doit déposer le(s) fichier(s)) — pas pour la copie informative à l'admin.
+                typeDocumentIds: avecReferenceDocument && this.documentsDemandesEnCours.length > 0 ? this.documentsDemandesEnCours : undefined,
                 // Toujours renseigné (pas seulement pour une demande de document) — sert à
                 // l'historique des messages de la fiche Salarié (voir basculerMessagesHistorique),
                 // qui filtre par salarieId pour ne montrer que les messages de CE salarié précis
@@ -984,7 +1025,7 @@ ${this.contexteChantierNom ? `<p>Chantier :<br /><strong>${this.contexteChantier
                 this.message.add({ severity: 'success', summary: 'Succès', detail: 'Message envoyé à l\'entreprise employeuse' });
                 this.messageForm.reset({ sujet: '', contenu: this.modeleParDefaut(), copieAdmin: false });
                 this.afficherComposeur = false;
-                this.documentDemandeEnCours = null;
+                this.documentsDemandesEnCours = [];
             },
             error: () => {
                 this.envoiMessageEnCours = false;

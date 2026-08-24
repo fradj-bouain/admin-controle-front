@@ -437,11 +437,11 @@
                     [queryParams]="{ entrepriseId: entrepriseId }"
                 ></button>
             </div>
-            <div class="ent-compact-list" *ngIf="salaries.length > 0">
+            <div class="ent-compact-list" *ngIf="salariesListeAffichee.length > 0">
                 <button
                     type="button"
                     class="ent-compact-row"
-                    *ngFor="let salarie of salaries"
+                    *ngFor="let salarie of salariesListeAffichee"
                     [routerLink]="['/salaries', salarie.id]"
                     [pTooltip]="'Ouvrir la fiche de ' + salarie.identiteCalculee"
                 >
@@ -460,7 +460,7 @@
                     </span>
                 </button>
             </div>
-            <p class="text-500 text-sm m-0" *ngIf="salaries.length === 0">{{ contexteChantierNom ? 'Aucun salarié de cette entreprise sur ' + contexteChantierNom + '.' : 'Aucun salarié pour cette entreprise.' }}</p>
+            <p class="text-500 text-sm m-0" *ngIf="salariesListeAffichee.length === 0">{{ contexteChantierNom ? 'Aucun salarié de cette entreprise sur ' + contexteChantierNom + '.' : 'Aucun salarié pour cette entreprise.' }}</p>
         </div>
 
     </div>
@@ -1521,15 +1521,18 @@
     </div>
 
     <div *ngIf="!afficherSalaries" class="flex align-items-center justify-content-between">
-        <a class="cursor-pointer text-primary" (click)="afficherSalaries = true">{{ salaries.length }} salarié(s)</a>
+        <a class="cursor-pointer text-primary" (click)="afficherSalaries = true">{{ salariesListeAffichee.length }} salarié(s)</a>
         <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="afficherSalaries = true"></button>
     </div>
 
     <!-- Fonction/Contrat : sur le Salarié lui-même, toujours affichables. Accès chantier/
-         Terrain/Depuis : sur l'affectation pour LE chantier en contexte (affectationParSalarieId,
+         Depuis : sur l'affectation pour LE chantier en contexte (affectationParSalarieId,
          voir chargerAffectationsSalarieContexte) — restent à "—" hors contexte chantier, un
-         salarié pouvant avoir plusieurs affectations et aucune n'étant alors LA bonne réponse. -->
-    <p-table [value]="salaries" dataKey="id" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="400px" *ngIf="afficherSalaries">
+         salarié pouvant avoir plusieurs affectations et aucune n'étant alors LA bonne réponse.
+         Colonne "Terrain" (badge/EPI/présence) retirée à la demande du client : jugée pas
+         assez utile ici pour la place qu'elle prenait. salariesListeAffichee (pas `salaries`,
+         qui reste l'ensemble complet pour les en-têtes) : filtrée au chantier en contexte. -->
+    <p-table [value]="salariesListeAffichee" dataKey="id" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="400px" *ngIf="afficherSalaries">
         <ng-template pTemplate="header">
             <tr>
                 <th>Identité</th>
@@ -1537,13 +1540,11 @@
                 <th>Contrat</th>
                 <th>Statut</th>
                 <th>Accès chantier</th>
-                <th>Terrain</th>
                 <th>Depuis</th>
                 <th style="width: 4rem"></th>
             </tr>
             <tr>
                 <th><p-columnFilter type="text" field="identiteCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                <th></th>
                 <th></th>
                 <th></th>
                 <th></th>
@@ -1561,14 +1562,6 @@
                 <td>
                     <p-tag *ngIf="affectationParSalarieId[salarie.id] as aff; else pasDeContexte" [severity]="aff.statutAcces === 'ACCORDE' ? 'success' : (aff.statutAcces === 'REFUSE' ? 'danger' : 'warning')" [value]="aff.statutAcces | etatLabel"></p-tag>
                 </td>
-                <td>
-                    <div class="flex flex-column align-items-start gap-1" *ngIf="affectationParSalarieId[salarie.id] as aff; else pasDeContexte">
-                        <p-tag [severity]="equipementComplet(aff) ? 'success' : 'warning'" [value]="equipementComplet(aff) ? 'Équipé' : 'Incomplet'" [pTooltip]="tooltipEquipement(aff)"></p-tag>
-                        <span class="text-xs flex align-items-center gap-1" [class.text-green-600]="aff.present" [class.text-500]="!aff.present">
-                            <i class="pi" [class.pi-map-marker]="aff.present" [class.pi-minus-circle]="!aff.present"></i>{{ aff.present ? 'Présent sur site' : 'Absent' }}
-                        </span>
-                    </div>
-                </td>
                 <td>{{ affectationParSalarieId[salarie.id] ? (affectationParSalarieId[salarie.id].dateDebut | date: 'dd/MM/yyyy') : '—' }}</td>
                 <td>
                     <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/salaries', salarie.id]"></button>
@@ -1576,7 +1569,7 @@
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
-            <tr><td colspan="8" class="text-center text-500">Aucun salarié pour cette entreprise.</td></tr>
+            <tr><td colspan="7" class="text-center text-500">Aucun salarié pour cette entreprise.</td></tr>
         </ng-template>
     </p-table>
     <ng-template #pasDeContexte><span class="text-500">—</span></ng-template>
@@ -1711,8 +1704,20 @@
 
     <div *ngIf="isNew || afficherDocuments">
         <ng-container *ngIf="typesAFournir.length > 0">
-            <div class="flex align-items-center gap-2 text-sm font-semibold uppercase text-red-600 mb-2 mt-2">
-                <i class="pi pi-exclamation-triangle"></i> À fournir ({{ typesAFournir.length }})
+            <div class="flex align-items-center justify-content-between gap-2 mb-2 mt-2">
+                <div class="flex align-items-center gap-2 text-sm font-semibold uppercase text-red-600">
+                    <i class="pi pi-exclamation-triangle"></i> À fournir ({{ typesAFournir.length }})
+                </div>
+                <!-- Sélection groupée : cocher plusieurs documents manquants puis envoyer une
+                     seule demande qui les couvre tous, plutôt qu'un message par document
+                     (voir demanderSelection/toggleSelectionDocument). -->
+                <div class="flex align-items-center gap-2" *ngIf="isSuperAdmin && !isNew">
+                    <div class="flex align-items-center gap-2">
+                        <p-checkbox [binary]="true" [ngModel]="toutSelectionneDemande" (onChange)="toggleToutSelectionnerDemande()" inputId="toutSelectionnerDemande"></p-checkbox>
+                        <label for="toutSelectionnerDemande" class="text-sm text-500">Tout sélectionner</label>
+                    </div>
+                    <button pButton type="button" icon="pi pi-send" [label]="'Demander la sélection (' + documentsSelectionnesDemande.size + ')'" class="p-button-sm" [disabled]="documentsSelectionnesDemande.size === 0" (click)="demanderSelection()"></button>
+                </div>
             </div>
             <ng-container *ngFor="let type of typesAFournir">
                 <ng-container *ngTemplateOutlet="ligneDocument; context: { type: type }"></ng-container>
@@ -1761,6 +1766,14 @@
     >
         <div class="doc-row__header">
             <div class="doc-row__title">
+                <p-checkbox
+                    *ngIf="isSuperAdmin && !isNew && !documentsByType[type.id]"
+                    [binary]="true"
+                    [ngModel]="documentsSelectionnesDemande.has(type.id)"
+                    (onChange)="toggleSelectionDocument(type.id)"
+                    styleClass="mr-2"
+                    pTooltip="Sélectionner pour une demande groupée"
+                ></p-checkbox>
                 <span class="doc-row__title-text" [pTooltip]="type.libelle" tooltipPosition="top">{{ type.libelle }}</span>
             </div>
             <div class="doc-row__status flex align-items-center gap-2">
@@ -1783,7 +1796,7 @@
                      précis — plus de sélecteur séparé, il agit directement sur la ligne qu'il voit. -->
                 <div class="field col-12 mb-0 flex align-items-center justify-content-between gap-2" *ngIf="isSuperAdmin && !isNew">
                     <p class="text-500 text-sm m-0">En attente d'un dépôt par l'entreprise.</p>
-                    <button pButton type="button" icon="pi pi-send" label="Demander" class="p-button-outlined p-button-sm flex-shrink-0" (click)="demanderDocument(type)"></button>
+                    <button pButton type="button" icon="pi pi-send" label="Demander" class="p-button-outlined p-button-sm flex-shrink-0" (click)="demanderDocuments([type])"></button>
                 </div>
                 <ng-container *ngIf="!isSuperAdmin">
                     <div class="field col-12 md:col-9 mb-0">
@@ -1979,10 +1992,16 @@
     </ng-template>
 
     <form id="composeurFormEntreprise" [formGroup]="messageForm" (ngSubmit)="envoyerMessage()" class="p-fluid">
-        <div class="composeur-doc-banner" *ngIf="documentDemandeEnCours">
-            <i class="pi pi-paperclip"></i>
-            <span>Document demandé : {{ libelleDocumentDemande }}</span>
-            <button type="button" class="clear" pTooltip="Retirer" tooltipPosition="left" (click)="documentDemandeEnCours = null"><i class="pi pi-times"></i></button>
+        <div class="composeur-doc-banner" style="flex-direction:column; align-items:stretch;" *ngIf="documentsDemandesEnCours.length > 0">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-paperclip"></i>
+                <span>{{ documentsDemandesEnCours.length === 1 ? 'Document demandé' : documentsDemandesEnCours.length + ' documents demandés' }}</span>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-2">
+                <span class="composeur-tag-chip" *ngFor="let libelle of libellesDocumentsDemandes; let i = index" (click)="retirerDocumentDemande(documentsDemandesEnCours[i])" pTooltip="Retirer de la demande">
+                    {{ libelle }}<i class="pi pi-times ml-1" style="font-size:.65rem;"></i>
+                </span>
+            </div>
         </div>
 
         <div class="field-checkbox">

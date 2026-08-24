@@ -857,8 +857,20 @@
 
     <div *ngIf="isNew || afficherDocuments">
         <ng-container *ngIf="typesAFournir.length > 0">
-            <div class="flex align-items-center gap-2 text-sm font-semibold uppercase text-red-600 mb-2 mt-2">
-                <i class="pi pi-exclamation-triangle"></i> À fournir ({{ typesAFournir.length }})
+            <div class="flex align-items-center justify-content-between gap-2 mb-2 mt-2">
+                <div class="flex align-items-center gap-2 text-sm font-semibold uppercase text-red-600">
+                    <i class="pi pi-exclamation-triangle"></i> À fournir ({{ typesAFournir.length }})
+                </div>
+                <!-- Sélection groupée : cocher plusieurs documents manquants puis envoyer une
+                     seule demande qui les couvre tous, plutôt qu'un message par document
+                     (voir demanderSelection/toggleSelectionDocument). -->
+                <div class="flex align-items-center gap-2" *ngIf="isSuperAdmin && !isNew">
+                    <div class="flex align-items-center gap-2">
+                        <p-checkbox [binary]="true" [ngModel]="toutSelectionneDemande" (onChange)="toggleToutSelectionnerDemande()" inputId="toutSelectionnerDemande"></p-checkbox>
+                        <label for="toutSelectionnerDemande" class="text-sm text-500">Tout sélectionner</label>
+                    </div>
+                    <button pButton type="button" icon="pi pi-send" [label]="'Demander la sélection (' + documentsSelectionnesDemande.size + ')'" class="p-button-sm" [disabled]="documentsSelectionnesDemande.size === 0" (click)="demanderSelection()"></button>
+                </div>
             </div>
             <ng-container *ngFor="let type of typesAFournir">
                 <ng-container *ngTemplateOutlet="ligneDocument; context: { type: type }"></ng-container>
@@ -907,6 +919,14 @@
     >
         <div class="doc-row__header">
             <div class="doc-row__title">
+                <p-checkbox
+                    *ngIf="isSuperAdmin && !isNew && !documentsByType[type.id]"
+                    [binary]="true"
+                    [ngModel]="documentsSelectionnesDemande.has(type.id)"
+                    (onChange)="toggleSelectionDocument(type.id)"
+                    styleClass="mr-2"
+                    pTooltip="Sélectionner pour une demande groupée"
+                ></p-checkbox>
                 <span class="doc-row__title-text" [pTooltip]="type.libelle" tooltipPosition="top">{{ type.libelle }}</span>
             </div>
             <div class="doc-row__status flex align-items-center gap-2">
@@ -929,7 +949,7 @@
                      précis — plus de sélecteur séparé, il agit directement sur la ligne qu'il voit. -->
                 <div class="field col-12 mb-0 flex align-items-center justify-content-between gap-2" *ngIf="isSuperAdmin && !isNew">
                     <p class="text-500 text-sm m-0">En attente d'un dépôt par l'entreprise.</p>
-                    <button pButton type="button" icon="pi pi-send" label="Demander" class="p-button-outlined p-button-sm flex-shrink-0" (click)="demanderDocument(type)"></button>
+                    <button pButton type="button" icon="pi pi-send" label="Demander" class="p-button-outlined p-button-sm flex-shrink-0" (click)="demanderDocuments([type])"></button>
                 </div>
                 <ng-container *ngIf="!isSuperAdmin">
                     <div class="field col-12 md:col-9 mb-0">
@@ -1129,10 +1149,16 @@
     </ng-template>
 
     <form id="composeurForm" [formGroup]="messageForm" (ngSubmit)="envoyerMessage()" class="p-fluid">
-        <div class="composeur-doc-banner" *ngIf="documentDemandeEnCours">
-            <i class="pi pi-paperclip"></i>
-            <span>Document demandé : {{ libelleDocumentDemande }}</span>
-            <button type="button" class="clear" pTooltip="Retirer" tooltipPosition="left" (click)="documentDemandeEnCours = null"><i class="pi pi-times"></i></button>
+        <div class="composeur-doc-banner" style="flex-direction:column; align-items:stretch;" *ngIf="documentsDemandesEnCours.length > 0">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-paperclip"></i>
+                <span>{{ documentsDemandesEnCours.length === 1 ? 'Document demandé' : documentsDemandesEnCours.length + ' documents demandés' }}</span>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-2">
+                <span class="composeur-tag-chip" *ngFor="let libelle of libellesDocumentsDemandes; let i = index" (click)="retirerDocumentDemande(documentsDemandesEnCours[i])" pTooltip="Retirer de la demande">
+                    {{ libelle }}<i class="pi pi-times ml-1" style="font-size:.65rem;"></i>
+                </span>
+            </div>
         </div>
 
         <div class="field-checkbox">

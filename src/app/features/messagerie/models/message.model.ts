@@ -8,9 +8,10 @@ export interface Message {
     destinataireId: string;
     sujet: string;
     contenu: string;
-    /** Renseignés seulement pour un message "Demander un document" (voir salarie/entreprise-detail
-        demanderDocument) — permet d'afficher un dépôt direct depuis la consultation du message. */
-    typeDocumentId?: string;
+    /** Renseignés seulement pour un message "Demander un/des document(s)" (voir salarie/
+        entreprise-detail demanderDocuments) — permet d'afficher un dépôt direct pour chacun
+        depuis la consultation du message. Un ou plusieurs éléments (sélection groupée). */
+    typeDocumentIds?: string[];
     salarieId?: string;
     lu: boolean;
     luParUtilisateurId?: string;
@@ -24,7 +25,7 @@ export interface SendMessageRequest {
     destinataireId: string;
     sujet: string;
     contenu: string;
-    typeDocumentId?: string;
+    typeDocumentIds?: string[];
     salarieId?: string;
 }
 
