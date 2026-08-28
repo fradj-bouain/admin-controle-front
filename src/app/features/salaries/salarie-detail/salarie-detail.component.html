@@ -15,6 +15,15 @@
                 *ngIf="!isEntreprise && !isNew"
                 pButton
                 type="button"
+                icon="pi pi-history"
+                label="Historique"
+                class="p-button-outlined"
+                (click)="basculerHistorique()"
+            ></button>
+            <button
+                *ngIf="!isEntreprise && !isNew"
+                pButton
+                type="button"
                 icon="pi pi-envelope"
                 label="Nouveau message"
                 class="p-button-outlined"
@@ -108,6 +117,7 @@
                 </div>
             </div>
             <div class="chantier-hero-actions">
+                <button pButton type="button" icon="pi pi-history" label="Historique" class="p-button-text" (click)="basculerHistorique()"></button>
                 <button pButton type="button" icon="pi pi-envelope" label="Nouveau message" class="p-button-text hero-btn-highlight" (click)="ouvrirComposeur()"></button>
                 <button
                     pButton
@@ -988,44 +998,57 @@
     </div>
 </ng-template>
 
-<!-- Historique des documents (repliée par défaut, chargée au premier dépli). Masquée pour
-     l'Entreprise, qui a sa propre version compacte dans la vue deux colonnes plus bas. -->
-<div class="card mb-3" *ngIf="!isNew && !isEntreprise && !isClient">
-    <div class="card-head justify-content-between">
+<!-- Historique des documents : plus de carte dédiée sur la page — un bouton "Historique"
+     dans l'en-tête de la fiche ouvre ce panneau latéral (même mécanique que "Contrôles"
+     sur la fiche Chantier et "Sous-traitants" sur la fiche Entreprise). Chargée à la
+     demande au premier dépli (voir basculerHistorique), pas au chargement de la page.
+     Masquée pour l'Entreprise, qui a sa propre version compacte dans la vue deux colonnes
+     plus bas. -->
+<p-sidebar *ngIf="!isNew && !isEntreprise && !isClient" [(visible)]="afficherHistorique" position="right" [style]="{ width: '46vw', minWidth: '640px', maxWidth: '820px' }">
+    <ng-template pTemplate="header">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-history"></i>
-            <h6 class="m-0">Historique des documents</h6>
+            <h5 class="m-0">Historique des documents — {{ salarie?.prenom }} {{ salarie?.nom }}</h5>
         </div>
-        <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherHistorique" (click)="afficherHistorique = false"></button>
-    </div>
+    </ng-template>
 
-    <div *ngIf="!afficherHistorique" class="flex align-items-center justify-content-between">
-        <a class="cursor-pointer text-primary" (click)="basculerHistorique()">Voir l'historique des documents</a>
-        <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="basculerHistorique()"></button>
-    </div>
-
-    <p-table [value]="historique" dataKey="id" *ngIf="afficherHistorique" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
-        <ng-template pTemplate="header">
-            <tr>
-                <th>Date</th>
-                <th>Document</th>
-                <th>Action</th>
-                <th>Détail</th>
-            </tr>
-        </ng-template>
+    <!-- Fil d'activité plutôt qu'un tableau à 4 colonnes (demande explicite : "plus clair à
+         comprendre") — chaque ligne dit d'un coup d'œil QUOI (document + action, en tête)
+         PUIS le détail, PUIS quand, dans cet ordre de priorité de lecture. L'icône colorée
+         reprend le code couleur déjà utilisé pour le tag (info/success/danger). -->
+    <p-table [value]="historique" dataKey="id" [paginator]="true" [rows]="15" [rowsPerPageOptions]="[15,30,60]" [scrollable]="true" scrollHeight="560px">
         <ng-template pTemplate="body" let-entree>
             <tr>
-                <td>{{ entree.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
-                <td>{{ libelleDocumentHistorique(entree) }}</td>
-                <td><p-tag [severity]="severiteAction(entree.action)" [value]="libelleAction(entree.action)"></p-tag></td>
-                <td>{{ detailHistorique(entree) }}</td>
+                <td style="border:none; padding: 0.85rem 0.25rem;">
+                    <div class="flex align-items-start gap-3">
+                        <span
+                            class="flex align-items-center justify-content-center flex-shrink-0"
+                            style="width: 2.25rem; height: 2.25rem; border-radius: 50%;"
+                            [ngClass]="{
+                                'bg-blue-100 text-blue-600': severiteAction(entree.action) === 'info',
+                                'bg-green-100 text-green-600': severiteAction(entree.action) === 'success',
+                                'bg-red-100 text-red-600': severiteAction(entree.action) === 'danger'
+                            }"
+                        >
+                            <i class="pi" [ngClass]="iconeAction(entree.action)"></i>
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex align-items-center gap-2 flex-wrap">
+                                <span class="font-semibold">{{ libelleDocumentHistorique(entree) }}</span>
+                                <p-tag [severity]="severiteAction(entree.action)" [value]="libelleAction(entree.action)"></p-tag>
+                            </div>
+                            <div class="text-600 text-sm mt-1" *ngIf="detailHistorique(entree) !== '—'">{{ detailHistorique(entree) }}</div>
+                            <div class="text-500 text-xs mt-1">{{ entree.createdAt | date: 'dd/MM/yyyy à HH:mm' }}</div>
+                        </div>
+                    </div>
+                </td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
-            <tr><td colspan="4" class="text-center text-500">Aucune modification enregistrée.</td></tr>
+            <tr><td class="text-center text-500 py-4" style="border:none;">Aucune modification enregistrée.</td></tr>
         </ng-template>
     </p-table>
-</div>
+</p-sidebar>
 
 <!-- Relances : rappels envoyés (automatiques ou manuels) pour les documents de ce salarié.
      Masqué en vue Entreprise (jamais elle-même destinataire de ses propres relances) et en
@@ -1091,9 +1114,9 @@
     <p-table [value]="messagesHistorique" dataKey="id" *ngIf="afficherMessagesHistorique" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
         <ng-template pTemplate="header">
             <tr>
-                <th>Date</th>
-                <th>Sujet</th>
-                <th>Statut</th>
+                <th style="min-width: 10rem">Date</th>
+                <th style="min-width: 20rem">Sujet</th>
+                <th style="min-width: 8rem">Statut</th>
                 <th style="width: 4rem"></th>
             </tr>
         </ng-template>

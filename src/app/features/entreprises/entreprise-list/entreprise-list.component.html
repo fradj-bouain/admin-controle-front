@@ -107,16 +107,17 @@
     </div>
     <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? lignes).length }} résultat(s)</p>
 
-    <p-table #dt [value]="lignes" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="rowKey" [globalFilterFields]="['raisonSociale','siret','telephone','ville','nomChantier','role']">
+    <p-table #dt [value]="lignes" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="rowKey" [globalFilterFields]="['raisonSociale','siret','telephone','ville','nomChantier','role']" [expandedRowKeys]="expandedRowKeys">
         <ng-template pTemplate="header">
             <tr>
-                <th>Raison sociale</th>
-                <th>SIRET</th>
-                <th>Téléphone</th>
-                <th>Chantier</th>
-                <th>Rôle</th>
-                <th>Statut sur ce chantier</th>
-                <th>Statut entreprise</th>
+                <th style="min-width: 16rem">Raison sociale</th>
+                <th style="min-width: 10rem">SIRET</th>
+                <th style="min-width: 9rem">Téléphone</th>
+                <th style="min-width: 14rem">Chantier</th>
+                <th style="min-width: 8rem">Rôle</th>
+                <th style="min-width: 12rem">Sous-traitants</th>
+                <th style="min-width: 11rem">Statut sur ce chantier</th>
+                <th style="min-width: 9rem">Statut entreprise</th>
                 <th style="width: 8rem"></th>
             </tr>
             <tr *ngIf="afficherFiltresAvances">
@@ -124,6 +125,7 @@
                 <th><p-columnFilter type="text" field="siret" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="telephone" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="nomChantier" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th></th>
                 <th></th>
                 <th></th>
                 <th>
@@ -161,6 +163,19 @@
                     <p-tag *ngIf="ligne.role" severity="info" [value]="ligne.role"></p-tag>
                     <span *ngIf="!ligne.role" class="text-500">—</span>
                 </td>
+                <td (click)="$event.stopPropagation()">
+                    <p-tag
+                        *ngIf="ligne.sousTraitants.length > 0; else pasDeSousTraitant"
+                        [pRowToggler]="ligne"
+                        severity="info"
+                        [value]="ligne.sousTraitants.length + ' sous-traitant' + (ligne.sousTraitants.length > 1 ? 's' : '')"
+                        [style.cursor]="'pointer'"
+                        [pTooltip]="(expandedRowKeys[ligne.rowKey] ? 'Masquer' : 'Voir') + ' les sous-traitants'"
+                    >
+                        <ng-template pTemplate="icon"><i class="pi" [ngClass]="expandedRowKeys[ligne.rowKey] ? 'pi-chevron-down' : 'pi-sitemap'" style="margin-right:.35rem;"></i></ng-template>
+                    </p-tag>
+                    <ng-template #pasDeSousTraitant><span class="text-500">—</span></ng-template>
+                </td>
                 <td>
                     <p-tag *ngIf="ligne.statutAffectation" [severity]="ligne.statutAffectation === 'ACTIF' ? 'success' : 'danger'" [value]="ligne.statutAffectation | etatLabel"></p-tag>
                     <span *ngIf="!ligne.statutAffectation" class="text-500">—</span>
@@ -182,9 +197,40 @@
                 </td>
             </tr>
         </ng-template>
+        <!-- Sous-traitants (STT1/STT2) directement rattachés à CETTE affectation, sur CE
+             chantier — déjà en mémoire (this.affectations), aucun appel réseau au dépli. -->
+        <ng-template pTemplate="rowexpansion" let-ligne>
+            <tr>
+                <td colspan="9" style="background: var(--surface-50);">
+                    <div class="p-3">
+                        <div class="flex align-items-center gap-2 mb-2 text-sm font-semibold uppercase text-600">
+                            <i class="pi pi-sitemap"></i> Sous-traitants sur {{ ligne.nomChantier }}
+                        </div>
+                        <div class="ent-compact-list">
+                            <button
+                                type="button"
+                                class="ent-compact-row"
+                                *ngFor="let st of ligne.sousTraitants"
+                                [routerLink]="['/entreprises', st.entrepriseId]"
+                                [queryParams]="{ chantierId: ligne.chantierId }"
+                            >
+                                <span class="ent-compact-row-icon"><i class="pi pi-briefcase"></i></span>
+                                <span class="ent-compact-row-body">
+                                    <span class="ent-compact-row-title">{{ st.raisonSociale }}</span>
+                                </span>
+                                <span class="ent-compact-row-end flex align-items-center gap-2">
+                                    <p-tag severity="info" [value]="st.role"></p-tag>
+                                    <p-tag [severity]="st.statut === 'ACTIF' ? 'success' : 'danger'" [value]="st.statut | etatLabel"></p-tag>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="8" class="text-center text-500 py-4">Aucune entreprise ne correspond à cette recherche.</td>
+                <td colspan="9" class="text-center text-500 py-4">Aucune entreprise ne correspond à cette recherche.</td>
             </tr>
         </ng-template>
     </p-table>

@@ -12,6 +12,15 @@
                 *ngIf="!isEntreprise && !isNew"
                 pButton
                 type="button"
+                icon="pi pi-sitemap"
+                label="Sous-traitants"
+                class="p-button-outlined"
+                (click)="afficherSousTraitants = true"
+            ></button>
+            <button
+                *ngIf="!isEntreprise && !isNew"
+                pButton
+                type="button"
                 icon="pi pi-envelope"
                 label="Nouveau message"
                 class="p-button-outlined"
@@ -99,6 +108,7 @@
                 </div>
             </div>
             <div class="chantier-hero-actions">
+                <button pButton type="button" icon="pi pi-sitemap" label="Sous-traitants" class="p-button-text" (click)="afficherSousTraitants = true"></button>
                 <button pButton type="button" icon="pi pi-envelope" label="Nouveau message" class="p-button-text hero-btn-highlight" (click)="ouvrirComposeur()"></button>
                 <button
                     pButton
@@ -1469,21 +1479,25 @@
 </div>
 
 <!-- Sous-traitants : entreprises STT1/STT2 rattachées à celle-ci sur ses chantiers. Lecture
-     seule pour SUPER_ADMIN/Client/Contrôleur — l'Entreprise a sa propre carte compacte
-     (cliquable vers le chantier) dans la vue deux colonnes plus bas. -->
-<div class="card mb-3" *ngIf="!isNew && !isEntreprise && !isClient">
-    <div class="card-head">
-        <i class="pi pi-sitemap"></i>
-        <h6 class="m-0">Sous-traitants</h6>
-    </div>
+     seule pour SUPER_ADMIN/Contrôleur — l'Entreprise a sa propre carte compacte (cliquable
+     vers le chantier) dans la vue deux colonnes plus bas. Plus de carte dédiée sur la page :
+     un bouton "Sous-traitants" dans l'en-tête de la fiche ouvre ce panneau latéral (même
+     mécanique que "Contrôles" sur la fiche Chantier, demande explicite). -->
+<p-sidebar *ngIf="!isNew && !isEntreprise && !isClient" [(visible)]="afficherSousTraitants" position="right" [style]="{ width: '46vw', minWidth: '640px', maxWidth: '820px' }">
+    <ng-template pTemplate="header">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-sitemap"></i>
+            <h5 class="m-0">Sous-traitants — {{ entreprise?.raisonSociale }}</h5>
+        </div>
+    </ng-template>
 
     <p-table [value]="sousTraitants" dataKey="id" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="400px" *ngIf="sousTraitants.length > 0">
         <ng-template pTemplate="header">
             <tr>
-                <th>Chantier</th>
-                <th>Sous-traitant</th>
-                <th>Rôle</th>
-                <th>Statut</th>
+                <th style="min-width: 14rem">Chantier</th>
+                <th style="min-width: 16rem">Sous-traitant</th>
+                <th style="min-width: 8rem">Rôle</th>
+                <th style="min-width: 9rem">Statut</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-affectation>
@@ -1496,7 +1510,7 @@
         </ng-template>
     </p-table>
     <p class="text-500 text-sm m-0" *ngIf="sousTraitants.length === 0">Aucun sous-traitant rattaché pour l'instant.</p>
-</div>
+</p-sidebar>
 
 <!-- Salariés (raccourci) : table complète pour SUPER_ADMIN/Client/Contrôleur — l'Entreprise
      a sa propre carte compacte (vue deux colonnes). Absente à la création (rien à lister
@@ -1535,12 +1549,12 @@
     <p-table [value]="salariesListeAffichee" dataKey="id" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="400px" *ngIf="afficherSalaries">
         <ng-template pTemplate="header">
             <tr>
-                <th>Identité</th>
-                <th>Fonction</th>
-                <th>Contrat</th>
-                <th>Statut</th>
-                <th>Accès chantier</th>
-                <th>Depuis</th>
+                <th style="min-width: 14rem">Identité</th>
+                <th style="min-width: 11rem">Fonction</th>
+                <th style="min-width: 10rem">Contrat</th>
+                <th style="min-width: 8rem">Statut</th>
+                <th style="min-width: 9rem">Accès chantier</th>
+                <th style="min-width: 8rem">Depuis</th>
                 <th style="width: 4rem"></th>
             </tr>
             <tr>
@@ -1937,9 +1951,9 @@
     <p-table [value]="messagesHistorique" dataKey="id" *ngIf="afficherMessagesHistorique" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px">
         <ng-template pTemplate="header">
             <tr>
-                <th>Date</th>
-                <th>Sujet</th>
-                <th>Statut</th>
+                <th style="min-width: 10rem">Date</th>
+                <th style="min-width: 20rem">Sujet</th>
+                <th style="min-width: 8rem">Statut</th>
                 <th style="width: 4rem"></th>
             </tr>
         </ng-template>

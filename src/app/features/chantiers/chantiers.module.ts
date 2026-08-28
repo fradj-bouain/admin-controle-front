@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { TooltipModule } from 'primeng/tooltip';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextareaModule } from 'primeng/inputtextarea';
+import { SidebarModule } from 'primeng/sidebar';
 
 import { SharedModule } from '../../shared/shared.module';
 import { ChantiersRoutingModule } from './chantiers-routing.module';
@@ -15,6 +16,6 @@ import { ChantierDetailComponent } from './chantier-detail/chantier-detail.compo
         ChantierListComponent,
         ChantierDetailComponent
     ],
-    imports: [SharedModule, ChantiersRoutingModule, FormsModule, RouterModule, TooltipModule, CheckboxModule, InputTextareaModule]
+    imports: [SharedModule, ChantiersRoutingModule, FormsModule, RouterModule, TooltipModule, CheckboxModule, InputTextareaModule, SidebarModule]
 })
 export class ChantiersModule { }

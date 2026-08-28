@@ -110,19 +110,21 @@
     </div>
     <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? chantiers).length }} résultat(s)</p>
 
-    <p-table #dt [value]="chantiers" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="id" [globalFilterFields]="['nom','nomClientCalcule','ville']">
+    <p-table #dt [value]="chantiers" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="id" [globalFilterFields]="['nom','nomClientCalcule','ville']" [expandedRowKeys]="expandedRowKeys" (onRowExpand)="onRowExpand($event)">
         <ng-template pTemplate="header">
             <tr>
-                <th>{{ 'chantier.nom' | translate }}</th>
-                <th>{{ 'chantier.client' | translate }}</th>
-                <th>{{ 'chantier.ville' | translate }}</th>
-                <th>{{ 'chantier.dateDebut' | translate }}</th>
-                <th>{{ 'chantier.dateFinPrevue' | translate }}</th>
-                <th>Prochain contrôle</th>
-                <th>{{ 'chantier.statut' | translate }}</th>
+                <th style="width: 3rem" *ngIf="isSuperAdmin"></th>
+                <th style="min-width: 16rem">{{ 'chantier.nom' | translate }}</th>
+                <th style="min-width: 14rem">{{ 'chantier.client' | translate }}</th>
+                <th style="min-width: 9rem">{{ 'chantier.ville' | translate }}</th>
+                <th style="min-width: 8rem">{{ 'chantier.dateDebut' | translate }}</th>
+                <th style="min-width: 8rem">{{ 'chantier.dateFinPrevue' | translate }}</th>
+                <th style="min-width: 10rem">Prochain contrôle</th>
+                <th style="min-width: 8rem">{{ 'chantier.statut' | translate }}</th>
                 <th style="width: 4rem"></th>
             </tr>
             <tr *ngIf="afficherFiltresAvances">
+                <th *ngIf="isSuperAdmin"></th>
                 <th><p-columnFilter type="text" field="nom" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="nomClientCalcule" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="ville" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
@@ -146,6 +148,16 @@
         </ng-template>
         <ng-template pTemplate="body" let-chantier>
             <tr class="cursor-pointer" [routerLink]="['/chantiers', chantier.id]">
+                <td *ngIf="isSuperAdmin" (click)="$event.stopPropagation()">
+                    <button
+                        type="button"
+                        pButton
+                        [pRowToggler]="chantier"
+                        class="p-button-text p-button-rounded"
+                        [icon]="expandedRowKeys[chantier.id] ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+                        pTooltip="Entreprises sur ce chantier"
+                    ></button>
+                </td>
                 <td>{{ chantier.nom }}</td>
                 <td>{{ nomClient(chantier.clientId) }}</td>
                 <td>{{ chantier.ville }}</td>
@@ -170,9 +182,51 @@
                 </td>
             </tr>
         </ng-template>
+        <!-- Entreprises sur ce chantier (SUPER_ADMIN uniquement) : rang + coordonnées de
+             contact propres à CE chantier, sans ouvrir la fiche Chantier — chargée à la
+             demande au premier dépli (voir onRowExpand), pas pour toutes les lignes d'un coup. -->
+        <ng-template pTemplate="rowexpansion" let-chantier>
+            <tr>
+                <td [attr.colspan]="isSuperAdmin ? 9 : 8" style="background: var(--surface-50);">
+                    <div class="p-3">
+                        <div class="flex align-items-center gap-2 mb-2 text-sm font-semibold uppercase text-600">
+                            <i class="pi pi-building"></i> Entreprises sur ce chantier
+                        </div>
+                        <p-skeleton height="2.5rem" *ngIf="chargementEntreprisesParChantier[chantier.id]"></p-skeleton>
+                        <p class="text-500 text-sm m-0" *ngIf="!chargementEntreprisesParChantier[chantier.id] && (entreprisesParChantier[chantier.id]?.length ?? 0) === 0">
+                            Aucune entreprise affectée à ce chantier.
+                        </p>
+                        <p-table [value]="entreprisesParChantier[chantier.id] || []" *ngIf="!chargementEntreprisesParChantier[chantier.id] && (entreprisesParChantier[chantier.id]?.length ?? 0) > 0">
+                            <ng-template pTemplate="header">
+                                <tr>
+                                    <th>Entreprise</th>
+                                    <th>Corps de métier</th>
+                                    <th>Localisation</th>
+                                    <th>Rang</th>
+                                    <th>Statut</th>
+                                    <th>Email de contact</th>
+                                    <th>Téléphone</th>
+                                </tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-affectation>
+                                <tr class="cursor-pointer" [routerLink]="['/entreprises', affectation.entrepriseId]" [queryParams]="{ chantierId: chantier.id }">
+                                    <td>{{ affectation.raisonSocialeEntreprise }}</td>
+                                    <td>{{ corpsDeMetierAffichage(affectation) }}</td>
+                                    <td>{{ localisationAffichage(affectation) }}</td>
+                                    <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
+                                    <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut | etatLabel"></p-tag></td>
+                                    <td>{{ emailAffichage(affectation) }}</td>
+                                    <td>{{ affectation.telephoneContact || '—' }}</td>
+                                </tr>
+                            </ng-template>
+                        </p-table>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="8" class="text-center text-500 py-4">Aucun chantier ne correspond à cette recherche.</td>
+                <td [attr.colspan]="isSuperAdmin ? 9 : 8" class="text-center text-500 py-4">Aucun chantier ne correspond à cette recherche.</td>
             </tr>
         </ng-template>
     </p-table>

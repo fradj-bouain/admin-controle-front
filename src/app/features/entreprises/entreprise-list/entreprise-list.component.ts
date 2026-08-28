@@ -21,6 +21,13 @@ interface RepartitionCorpsMetier {
  * qu'un objet { entreprise, affectation } imbriqué, pour que le filtre/tri natif de p-table
  * (globalFilterFields, p-columnFilter) fonctionne sans souci de chemin.
  */
+interface SousTraitantApercu {
+    entrepriseId: string;
+    raisonSociale: string;
+    role: RoleEntreprise;
+    statut: string;
+}
+
 interface LigneEntrepriseAffectation {
     // Clé unique de ligne pour p-table (dataKey) : l'id d'affectation quand il y en a une,
     // sinon l'id d'entreprise (une seule ligne "sans affectation" possible par entreprise).
@@ -37,6 +44,10 @@ interface LigneEntrepriseAffectation {
     nomChantier?: string;
     role?: RoleEntreprise;
     statutAffectation?: string;
+    // Entreprises STT1/STT2 rattachées à CETTE affectation précise (affectationParenteId
+    // pointant sur elle) — jamais renseigné pour une ligne "sans affectation" ni pour un
+    // STT2 (qui ne peut pas lui-même avoir de sous-traitant, voir règle métier).
+    sousTraitants: SousTraitantApercu[];
 }
 
 @Component({
@@ -52,6 +63,10 @@ export class EntrepriseListComponent implements OnInit {
     // colonne chantier renseignée (comportement inchangé pour ces rôles).
     affectations: AffectationEntrepriseChantier[] = [];
     lignes: LigneEntrepriseAffectation[] = [];
+    // Ligne dépliable "Sous-traitants" (voir template, pRowToggler) — déjà en mémoire via
+    // this.affectations, aucun appel réseau au dépli, contrairement au dépli chantier de
+    // ChantierListComponent (qui doit charger à la demande).
+    expandedRowKeys: Record<string, boolean> = {};
     loading = false;
     // Filtres avancés (par colonne) repliés par défaut : la recherche unique
     // couvre le besoin courant, ceux-ci restent disponibles pour un besoin
@@ -189,7 +204,15 @@ export class EntrepriseListComponent implements OnInit {
                 chantierId: a.chantierId,
                 nomChantier: a.nomChantier,
                 role: a.role,
-                statutAffectation: a.statut
+                statutAffectation: a.statut,
+                sousTraitants: this.affectations
+                    .filter((enfant) => enfant.affectationParenteId === a.id)
+                    .map((enfant) => ({
+                        entrepriseId: enfant.entrepriseId,
+                        raisonSociale: this.entreprises.find((e) => e.id === enfant.entrepriseId)?.raisonSociale ?? '—',
+                        role: enfant.role,
+                        statut: enfant.statut
+                    }))
             }));
         });
     }
@@ -203,7 +226,8 @@ export class EntrepriseListComponent implements OnInit {
             telephone: entreprise.telephone,
             ville: entreprise.ville,
             actif: entreprise.actif,
-            createdAt: entreprise.createdAt
+            createdAt: entreprise.createdAt,
+            sousTraitants: []
         };
     }
 

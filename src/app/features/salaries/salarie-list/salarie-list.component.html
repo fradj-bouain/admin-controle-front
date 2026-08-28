@@ -78,6 +78,29 @@
     </div>
 </div>
 
+<div class="card mb-3" *ngIf="!loading && repartitionTypesContrat.length > 0">
+    <div class="card-head justify-content-between">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-file"></i>
+            <h6 class="m-0">Salariés par type de contrat</h6>
+        </div>
+        <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherRepartitionTypesContrat" (click)="afficherRepartitionTypesContrat = false"></button>
+    </div>
+
+    <div *ngIf="!afficherRepartitionTypesContrat" class="flex align-items-center justify-content-between">
+        <a class="cursor-pointer text-primary" (click)="afficherRepartitionTypesContrat = true">Répartition masquée</a>
+        <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="afficherRepartitionTypesContrat = true"></button>
+    </div>
+
+    <div class="bar-chart" *ngIf="afficherRepartitionTypesContrat">
+        <div class="bar-row" *ngFor="let t of repartitionTypesContrat">
+            <span class="bar-label">{{ t.libelle }}</span>
+            <span class="bar-track"><span class="bar-fill" [style.width.%]="(t.total / maxRepartitionTypesContrat) * 100" style="background:var(--brand-accent);"></span></span>
+            <span class="bar-count">{{ t.total }}</span>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <p-toolbar styleClass="mb-4">
         <ng-template pTemplate="left">
@@ -107,17 +130,18 @@
     </div>
     <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? lignes).length }} résultat(s)</p>
 
-    <p-table #dt [value]="lignes" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="rowKey" [globalFilterFields]="['nom','prenom','nomEntrepriseCalculee','libelleFonctionCalculee','nomChantier']">
+    <p-table #dt [value]="lignes" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="rowKey" [globalFilterFields]="['nom','prenom','nomEntrepriseCalculee','libelleFonctionCalculee','libelleTypeContratCalculee','nomChantier']">
         <ng-template pTemplate="header">
             <tr>
-                <th>Nom</th>
-                <th>Prénom</th>
-                <th>Entreprise employeur</th>
-                <th>Fonction</th>
-                <th>Chantier</th>
-                <th>Statut sur ce chantier</th>
-                <th>Accès</th>
-                <th>Statut salarié</th>
+                <th style="min-width: 10rem">Nom</th>
+                <th style="min-width: 10rem">Prénom</th>
+                <th style="min-width: 15rem">Entreprise employeur</th>
+                <th style="min-width: 11rem">Fonction</th>
+                <th style="min-width: 10rem">Contrat</th>
+                <th style="min-width: 14rem">Chantier</th>
+                <th style="min-width: 11rem">Statut sur ce chantier</th>
+                <th style="min-width: 8rem">Accès</th>
+                <th style="min-width: 9rem">Statut salarié</th>
                 <th style="width: 8rem"></th>
             </tr>
             <tr *ngIf="afficherFiltresAvances">
@@ -125,6 +149,7 @@
                 <th><p-columnFilter type="text" field="prenom" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="nomEntrepriseCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="libelleFonctionCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th><p-columnFilter type="text" field="libelleTypeContratCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="nomChantier" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th></th>
                 <th></th>
@@ -154,6 +179,7 @@
                 <td>{{ ligne.prenom }}</td>
                 <td>{{ ligne.nomEntrepriseCalculee }}</td>
                 <td>{{ ligne.libelleFonctionCalculee }}</td>
+                <td>{{ ligne.libelleTypeContratCalculee }}</td>
                 <td>
                     <p-tag *ngIf="ligne.nomChantier" severity="info" [value]="ligne.nomChantier">
                         <ng-template pTemplate="icon"><i class="pi pi-map-marker mr-1"></i></ng-template>
@@ -195,7 +221,7 @@
         </ng-template>
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="9" class="text-center text-500 py-4">Aucun salarié ne correspond à cette recherche.</td>
+                <td colspan="10" class="text-center text-500 py-4">Aucun salarié ne correspond à cette recherche.</td>
             </tr>
         </ng-template>
     </p-table>

@@ -83,6 +83,9 @@ export class EntrepriseDetailComponent implements OnInit {
     // getter (voir la note sur typesAFournir plus bas — un p-table peut aussi mal réagir à un
     // tableau qui change de référence sans changer de contenu).
     sousTraitants: Array<AffectationEntrepriseChantier & { nomChantierCalculee: string }> = [];
+    // Panneau latéral (voir bouton "Sous-traitants" dans l'en-tête) — plus de carte dédiée
+    // sur la page elle-même, même mécanique que "Contrôles" sur la fiche Chantier.
+    afficherSousTraitants = false;
     roles: RoleEntreprise[] = ['PRINCIPALE', 'STT1', 'STT2'];
     affectationsChantierSelectionne: AffectationEntrepriseChantier[] = [];
     parentsDisponibles: Array<{ id: string; label: string }> = [];

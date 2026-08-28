@@ -51,6 +51,14 @@ export class ChantierService {
         return this.http.put<Chantier>(`${this.baseUrl}/${id}/salarie-responsable/${salarieId}`, {});
     }
 
+    retirerChefChantier(id: string): Observable<Chantier> {
+        return this.http.delete<Chantier>(`${this.baseUrl}/${id}/chef-chantier`);
+    }
+
+    retirerSalarieResponsable(id: string): Observable<Chantier> {
+        return this.http.delete<Chantier>(`${this.baseUrl}/${id}/salarie-responsable`);
+    }
+
     supprimer(id: string): Observable<void> {
         return this.http.delete<void>(`${this.baseUrl}/${id}`);
     }

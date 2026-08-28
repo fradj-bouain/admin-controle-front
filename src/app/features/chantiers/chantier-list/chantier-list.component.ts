@@ -8,6 +8,11 @@ import { ChantierService } from '../services/chantier.service';
 import { Client } from 'src/app/features/clients/models/client.model';
 import { ClientService } from 'src/app/features/clients/services/client.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
+import { AffectationEntrepriseChantier, Entreprise } from 'src/app/features/entreprises/models/entreprise.model';
+import { AffectationEntrepriseChantierService } from 'src/app/features/entreprises/services/affectation-entreprise-chantier.service';
+import { EntrepriseService } from 'src/app/features/entreprises/services/entreprise.service';
+import { CorpsDeMetier, Pays } from 'src/app/features/configuration/models/configuration.model';
+import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
 
 interface RepartitionClient {
     nom: string;
@@ -45,9 +50,24 @@ export class ChantierListComponent implements OnInit {
     // Repliable, repliée par défaut (même convention que ClientListComponent.afficherRepartitionVilles).
     afficherRepartitionClients = false;
 
+    // --- Ligne dépliable "Entreprises sur ce chantier" (SUPER_ADMIN uniquement, demande
+    // explicite) : rang (Principale/STT1/STT2) + coordonnées de contact propres à CE chantier,
+    // sans avoir à ouvrir la fiche Chantier pour chaque ligne. Chargée à la demande au premier
+    // dépli (voir onRowExpand), mise en cache par chantierId pour ne pas rappeler l'API à
+    // chaque repli/dépli du même chantier. ---
+    expandedRowKeys: Record<string, boolean> = {};
+    entreprises: Entreprise[] = [];
+    corpsDeMetiers: CorpsDeMetier[] = [];
+    pays: Pays[] = [];
+    entreprisesParChantier: Record<string, AffectationEntrepriseChantier[]> = {};
+    chargementEntreprisesParChantier: Record<string, boolean> = {};
+
     constructor(
         private chantierService: ChantierService,
         private clientService: ClientService,
+        private affectationEntrepriseService: AffectationEntrepriseChantierService,
+        private entrepriseService: EntrepriseService,
+        private referenceDataService: ReferenceDataService,
         private confirmation: ConfirmationService,
         private message: MessageService,
         private translate: TranslateService,
@@ -65,10 +85,65 @@ export class ChantierListComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        if (this.isSuperAdmin) {
+            // Sert à résoudre l'email de repli (voir emailAffichage), le corps de métier et
+            // la localisation (voir corpsDeMetierAffichage/localisationAffichage) quand
+            // l'affectation n'a pas de contact propre à ce chantier — inutile pour les
+            // autres rôles, qui ne voient de toute façon pas la ligne dépliable.
+            this.entrepriseService.lister().subscribe((e) => (this.entreprises = e));
+            this.referenceDataService.listerCorpsDeMetier().subscribe((c) => (this.corpsDeMetiers = c));
+            this.referenceDataService.listerPays().subscribe((p) => (this.pays = p));
+        }
         this.route.queryParamMap.subscribe((params) => {
             this.filtreClientId = params.get('clientId');
             this.charger();
         });
+    }
+
+    // Chargée à la demande, une seule fois par chantier (voir entreprisesParChantier) —
+    // reployer/déplier ensuite ne rappelle plus l'API.
+    onRowExpand(event: { data: Chantier }) {
+        const chantierId = event.data.id;
+        if (this.entreprisesParChantier[chantierId]) {
+            return;
+        }
+        this.chargementEntreprisesParChantier[chantierId] = true;
+        this.affectationEntrepriseService.lister(chantierId).subscribe({
+            next: (affectations) => {
+                this.entreprisesParChantier[chantierId] = affectations;
+                this.chargementEntreprisesParChantier[chantierId] = false;
+            },
+            error: () => (this.chargementEntreprisesParChantier[chantierId] = false)
+        });
+    }
+
+    // Email de contact propre à cette relation (entreprise, chantier) — voir modèle validé
+    // "chaque chantier peut avoir son propre contact" — sinon retombe sur l'email principal
+    // de l'entreprise (voir AffectationEntrepriseChantier.emailContact).
+    emailAffichage(a: AffectationEntrepriseChantier): string {
+        if (a.emailContact) {
+            return a.emailContact;
+        }
+        return this.entreprises.find((e) => e.id === a.entrepriseId)?.email || '—';
+    }
+
+    // Corps de métier de l'entreprise elle-même (pas de version "propre à ce chantier" —
+    // à la différence des coordonnées de contact, ce que fait l'entreprise ne change pas
+    // d'un chantier à l'autre) : donne un repère immédiat de ce qu'elle fait sur place.
+    corpsDeMetierAffichage(a: AffectationEntrepriseChantier): string {
+        const corpsDeMetierId = this.entreprises.find((e) => e.id === a.entrepriseId)?.corpsDeMetierId;
+        return this.corpsDeMetiers.find((c) => c.id === corpsDeMetierId)?.libelle ?? '—';
+    }
+
+    // Ville + pays du siège de l'entreprise — pas une adresse propre au chantier (celle-ci
+    // est dans adresseContact si renseignée, déjà visible via la fiche entreprise en un clic).
+    localisationAffichage(a: AffectationEntrepriseChantier): string {
+        const entreprise = this.entreprises.find((e) => e.id === a.entrepriseId);
+        const nomPays = this.pays.find((p) => p.id === entreprise?.paysId)?.nom;
+        if (entreprise?.ville && nomPays) {
+            return `${entreprise.ville} (${nomPays})`;
+        }
+        return entreprise?.ville || nomPays || '—';
     }
 
     charger() {

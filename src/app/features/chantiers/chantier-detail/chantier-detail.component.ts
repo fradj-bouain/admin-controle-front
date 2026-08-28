@@ -64,13 +64,7 @@ export class ChantierDetailComponent implements OnInit {
         dateFinPrevue: [null as Date | null]
     });
 
-    responsableForm = this.fb.group({
-        chefChantierUtilisateurId: [''],
-        salarieResponsableId: ['']
-    });
-
-    // --- Sections secondaires repliées par défaut ---
-    afficherStatistiques = false;
+    // --- Sections secondaires repliées par défaut (Statistiques exclue : toujours visible) ---
     afficherControles = false;
     afficherUtilisateurs = false;
     afficherEntreprises = false;
@@ -483,10 +477,6 @@ export class ChantierDetailComponent implements OnInit {
                     dateDebut: c.dateDebut ? new Date(c.dateDebut) : null,
                     dateFinPrevue: c.dateFinPrevue ? new Date(c.dateFinPrevue) : null
                 });
-                this.responsableForm.patchValue({
-                    chefChantierUtilisateurId: c.chefChantierUtilisateurId ?? '',
-                    salarieResponsableId: c.salarieResponsableId ?? ''
-                });
                 this.controlesForm.patchValue({
                     recurrenceControles: c.recurrenceControles ?? 'AUCUNE',
                     dateProchainControle: c.dateProchainControle ? new Date(c.dateProchainControle) : null
@@ -562,22 +552,53 @@ export class ChantierDetailComponent implements OnInit {
         });
     }
 
-    // --- Responsable du chantier ---
+    // --- Responsable du chantier : étoile ★ directement dans les listes Utilisateurs du
+    // Back Office / Salariés (plus de carte séparée avec ses propres menus déroulants —
+    // ils répétaient exactement les mêmes personnes que ces listes gèrent déjà, signalé
+    // comme redondant). Un clic sur l'étoile de la personne déjà désignée la retire ;
+    // sur une autre personne, la désignation se déplace. Les deux désignations (un
+    // utilisateur ET un salarié) restent indépendantes, comme avant. ---
 
-    affecterResponsable() {
-        const value = this.responsableForm.getRawValue();
-        if (value.chefChantierUtilisateurId) {
-            this.chantierService.affecterChefChantier(this.chantierId!, value.chefChantierUtilisateurId).subscribe({
-                next: (c) => { this.chantier = c; this.message.add({ severity: 'success', summary: 'Succès', detail: 'Chef de chantier affecté' }); },
-                error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
-            });
+    estResponsableUtilisateur(utilisateurId: string): boolean {
+        return this.chantier?.chefChantierUtilisateurId === utilisateurId;
+    }
+
+    toggleResponsableUtilisateur(utilisateurId: string) {
+        const obs = this.estResponsableUtilisateur(utilisateurId)
+            ? this.chantierService.retirerChefChantier(this.chantierId!)
+            : this.chantierService.affecterChefChantier(this.chantierId!, utilisateurId);
+        obs.subscribe({
+            next: (c) => (this.chantier = c),
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
+        });
+    }
+
+    estResponsableSalarie(salarieId: string): boolean {
+        return this.chantier?.salarieResponsableId === salarieId;
+    }
+
+    toggleResponsableSalarie(salarieId: string) {
+        const obs = this.estResponsableSalarie(salarieId)
+            ? this.chantierService.retirerSalarieResponsable(this.chantierId!)
+            : this.chantierService.affecterSalarieResponsable(this.chantierId!, salarieId);
+        obs.subscribe({
+            next: (c) => (this.chantier = c),
+            error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
+        });
+    }
+
+    // Remonté dans le bandeau d'en-tête (voir chantier-hero-stats) pour rester visible sans
+    // déplier Utilisateurs du Back Office ou Salariés — priorité à l'utilisateur s'il y a
+    // les deux, un compte Back Office étant le contact le plus probable pour un contrôle.
+    get nomResponsableCalcule(): string | null {
+        if (this.chantier?.chefChantierUtilisateurId) {
+            return this.nomUtilisateur(this.chantier.chefChantierUtilisateurId);
         }
-        if (value.salarieResponsableId) {
-            this.chantierService.affecterSalarieResponsable(this.chantierId!, value.salarieResponsableId).subscribe({
-                next: (c) => { this.chantier = c; this.message.add({ severity: 'success', summary: 'Succès', detail: 'Salarié responsable affecté' }); },
-                error: () => this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Action impossible' })
-            });
+        if (this.chantier?.salarieResponsableId) {
+            const s = this.salaries.find((sal) => sal.id === this.chantier!.salarieResponsableId);
+            return s ? `${s.prenom} ${s.nom}` : null;
         }
+        return null;
     }
 
     // --- Statistiques (calculées côté client à partir des affectations déjà chargées) ---
@@ -624,6 +645,14 @@ export class ChantierDetailComponent implements OnInit {
         this.controleService.lister(chantierId).subscribe((controles) => {
             this.controles = controles.map((c) => ({ ...c, controleTiersNomCalcule: this.nomControleTiers(c.controleTiersId) }));
         });
+    }
+
+    // Aperçu limité (voir carte Contrôles, colonne latérale) — même convention que les
+    // autres aperçus de cette page (7 lignes), le détail complet reste sur /controles.
+    get controlesApercu(): Array<Controle & { controleTiersNomCalcule: string }> {
+        return [...this.controles]
+            .sort((a, b) => b.dateControle.localeCompare(a.dateControle))
+            .slice(0, 7);
     }
 
     /** Statut à 3 couleurs (voir prototype v2 validé) : un contrôle non terminé dont la

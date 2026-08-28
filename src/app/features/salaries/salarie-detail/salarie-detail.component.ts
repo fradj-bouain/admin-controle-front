@@ -930,6 +930,15 @@ ${this.contexteChantierNom ? `<p>Chantier :<br /><strong>${this.contexteChantier
         return severites[action] ?? 'info';
     }
 
+    // Icône par action (voir panneau Historique, présentation "fil d'activité" plutôt que
+    // tableau brut — demande explicite : "plus clair à comprendre").
+    iconeAction(action: string): string {
+        const icones: Record<string, string> = {
+            CREATION: 'pi-upload', VALIDATION: 'pi-check-circle', REFUS: 'pi-times-circle', SUPPRESSION: 'pi-trash'
+        };
+        return icones[action] ?? 'pi-circle';
+    }
+
     detailHistorique(h: HistoriqueModification): string {
         const d = h.details || {};
         if (h.action === 'REFUS' && d['motif']) {

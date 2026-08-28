@@ -35,16 +35,19 @@
                     </div>
                 </div>
             </div>
-            <div class="chantier-hero-actions" *ngIf="isSuperAdmin">
-                <button pButton type="button" icon="pi pi-envelope" label="Nouveau message" class="p-button-text hero-btn-highlight" (click)="ouvrirComposeur()"></button>
-                <button
-                    pButton
-                    type="button"
-                    [label]="client.actif ? 'Désactiver' : 'Activer'"
-                    [icon]="client.actif ? 'pi pi-ban' : 'pi pi-check'"
-                    class="p-button-text"
-                    (click)="confirmerBasculeStatut()"
-                ></button>
+            <div class="chantier-hero-actions" *ngIf="!isEntreprise && !isClient">
+                <button pButton type="button" icon="pi pi-history" label="Historique" class="p-button-text" (click)="basculerMessagesHistorique()"></button>
+                <ng-container *ngIf="isSuperAdmin">
+                    <button pButton type="button" icon="pi pi-envelope" label="Nouveau message" class="p-button-text hero-btn-highlight" (click)="ouvrirComposeur()"></button>
+                    <button
+                        pButton
+                        type="button"
+                        [label]="client.actif ? 'Désactiver' : 'Activer'"
+                        [icon]="client.actif ? 'pi pi-ban' : 'pi pi-check'"
+                        class="p-button-text"
+                        (click)="confirmerBasculeStatut()"
+                    ></button>
+                </ng-container>
             </div>
         </div>
 
@@ -620,48 +623,44 @@
             <p class="text-500 text-sm m-0" *ngIf="chantiersApercu.length === 0">Aucun chantier pour ce client.</p>
         </div>
 
-        <!-- Historique des messages : trace des échanges avec ce client — jusqu'ici cette
-             fiche n'avait aucune intégration messagerie (ni envoi, ni historique). -->
-        <div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isNew">
-            <div class="card-head justify-content-between">
-                <div class="flex align-items-center gap-2">
-                    <i class="pi pi-envelope"></i>
-                    <h6 class="m-0">Historique des messages</h6>
-                </div>
-                <button pButton type="button" icon="pi pi-eye-slash" label="Masquer" class="p-button-text p-button-sm" *ngIf="afficherMessagesHistorique" (click)="afficherMessagesHistorique = false"></button>
-            </div>
-
-            <div *ngIf="!afficherMessagesHistorique" class="flex align-items-center justify-content-between">
-                <a class="cursor-pointer text-primary" (click)="basculerMessagesHistorique()">Voir l'historique des messages</a>
-                <button pButton type="button" label="Afficher" class="p-button-outlined" (click)="basculerMessagesHistorique()"></button>
-            </div>
-
-            <p-table [value]="messagesHistorique" dataKey="id" *ngIf="afficherMessagesHistorique" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="400px">
-                <ng-template pTemplate="header">
-                    <tr>
-                        <th>Date</th>
-                        <th>Sujet</th>
-                        <th>Statut</th>
-                        <th style="width: 4rem"></th>
-                    </tr>
-                </ng-template>
-                <ng-template pTemplate="body" let-msg>
-                    <tr>
-                        <td>{{ msg.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
-                        <td>{{ msg.sujet }}</td>
-                        <td><p-tag [severity]="msg.lu ? 'success' : 'info'" [value]="msg.lu ? 'Lu' : 'Non lu'"></p-tag></td>
-                        <td>
-                            <button pButton type="button" icon="pi pi-eye" class="p-button-text p-button-rounded" pTooltip="Ouvrir" [routerLink]="['/messages', msg.id]"></button>
-                        </td>
-                    </tr>
-                </ng-template>
-                <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="4" class="text-center text-500">Aucun message envoyé à ce client.</td></tr>
-                </ng-template>
-            </p-table>
-        </div>
     </div>
 </div>
+
+<!-- Historique des messages : trace des échanges avec ce client. Plus de carte dédiée sur
+     la page — un bouton "Historique" dans l'en-tête de la fiche ouvre ce panneau latéral
+     (même mécanique que sur les fiches Chantier/Entreprise/Salarié). -->
+<p-sidebar *ngIf="!isEntreprise && !isClient && !isNew" [(visible)]="afficherMessagesHistorique" position="right" [style]="{ width: '46vw', minWidth: '640px', maxWidth: '820px' }">
+    <ng-template pTemplate="header">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-history"></i>
+            <h5 class="m-0">Historique des messages — {{ client?.raisonSociale }}</h5>
+        </div>
+    </ng-template>
+
+    <p-table [value]="messagesHistorique" dataKey="id" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" [scrollable]="true" scrollHeight="560px">
+        <ng-template pTemplate="header">
+            <tr>
+                <th style="min-width: 10rem">Date</th>
+                <th style="min-width: 20rem">Sujet</th>
+                <th style="min-width: 8rem">Statut</th>
+                <th style="width: 4rem"></th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-msg>
+            <tr>
+                <td>{{ msg.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ msg.sujet }}</td>
+                <td><p-tag [severity]="msg.lu ? 'success' : 'info'" [value]="msg.lu ? 'Lu' : 'Non lu'"></p-tag></td>
+                <td>
+                    <button pButton type="button" icon="pi pi-eye" class="p-button-text p-button-rounded" pTooltip="Ouvrir" [routerLink]="['/messages', msg.id]"></button>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr><td colspan="4" class="text-center text-500">Aucun message envoyé à ce client.</td></tr>
+        </ng-template>
+    </p-table>
+</p-sidebar>
 
 <!-- Envoyer un message : panneau latéral (même modèle que les fiches Entreprise/Salarié). -->
 <p-sidebar
