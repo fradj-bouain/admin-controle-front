@@ -1456,13 +1456,13 @@
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-affectation>
-            <tr [class.text-500]="!!affectation.dateFin">
+            <tr class="cursor-pointer" [class.text-500]="!!affectation.dateFin" [routerLink]="['/chantiers', affectation.chantierId]">
                 <td>{{ affectation.nomChantierCalculee }}</td>
                 <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
                 <td>{{ affectation.dateDebut | date: 'dd/MM/yyyy' }}</td>
                 <td>{{ affectation.dateFin ? (affectation.dateFin | date: 'dd/MM/yyyy') : '—' }}</td>
                 <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut | etatLabel"></p-tag></td>
-                <td>
+                <td (click)="$event.stopPropagation()">
                     <button
                         pButton
                         type="button"
@@ -1501,7 +1501,7 @@
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-affectation>
-            <tr [class.text-500]="!!affectation.dateFin">
+            <tr class="cursor-pointer" [class.text-500]="!!affectation.dateFin" [routerLink]="['/entreprises', affectation.entrepriseId]" [queryParams]="{ chantierId: affectation.chantierId }">
                 <td>{{ affectation.nomChantierCalculee }}</td>
                 <td>{{ nomSousTraitant(affectation) }}</td>
                 <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
@@ -1568,7 +1568,7 @@
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-salarie>
-            <tr>
+            <tr class="cursor-pointer" [routerLink]="['/salaries', salarie.id]" [queryParams]="contexteChantierId ? { chantierId: contexteChantierId } : {}">
                 <td>{{ salarie.identiteCalculee }}</td>
                 <td>{{ libelleFonction(salarie.fonctionId) }}</td>
                 <td>{{ libelleContrat(salarie.typeContratId) }}</td>
@@ -1577,8 +1577,8 @@
                     <p-tag *ngIf="affectationParSalarieId[salarie.id] as aff; else pasDeContexte" [severity]="aff.statutAcces === 'ACCORDE' ? 'success' : (aff.statutAcces === 'REFUSE' ? 'danger' : 'warning')" [value]="aff.statutAcces | etatLabel"></p-tag>
                 </td>
                 <td>{{ affectationParSalarieId[salarie.id] ? (affectationParSalarieId[salarie.id].dateDebut | date: 'dd/MM/yyyy') : '—' }}</td>
-                <td>
-                    <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/salaries', salarie.id]"></button>
+                <td (click)="$event.stopPropagation()">
+                    <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-rounded" pTooltip="Modifier" [routerLink]="['/salaries', salarie.id]" [queryParams]="contexteChantierId ? { chantierId: contexteChantierId } : {}"></button>
                 </td>
             </tr>
         </ng-template>
@@ -1958,11 +1958,11 @@
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-msg>
-            <tr>
+            <tr class="cursor-pointer" [routerLink]="['/messages', msg.id]">
                 <td>{{ msg.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
                 <td>{{ msg.sujet }}</td>
                 <td><p-tag [severity]="msg.lu ? 'success' : 'info'" [value]="msg.lu ? 'Lu' : 'Non lu'"></p-tag></td>
-                <td>
+                <td (click)="$event.stopPropagation()">
                     <button pButton type="button" icon="pi pi-eye" class="p-button-text p-button-rounded" pTooltip="Ouvrir" [routerLink]="['/messages', msg.id]"></button>
                 </td>
             </tr>

@@ -1008,13 +1008,13 @@
                 </tr>
             </ng-template>
             <ng-template pTemplate="body" let-affectation>
-                <tr>
+                <tr class="cursor-pointer" [routerLink]="['/entreprises', affectation.entrepriseId]" [queryParams]="{ chantierId: chantierId }">
                     <td>{{ affectation.nomEntrepriseCalculee }}</td>
                     <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
                     <td>{{ affectation.nomParenteCalculee || '—' }}</td>
                     <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut | etatLabel"></p-tag></td>
                     <td class="text-center">{{ entrepriseStatSalaries(affectation.id) }}</td>
-                    <td class="white-space-nowrap">
+                    <td class="white-space-nowrap" (click)="$event.stopPropagation()">
                         <button pButton type="button" icon="pi pi-id-card" class="p-button-text p-button-rounded" *ngIf="isSuperAdmin" pTooltip="Coordonnées de contact pour ce chantier" (click)="ouvrirCoordonneesContact(affectation)"></button>
                         <button pButton type="button" icon="pi pi-ban" class="p-button-text p-button-rounded" *ngIf="affectation.statut === 'ACTIF' && (isSuperAdmin || isEntreprise)" (click)="desactiverAffectationEntreprise(affectation)"></button>
                     </td>
@@ -1121,14 +1121,14 @@
                 </tr>
             </ng-template>
             <ng-template pTemplate="body" let-affectation>
-                <tr>
+                <tr class="cursor-pointer" [routerLink]="['/salaries', affectation.salarieId]" [queryParams]="{ chantierId: chantierId }">
                     <td>{{ affectation.nomSalarieCalculee }}</td>
                     <td>{{ affectation.nomEntrepriseCalculee }}</td>
                     <td>
                         <p-tag [severity]="affectation.statutAcces === 'ACCORDE' ? 'success' : (affectation.statutAcces === 'REFUSE' ? 'danger' : 'warning')" [value]="affectation.statutAcces"></p-tag>
                     </td>
                     <td>{{ affectation.contratCalculee }}</td>
-                    <td>
+                    <td (click)="$event.stopPropagation()">
                         <div class="flex align-items-center gap-1 flex-nowrap">
                             <button
                                 pButton

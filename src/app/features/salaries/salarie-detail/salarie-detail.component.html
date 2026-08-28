@@ -800,7 +800,7 @@
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-affectation>
-            <tr [class.text-500]="!!affectation.dateFin">
+            <tr class="cursor-pointer" [class.text-500]="!!affectation.dateFin" [routerLink]="['/chantiers', affectation.chantierId]">
                 <td>{{ affectation.nomChantierCalculee }}</td>
                 <td>{{ affectation.entrepriseId ? nomEntreprise(affectation.entrepriseId) : '—' }}</td>
                 <td>{{ affectation.dateDebut | date: 'dd/MM/yyyy' }}</td>
@@ -812,7 +812,7 @@
                         [value]="affectation.statutAcces"
                     ></p-tag>
                 </td>
-                <td>
+                <td (click)="$event.stopPropagation()">
                     <div class="flex align-items-center gap-1 flex-nowrap" *ngIf="!affectation.dateFin">
                         <button pButton type="button" icon="pi pi-check" class="p-button-text p-button-rounded p-button-success" *ngIf="affectation.statutAcces !== 'ACCORDE' && isSuperAdmin" (click)="accorderAcces(affectation)"></button>
                         <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" *ngIf="affectation.statutAcces !== 'REFUSE' && isSuperAdmin" (click)="refuserAcces(affectation)"></button>
@@ -1121,11 +1121,11 @@
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-msg>
-            <tr>
+            <tr class="cursor-pointer" [routerLink]="['/messages', msg.id]">
                 <td>{{ msg.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
                 <td>{{ msg.sujet }}</td>
                 <td><p-tag [severity]="msg.lu ? 'success' : 'info'" [value]="msg.lu ? 'Lu' : 'Non lu'"></p-tag></td>
-                <td>
+                <td (click)="$event.stopPropagation()">
                     <button pButton type="button" icon="pi pi-eye" class="p-button-text p-button-rounded" pTooltip="Ouvrir" [routerLink]="['/messages', msg.id]"></button>
                 </td>
             </tr>
