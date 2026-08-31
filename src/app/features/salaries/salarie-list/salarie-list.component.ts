@@ -6,7 +6,7 @@ import { SalarieService } from '../services/salarie.service';
 import { AffectationSalarieChantierService } from '../services/affectation-salarie-chantier.service';
 import { Entreprise } from 'src/app/features/entreprises/models/entreprise.model';
 import { EntrepriseService } from 'src/app/features/entreprises/services/entreprise.service';
-import { SalarieFonction, TypeContratSalarie } from 'src/app/features/configuration/models/configuration.model';
+import { Pays, SalarieFonction, TypeContratSalarie } from 'src/app/features/configuration/models/configuration.model';
 import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
 
@@ -36,6 +36,7 @@ interface LigneSalarieAffectation {
     nomEntrepriseCalculee: string;
     libelleFonctionCalculee: string;
     libelleTypeContratCalculee: string;
+    nationaliteCalculee: string;
     statut: StatutSalarie;
     createdAt: string;
     affectationId?: string;
@@ -55,10 +56,11 @@ export class SalarieListComponent implements OnInit {
 
     // nomEntrepriseCalculee/libelleFonctionCalculee ajoutées au chargement, pour permettre
     // un p-columnFilter texte simple (les champs bruts n'ont que des ids).
-    salaries: Array<Salarie & { nomEntrepriseCalculee: string; libelleFonctionCalculee: string; libelleTypeContratCalculee: string }> = [];
+    salaries: Array<Salarie & { nomEntrepriseCalculee: string; libelleFonctionCalculee: string; libelleTypeContratCalculee: string; nationaliteCalculee: string }> = [];
     entreprises: Entreprise[] = [];
     fonctions: SalarieFonction[] = [];
     typesContrat: TypeContratSalarie[] = [];
+    pays: Pays[] = [];
     // Réservé SUPER_ADMIN (voir GET /salaries/affectations) — reste vide pour les autres
     // rôles, auquel cas lignes() retombe naturellement sur une ligne par salarié, sans
     // colonne chantier renseignée (comportement inchangé pour ces rôles).
@@ -131,17 +133,20 @@ export class SalarieListComponent implements OnInit {
             salaries: this.salarieService.lister(),
             entreprises: this.entrepriseService.lister(),
             fonctions: this.referenceDataService.listerSalarieFonction(),
-            typesContrat: this.referenceDataService.listerTypeContratSalarie()
+            typesContrat: this.referenceDataService.listerTypeContratSalarie(),
+            pays: this.referenceDataService.listerPays()
         }).subscribe({
-            next: ({ salaries, entreprises, fonctions, typesContrat }) => {
+            next: ({ salaries, entreprises, fonctions, typesContrat, pays }) => {
                 this.entreprises = entreprises;
                 this.fonctions = fonctions;
                 this.typesContrat = typesContrat;
+                this.pays = pays;
                 this.salaries = salaries.map((s) => ({
                     ...s,
                     nomEntrepriseCalculee: this.nomEntreprise(s.entrepriseEmployeurId),
                     libelleFonctionCalculee: this.nomFonction(s.fonctionId),
-                    libelleTypeContratCalculee: this.nomTypeContrat(s.typeContratId)
+                    libelleTypeContratCalculee: this.nomTypeContrat(s.typeContratId),
+                    nationaliteCalculee: this.nomPays(s.nationalitePaysId)
                 }));
                 this.calculerIndicateurs(salaries, fonctions, typesContrat);
                 this.recalculerLignes();
@@ -225,6 +230,7 @@ export class SalarieListComponent implements OnInit {
                 nomEntrepriseCalculee: salarie.nomEntrepriseCalculee,
                 libelleFonctionCalculee: salarie.libelleFonctionCalculee,
                 libelleTypeContratCalculee: salarie.libelleTypeContratCalculee,
+                nationaliteCalculee: salarie.nationaliteCalculee,
                 statut: salarie.statut,
                 createdAt: salarie.createdAt,
                 affectationId: a.id,
@@ -237,7 +243,7 @@ export class SalarieListComponent implements OnInit {
         });
     }
 
-    private ligneSansAffectation(salarie: Salarie & { nomEntrepriseCalculee: string; libelleFonctionCalculee: string; libelleTypeContratCalculee: string }): LigneSalarieAffectation {
+    private ligneSansAffectation(salarie: Salarie & { nomEntrepriseCalculee: string; libelleFonctionCalculee: string; libelleTypeContratCalculee: string; nationaliteCalculee: string }): LigneSalarieAffectation {
         return {
             rowKey: salarie.id,
             salarieId: salarie.id,
@@ -246,6 +252,7 @@ export class SalarieListComponent implements OnInit {
             nomEntrepriseCalculee: salarie.nomEntrepriseCalculee,
             libelleFonctionCalculee: salarie.libelleFonctionCalculee,
             libelleTypeContratCalculee: salarie.libelleTypeContratCalculee,
+            nationaliteCalculee: salarie.nationaliteCalculee,
             statut: salarie.statut,
             createdAt: salarie.createdAt,
             salarie
@@ -290,6 +297,10 @@ export class SalarieListComponent implements OnInit {
 
     nomTypeContrat(typeContratId?: string): string {
         return this.typesContrat.find((t) => t.id === typeContratId)?.libelle ?? '—';
+    }
+
+    nomPays(paysId?: string): string {
+        return this.pays.find((p) => p.id === paysId)?.nom ?? '—';
     }
 
     confirmerBasculeStatut(ligne: LigneSalarieAffectation) {
