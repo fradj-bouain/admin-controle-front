@@ -98,7 +98,7 @@
             <input
                 type="text"
                 pInputText
-                placeholder="Rechercher (nom, SIRET, chantier...)"
+                placeholder="Rechercher (nom, pays, chantier...)"
                 class="w-full"
                 (input)="dt.filterGlobal($any($event.target).value, 'contains')"
             />
@@ -107,11 +107,11 @@
     </div>
     <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? lignes).length }} résultat(s)</p>
 
-    <p-table #dt [value]="lignes" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="rowKey" [globalFilterFields]="['raisonSociale','siret','telephone','ville','nomChantier','role']" [expandedRowKeys]="expandedRowKeys">
+    <p-table #dt [value]="lignes" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="rowKey" [globalFilterFields]="['raisonSociale','paysCalculee','telephone','ville','nomChantier','role']" [expandedRowKeys]="expandedRowKeys">
         <ng-template pTemplate="header">
             <tr>
                 <th style="min-width: 16rem">Raison sociale</th>
-                <th style="min-width: 10rem">SIRET</th>
+                <th style="min-width: 10rem">Pays</th>
                 <th style="min-width: 9rem">Téléphone</th>
                 <th style="min-width: 14rem">Chantier</th>
                 <th style="min-width: 8rem">Rôle</th>
@@ -122,7 +122,7 @@
             </tr>
             <tr *ngIf="afficherFiltresAvances">
                 <th><p-columnFilter type="text" field="raisonSociale" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                <th><p-columnFilter type="text" field="siret" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th><p-columnFilter type="text" field="paysCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="telephone" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th><p-columnFilter type="text" field="nomChantier" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
                 <th></th>
@@ -151,7 +151,7 @@
                         {{ ligne.raisonSociale }}
                     </div>
                 </td>
-                <td>{{ ligne.siret }}</td>
+                <td>{{ ligne.paysCalculee }}</td>
                 <td>{{ ligne.telephone }}</td>
                 <td>
                     <p-tag *ngIf="ligne.nomChantier" severity="info" [value]="ligne.nomChantier">

@@ -6,6 +6,7 @@ import { EntrepriseService } from '../services/entreprise.service';
 import { AffectationEntrepriseChantierService } from '../services/affectation-entreprise-chantier.service';
 import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
+import { Pays } from 'src/app/features/configuration/models/configuration.model';
 
 interface RepartitionCorpsMetier {
     libelle: string;
@@ -34,7 +35,7 @@ interface LigneEntrepriseAffectation {
     rowKey: string;
     entrepriseId: string;
     raisonSociale: string;
-    siret?: string;
+    paysCalculee: string;
     telephone?: string;
     ville?: string;
     actif: boolean;
@@ -58,6 +59,7 @@ interface LigneEntrepriseAffectation {
 export class EntrepriseListComponent implements OnInit {
 
     entreprises: Entreprise[] = [];
+    pays: Pays[] = [];
     // Réservé SUPER_ADMIN (voir GET /entreprises/affectations) — reste vide pour les autres
     // rôles, auquel cas lignes() retombe naturellement sur une ligne par entreprise, sans
     // colonne chantier renseignée (comportement inchangé pour ces rôles).
@@ -102,6 +104,10 @@ export class EntrepriseListComponent implements OnInit {
         return Math.max(1, ...this.repartitionCorpsMetier.map((c) => c.total));
     }
 
+    nomPays(paysId?: string): string {
+        return this.pays.find((p) => p.id === paysId)?.nom ?? '—';
+    }
+
     initiales(raisonSociale: string): string {
         const mots = raisonSociale.trim().split(/\s+/).filter((m) => m.length > 0);
         if (mots.length === 0) {
@@ -124,10 +130,12 @@ export class EntrepriseListComponent implements OnInit {
         this.loading = true;
         forkJoin({
             entreprises: this.entrepriseService.lister(),
-            corpsDeMetiers: this.referenceDataService.listerCorpsDeMetier()
+            corpsDeMetiers: this.referenceDataService.listerCorpsDeMetier(),
+            pays: this.referenceDataService.listerPays()
         }).subscribe({
-            next: ({ entreprises, corpsDeMetiers }) => {
+            next: ({ entreprises, corpsDeMetiers, pays }) => {
                 this.entreprises = entreprises;
+                this.pays = pays;
                 this.calculerIndicateurs(entreprises, corpsDeMetiers);
                 this.recalculerLignes();
                 this.loading = false;
@@ -195,7 +203,7 @@ export class EntrepriseListComponent implements OnInit {
                 rowKey: a.id,
                 entrepriseId: entreprise.id,
                 raisonSociale: entreprise.raisonSociale,
-                siret: entreprise.siret,
+                paysCalculee: this.nomPays(entreprise.paysId),
                 telephone: entreprise.telephone,
                 ville: entreprise.ville,
                 actif: entreprise.actif,
@@ -222,7 +230,7 @@ export class EntrepriseListComponent implements OnInit {
             rowKey: entreprise.id,
             entrepriseId: entreprise.id,
             raisonSociale: entreprise.raisonSociale,
-            siret: entreprise.siret,
+            paysCalculee: this.nomPays(entreprise.paysId),
             telephone: entreprise.telephone,
             ville: entreprise.ville,
             actif: entreprise.actif,
