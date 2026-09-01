@@ -1299,7 +1299,7 @@
         </form>
     </div>
 
-    <div class="col-12 lg:col-4" *ngIf="(isNew && !loading) || (isSuperAdmin && contexteChantierId && !isNew)">
+    <div class="col-12 lg:col-4" *ngIf="(isNew && !loading) || (isSuperAdmin && !isNew)">
         <ng-container *ngIf="isNew && !loading">
             <p class="text-500 text-xs font-bold uppercase mb-2" style="letter-spacing:.05em;">Aperçu de la fiche</p>
             <div class="id-card mb-3">
@@ -1337,6 +1337,57 @@
                 </ul>
             </div>
         </ng-container>
+
+        <!-- Statistiques : même bloc, même principe que sur la fiche Chantier (juste à côté
+             du formulaire principal, demande client) — mélange tous les chantiers/salariés
+             de cette entreprise, rien de plus à charger (déjà en mémoire). -->
+        <div class="card mb-3" *ngIf="isSuperAdmin && !isNew">
+            <div class="card-head">
+                <i class="pi pi-chart-bar"></i>
+                <h6 class="m-0">Statistiques</h6>
+            </div>
+
+            <div class="mb-4">
+                <div class="flex align-items-center gap-2 mb-3">
+                    <i class="pi pi-users text-600 text-sm"></i>
+                    <span class="text-600 font-semibold text-sm uppercase" style="letter-spacing:.04em">Salariés</span>
+                </div>
+                <div class="grid">
+                    <div class="col-6 xl:col-4">
+                        <app-stat-tile [compact]="true" icon="users" label="Total" [value]="statsSalariesEntreprise.total" color="blue"></app-stat-tile>
+                    </div>
+                    <div class="col-6 xl:col-4">
+                        <app-stat-tile [compact]="true" icon="check-circle" label="Actifs" [value]="statsSalariesEntreprise.actif" color="green"></app-stat-tile>
+                    </div>
+                    <div class="col-6 xl:col-4">
+                        <app-stat-tile [compact]="true" icon="ban" label="Inactifs" [value]="statsSalariesEntreprise.inactif" color="red"></app-stat-tile>
+                    </div>
+                    <div class="col-6 xl:col-4" *ngFor="let s of statsSalariesEntrepriseParContrat">
+                        <app-stat-tile [compact]="true" icon="file" [label]="s.libelle" [value]="s.total" color="purple"></app-stat-tile>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="flex align-items-center gap-2 mb-3">
+                    <i class="pi pi-map-marker text-600 text-sm"></i>
+                    <span class="text-600 font-semibold text-sm uppercase" style="letter-spacing:.04em">Chantiers</span>
+                </div>
+                <div class="grid">
+                    <div class="col-6 xl:col-4">
+                        <app-stat-tile [compact]="true" icon="map-marker" label="Total" [value]="statsChantiersEntreprise.total" color="blue"></app-stat-tile>
+                    </div>
+                    <div class="col-6 xl:col-4">
+                        <app-stat-tile [compact]="true" icon="check-circle" label="Actifs" [value]="statsChantiersEntreprise.actif" color="green"></app-stat-tile>
+                    </div>
+                    <div class="col-6 xl:col-4">
+                        <app-stat-tile [compact]="true" icon="ban" label="Inactifs" [value]="statsChantiersEntreprise.inactif" color="red"></app-stat-tile>
+                    </div>
+                    <div class="col-6 xl:col-4" *ngFor="let s of statsChantiersEntrepriseParRole">
+                        <app-stat-tile [compact]="true" icon="sitemap" [label]="s.libelle" [value]="s.total" color="yellow"></app-stat-tile>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Contexte chantier : visible seulement quand on arrive sur cette fiche depuis une
              ligne précise de la liste fusionnée (?chantierId=... dans l'URL, voir

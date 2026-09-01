@@ -475,6 +475,39 @@ export class EntrepriseDetailComponent implements OnInit {
         return this.typesContrat.find((t) => t.id === id)?.libelle ?? '—';
     }
 
+    // --- Statistiques (même bloc que la fiche Chantier, demande client — calculées côté
+    // client à partir des données déjà chargées : salaries/mesAffectations/sousTraitants). ---
+
+    get statsSalariesEntreprise(): { total: number; actif: number; inactif: number } {
+        return {
+            total: this.salaries.length,
+            actif: this.salaries.filter((s) => s.statut === 'ACTIF').length,
+            inactif: this.salaries.filter((s) => s.statut !== 'ACTIF').length
+        };
+    }
+
+    get statsSalariesEntrepriseParContrat(): Array<{ libelle: string; total: number }> {
+        return this.typesContrat.map((t) => ({
+            libelle: t.libelle,
+            total: this.salaries.filter((s) => s.typeContratId === t.id).length
+        })).filter((s) => s.total > 0);
+    }
+
+    get statsChantiersEntreprise(): { total: number; actif: number; inactif: number } {
+        return {
+            total: this.mesAffectations.length,
+            actif: this.mesAffectations.filter((a) => a.statut === 'ACTIF').length,
+            inactif: this.mesAffectations.filter((a) => a.statut !== 'ACTIF').length
+        };
+    }
+
+    get statsChantiersEntrepriseParRole(): Array<{ libelle: string; total: number }> {
+        return this.roles.map((role) => ({
+            libelle: role,
+            total: this.mesAffectations.filter((a) => a.role === role).length
+        })).filter((s) => s.total > 0);
+    }
+
     libelleFonction(id?: string): string {
         return this.fonctions.find((f) => f.id === id)?.libelle ?? '—';
     }

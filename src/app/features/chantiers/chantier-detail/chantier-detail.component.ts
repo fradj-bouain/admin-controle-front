@@ -8,7 +8,7 @@ import { ChantierService } from '../services/chantier.service';
 import { ChantierUtilisateurService } from '../services/chantier-utilisateur.service';
 import { Client } from 'src/app/features/clients/models/client.model';
 import { ClientService } from 'src/app/features/clients/services/client.service';
-import { Pays, Utilisateur, ControleTiers, TypeContratSalarie } from 'src/app/features/configuration/models/configuration.model';
+import { CorpsDeMetier, Pays, Utilisateur, ControleTiers, TypeContratSalarie } from 'src/app/features/configuration/models/configuration.model';
 import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
 import { UtilisateurService } from 'src/app/features/configuration/services/utilisateur.service';
 import { Salarie, AffectationSalarieChantier } from 'src/app/features/salaries/models/salarie.model';
@@ -42,6 +42,7 @@ export class ChantierDetailComponent implements OnInit {
 
     clients: Client[] = [];
     pays: Pays[] = [];
+    corpsDeMetiers: CorpsDeMetier[] = [];
     utilisateurs: Utilisateur[] = [];
     salaries: Salarie[] = [];
     entreprises: Entreprise[] = [];
@@ -113,6 +114,22 @@ export class ChantierDetailComponent implements OnInit {
         entrepriseId: ['', Validators.required],
         role: ['PRINCIPALE' as RoleEntreprise, Validators.required],
         affectationParenteId: ['']
+    });
+
+    // Créer une entreprise inconnue directement depuis cette page (demande client : ne
+    // pas devoir quitter la fiche Chantier pour créer puis revenir affecter) — seule
+    // raisonSociale est requise côté backend (voir CreateEntrepriseRequest), les autres
+    // champs ici sont ceux qui comptent le plus tôt possible (corps de métier = documents
+    // obligatoires demandés ensuite). Une fois créée, sélectionnée automatiquement dans
+    // affecterEntrepriseForm.entrepriseId — il ne reste plus qu'à choisir le rôle et
+    // cliquer "Affecter", déjà juste en dessous.
+    dialogCreationEntrepriseVisible = false;
+    creationEntrepriseEnCours = false;
+    nouvelleEntrepriseForm = this.fb.group({
+        raisonSociale: ['', Validators.required],
+        corpsDeMetierId: [''],
+        ville: [''],
+        paysId: ['']
     });
 
     // --- Coordonnées de contact par affectation (email/téléphone/adresse propres à CE
@@ -427,6 +444,7 @@ export class ChantierDetailComponent implements OnInit {
     ngOnInit(): void {
         this.clientService.lister().subscribe((clients) => (this.clients = clients));
         this.referenceDataService.listerPays().subscribe((pays) => (this.pays = pays));
+        this.referenceDataService.listerCorpsDeMetier().subscribe((c) => (this.corpsDeMetiers = c));
         this.referenceDataService.listerTypeContratSalarie().subscribe((types) => (this.typesContrat = types));
         this.referenceDataService.listerControleTiers().subscribe((tiers) => (this.controleTiersListe = tiers));
         this.utilisateurService.lister().subscribe((utilisateurs) => {
@@ -818,6 +836,39 @@ export class ChantierDetailComponent implements OnInit {
             error: (err) => this.message.add({
                 severity: 'error', summary: 'Erreur', detail: err?.error?.message ?? 'Affectation impossible'
             })
+        });
+    }
+
+    ouvrirCreationEntreprise() {
+        this.nouvelleEntrepriseForm.reset();
+        this.dialogCreationEntrepriseVisible = true;
+    }
+
+    submitNouvelleEntreprise() {
+        if (this.nouvelleEntrepriseForm.invalid) {
+            this.nouvelleEntrepriseForm.markAllAsTouched();
+            return;
+        }
+        const value = this.nouvelleEntrepriseForm.getRawValue();
+        this.creationEntrepriseEnCours = true;
+        this.entrepriseService.creer({
+            raisonSociale: value.raisonSociale!,
+            corpsDeMetierId: value.corpsDeMetierId || undefined,
+            ville: value.ville || undefined,
+            paysId: value.paysId || undefined
+        }).subscribe({
+            next: (entreprise) => {
+                this.creationEntrepriseEnCours = false;
+                this.dialogCreationEntrepriseVisible = false;
+                this.entreprises = [...this.entreprises, entreprise];
+                this.recalculerEntreprisesDisponibles();
+                this.affecterEntrepriseForm.patchValue({ entrepriseId: entreprise.id });
+                this.message.add({ severity: 'success', summary: 'Succès', detail: `Entreprise "${entreprise.raisonSociale}" créée — choisissez son rôle puis affectez-la.` });
+            },
+            error: () => {
+                this.creationEntrepriseEnCours = false;
+                this.message.add({ severity: 'error', summary: 'Erreur', detail: 'Création impossible' });
+            }
         });
     }
 

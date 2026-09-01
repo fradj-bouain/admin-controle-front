@@ -956,7 +956,10 @@
         <form [formGroup]="affecterEntrepriseForm" (ngSubmit)="submitAffecterEntreprise()" class="formgrid grid align-items-end p-3 border-round mb-3" style="background:var(--brand-accent-tint);" *ngIf="isSuperAdmin || isEntreprise">
             <div class="field col-12 md:col-4">
                 <label for="entrepriseId">Entreprise *</label>
-                <p-dropdown id="entrepriseId" [options]="entreprisesDisponibles" formControlName="entrepriseId" optionLabel="raisonSociale" optionValue="id" [filter]="true" filterBy="raisonSociale" placeholder="-- Choisir --" styleClass="w-full" [class.ng-dirty]="affecterEntrepriseForm.controls.entrepriseId.touched"></p-dropdown>
+                <div class="flex align-items-start gap-2">
+                    <p-dropdown id="entrepriseId" [options]="entreprisesDisponibles" formControlName="entrepriseId" optionLabel="raisonSociale" optionValue="id" [filter]="true" filterBy="raisonSociale" placeholder="-- Choisir --" styleClass="w-full" [class.ng-dirty]="affecterEntrepriseForm.controls.entrepriseId.touched"></p-dropdown>
+                    <button *ngIf="isSuperAdmin" pButton type="button" icon="pi pi-plus" class="p-button-outlined flex-shrink-0" pTooltip="Créer une nouvelle entreprise" tooltipPosition="top" (click)="ouvrirCreationEntreprise()"></button>
+                </div>
                 <small class="p-error" *ngIf="affecterEntrepriseForm.controls.entrepriseId.invalid && affecterEntrepriseForm.controls.entrepriseId.touched">Ce champ est requis.</small>
             </div>
             <div class="field col-12 md:col-3">
@@ -1057,6 +1060,40 @@
             <div class="flex justify-content-end gap-2 mt-4">
                 <button pButton type="button" label="Annuler" class="p-button-text" (click)="dialogCoordonneesVisible = false"></button>
                 <button pButton type="submit" label="Enregistrer" icon="pi pi-check" [loading]="enregistrementCoordonneesEnCours"></button>
+            </div>
+        </form>
+    </p-dialog>
+
+    <!-- Créer une entreprise directement depuis le chantier (voir ouvrirCreationEntreprise) :
+         seul le nom est requis, le reste peut être complété plus tard depuis sa propre
+         fiche — l'objectif ici est juste de ne pas quitter la page pour l'affecter tout
+         de suite (demande client). -->
+    <p-dialog header="Nouvelle entreprise" [(visible)]="dialogCreationEntrepriseVisible" [modal]="true" [style]="{ width: '480px' }">
+        <form [formGroup]="nouvelleEntrepriseForm" (ngSubmit)="submitNouvelleEntreprise()" class="p-fluid">
+            <div class="field">
+                <label for="nvERaisonSociale">Nom de l'entreprise *</label>
+                <input id="nvERaisonSociale" type="text" pInputText formControlName="raisonSociale" [class.ng-dirty]="nouvelleEntrepriseForm.controls.raisonSociale.touched" />
+                <small class="p-error" *ngIf="nouvelleEntrepriseForm.controls.raisonSociale.invalid && nouvelleEntrepriseForm.controls.raisonSociale.touched">Ce champ est requis.</small>
+            </div>
+            <div class="field">
+                <label for="nvECorpsDeMetier">Corps de métier</label>
+                <p-dropdown id="nvECorpsDeMetier" [options]="corpsDeMetiers" formControlName="corpsDeMetierId" optionLabel="libelle" optionValue="id" [filter]="true" filterBy="libelle" placeholder="-- Sélectionner --" styleClass="w-full"></p-dropdown>
+                <small class="text-500">Détermine les documents obligatoires qui lui seront demandés.</small>
+            </div>
+            <div class="formgrid grid">
+                <div class="field col-12 md:col-6">
+                    <label for="nvEVille">Ville</label>
+                    <input id="nvEVille" type="text" pInputText formControlName="ville" />
+                </div>
+                <div class="field col-12 md:col-6">
+                    <label for="nvEPaysId">Pays</label>
+                    <p-dropdown id="nvEPaysId" [options]="pays" formControlName="paysId" optionLabel="nom" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Sélectionner --" styleClass="w-full"></p-dropdown>
+                </div>
+            </div>
+            <p class="text-500 text-sm">Les autres informations (coordonnées, documents légaux...) pourront être complétées ensuite depuis sa fiche.</p>
+            <div class="flex justify-content-end gap-2 mt-4">
+                <button pButton type="button" label="Annuler" class="p-button-text" (click)="dialogCreationEntrepriseVisible = false"></button>
+                <button pButton type="submit" label="Créer" icon="pi pi-check" [loading]="creationEntrepriseEnCours"></button>
             </div>
         </form>
     </p-dialog>
