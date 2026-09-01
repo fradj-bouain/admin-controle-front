@@ -18,8 +18,9 @@
             <small class="p-error" *ngIf="form.controls.nom.invalid && form.controls.nom.touched">Ce champ est requis.</small>
         </div>
         <div class="field">
-            <label for="zone">Zone</label>
-            <input id="zone" type="text" pInputText formControlName="zone" class="w-full" placeholder="France / Europe / Europe de l'Est" />
+            <label for="zone">Zone *</label>
+            <p-dropdown id="zone" [options]="zones" formControlName="zone" optionLabel="label" optionValue="value" placeholder="-- Sélectionner --" styleClass="w-full" [class.ng-dirty]="form.controls.zone.touched"></p-dropdown>
+            <small class="p-error" *ngIf="form.controls.zone.invalid && form.controls.zone.touched">Ce champ est requis.</small>
         </div>
     </form>
 

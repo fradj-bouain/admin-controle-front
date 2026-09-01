@@ -121,8 +121,11 @@
             </div>
         </div>
 
+        <!-- Stats cliquables (raccourcis vers les blocs correspondants plus bas sur la
+             fiche, demande client) — même principe que le bandeau de la vue Entreprise
+             (.ent-stat), qui a aussi une 4e stat "Sous-traitants" désormais reprise ici. -->
         <div class="chantier-hero-stats">
-            <div class="chantier-hstat">
+            <button type="button" class="chantier-hstat clickable" (click)="scrollVersSection('admin-documents')">
                 <span class="chantier-hstat-ring">
                     <svg viewBox="0 0 36 36">
                         <circle class="chantier-hstat-ring-track" cx="18" cy="18" r="15.5"></circle>
@@ -137,21 +140,28 @@
                     <span class="chantier-hstat-value tabular-nums">{{ nbObligatoiresFournis }}<small>/{{ nbObligatoiresTotal }}</small></span>
                     <span class="chantier-hstat-label">Documents obligatoires conformes</span>
                 </span>
-            </div>
-            <div class="chantier-hstat">
+            </button>
+            <button type="button" class="chantier-hstat clickable" (click)="scrollVersSection('admin-chantiers')">
                 <span class="chantier-hstat-icon blue"><i class="pi pi-map-marker"></i></span>
                 <span class="chantier-hstat-body">
                     <span class="chantier-hstat-value tabular-nums">{{ nbAffectationsActives }}</span>
                     <span class="chantier-hstat-label">Chantiers actifs</span>
                 </span>
-            </div>
-            <div class="chantier-hstat">
+            </button>
+            <button type="button" class="chantier-hstat clickable" [routerLink]="['/salaries']">
                 <span class="chantier-hstat-icon"><i class="pi pi-users"></i></span>
                 <span class="chantier-hstat-body">
                     <span class="chantier-hstat-value tabular-nums">{{ salaries.length }}</span>
                     <span class="chantier-hstat-label">Salariés</span>
                 </span>
-            </div>
+            </button>
+            <button type="button" class="chantier-hstat clickable" (click)="afficherSousTraitants = true">
+                <span class="chantier-hstat-icon warn"><i class="pi pi-sitemap"></i></span>
+                <span class="chantier-hstat-body">
+                    <span class="chantier-hstat-value tabular-nums">{{ sousTraitants.length }}</span>
+                    <span class="chantier-hstat-label">Sous-traitant(s)</span>
+                </span>
+            </button>
         </div>
     </div>
 </div>
@@ -1362,16 +1372,14 @@
     </div>
 </div>
 
-<!-- Affectation à un chantier : gestion (ajout/retrait) réservée au SUPER_ADMIN — le client
-     décide qui intervient sur son chantier. Masquée pour l'Entreprise (sa propre carte
-     compacte, vue deux colonnes plus bas) et absente à la création (rien à affecter tant
-     que l'entreprise n'existe pas), plutôt que montrée grisée — voir prototype validé.
-     Également masquée pour le SUPER_ADMIN désormais : la liste fusionnée Entreprises
-     (une ligne par affectation) sert déjà à voir/choisir le bon chantier, et affecter une
-     entreprise à un nouveau chantier se fait depuis la fiche Chantier elle-même
-     (affecterEntrepriseForm) — cette carte devenait une simple redite. Reste visible pour
-     le Contrôleur, qui n'a pas d'équivalent ailleurs. -->
-<div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isSuperAdmin && !isNew">
+<!-- Affectation à un chantier + rang + lien d'appartenance (nom du chantier, PRINCIPALE/
+     STT1/STT2, rattachée à) : gestion (ajout/retrait) réservée au SUPER_ADMIN, lecture
+     seule pour le Contrôleur — masquée pour l'Entreprise (sa propre carte compacte, vue
+     deux colonnes plus bas). Absente à la création (voir la carte "isNew" juste après,
+     qui met en attente les affectations tant que l'entreprise n'a pas d'id) — demande
+     client : ces informations doivent rester consultables/gérables depuis la fiche
+     entreprise elle-même, pas seulement depuis la fiche Chantier. -->
+<div class="card mb-3" id="admin-chantiers" *ngIf="!isEntreprise && !isClient && !isNew">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-map-marker"></i>
@@ -1435,6 +1443,7 @@
             <tr>
                 <th>Chantier</th>
                 <th>Rôle</th>
+                <th>Rattachée à</th>
                 <th>Date début</th>
                 <th>Date fin</th>
                 <th>Statut</th>
@@ -1442,6 +1451,7 @@
             </tr>
             <tr>
                 <th><p-columnFilter type="text" field="nomChantierCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
+                <th></th>
                 <th></th>
                 <th></th>
                 <th></th>
@@ -1459,6 +1469,7 @@
             <tr class="cursor-pointer" [class.text-500]="!!affectation.dateFin" [routerLink]="['/chantiers', affectation.chantierId]">
                 <td>{{ affectation.nomChantierCalculee }}</td>
                 <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
+                <td>{{ nomRattachement(affectation) }}</td>
                 <td>{{ affectation.dateDebut | date: 'dd/MM/yyyy' }}</td>
                 <td>{{ affectation.dateFin ? (affectation.dateFin | date: 'dd/MM/yyyy') : '—' }}</td>
                 <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut | etatLabel"></p-tag></td>
@@ -1476,6 +1487,77 @@
         </ng-template>
     </p-table>
     </ng-container>
+</div>
+
+<!-- À la création : mêmes champs (chantier/rôle/rattachée à), mais rien n'est envoyé au
+     serveur avant que l'entreprise ait un id — mis en attente dans affectationsInitiales,
+     envoyés juste après la création (voir submitCoordonnees/enregistrerAffectationsInitiales).
+     Demande client : pouvoir affecter chantier + rang dès la création plutôt que de devoir
+     rouvrir la fiche ensuite. -->
+<div class="card mb-3" *ngIf="isSuperAdmin && isNew">
+    <div class="card-head">
+        <i class="pi pi-map-marker"></i>
+        <h6 class="m-0">Affectation à un chantier</h6>
+    </div>
+    <p class="text-500 text-sm mt-0 mb-3">Optionnel : ces affectations seront créées automatiquement juste après l'enregistrement de l'entreprise.</p>
+
+    <form [formGroup]="affectationForm" (ngSubmit)="submitAffectation()">
+        <div class="formgrid grid">
+            <div class="field col-12 md:col-3">
+                <label for="chantierIdNouveau">Chantier</label>
+                <p-dropdown
+                    id="chantierIdNouveau"
+                    [options]="chantiersDisponibles"
+                    formControlName="chantierId"
+                    optionLabel="nom"
+                    optionValue="id"
+                    placeholder="-- Choisir --"
+                    [filter]="true"
+                    filterBy="nom"
+                    styleClass="w-full"
+                ></p-dropdown>
+            </div>
+            <div class="field col-12 md:col-3">
+                <label for="roleNouveau">Rôle de l'entreprise</label>
+                <p-dropdown id="roleNouveau" [options]="roles" formControlName="role" styleClass="w-full"></p-dropdown>
+            </div>
+            <div class="field col-12 md:col-4" *ngIf="affectationForm.value.role !== 'PRINCIPALE'">
+                <label for="affectationParenteIdNouveau">
+                    Rattachée à ({{ affectationForm.value.role === 'STT1' ? 'la Principale' : 'un STT1' }})
+                </label>
+                <p-dropdown
+                    id="affectationParenteIdNouveau"
+                    [options]="parentsDisponibles"
+                    formControlName="affectationParenteId"
+                    optionLabel="label"
+                    optionValue="id"
+                    placeholder="-- Choisir --"
+                    styleClass="w-full"
+                ></p-dropdown>
+                <small class="text-500" *ngIf="affectationForm.value.chantierId && parentsDisponibles.length === 0">
+                    Aucune entreprise {{ affectationForm.value.role === 'STT1' ? 'Principale' : 'STT1' }} sur ce chantier pour l'instant.
+                </small>
+            </div>
+            <div class="field col-12 md:col-2 flex align-items-end">
+                <button pButton type="submit" label="Ajouter" class="w-full p-button-outlined" [disabled]="affectationForm.invalid"></button>
+            </div>
+        </div>
+    </form>
+
+    <div class="ent-compact-list" *ngIf="affectationsInitiales.length > 0">
+        <div class="ent-compact-row" *ngFor="let a of affectationsInitiales; let i = index" style="cursor: default;">
+            <span class="ent-compact-row-icon"><i class="pi pi-building"></i></span>
+            <span class="ent-compact-row-body">
+                <span class="ent-compact-row-title">{{ a.nomChantierCalculee }}</span>
+                <span class="ent-compact-row-sub" *ngIf="a.nomParenteCalculee">Rattachée à {{ a.nomParenteCalculee }}</span>
+            </span>
+            <span class="ent-compact-row-end">
+                <p-tag severity="info" [value]="a.role"></p-tag>
+                <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" pTooltip="Retirer" (click)="retirerAffectationInitiale(i)"></button>
+            </span>
+        </div>
+    </div>
+    <p class="text-500 text-sm m-0" *ngIf="affectationsInitiales.length === 0">Aucune affectation ajoutée pour l'instant.</p>
 </div>
 
 <!-- Sous-traitants : entreprises STT1/STT2 rattachées à celle-ci sur ses chantiers. Lecture
@@ -1560,7 +1642,13 @@
             </tr>
             <tr>
                 <th><p-columnFilter type="text" field="identiteCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                <th></th>
+                <th>
+                    <p-columnFilter field="zoneCalculee" matchMode="equals" [showMenu]="false">
+                        <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                            <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'France', value: 'FRANCE'}, {label: 'UE', value: 'UE'}, {label: 'Hors UE', value: 'HORS_UE'}]" optionLabel="label" optionValue="value" placeholder="Toutes" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                        </ng-template>
+                    </p-columnFilter>
+                </th>
                 <th></th>
                 <th></th>
                 <th></th>
@@ -1676,7 +1764,7 @@
 <!-- Documents (ouverts par défaut en création : les documents obligatoires
      doivent être renseignés avant de pouvoir créer l'entreprise). Masquée pour l'Entreprise,
      qui a sa propre carte (vue deux colonnes) — voir #ligneDocumentEntreprise plus bas. -->
-<div class="card mb-3" *ngIf="!isEntreprise && !isClient">
+<div class="card mb-3" id="admin-documents" *ngIf="!isEntreprise && !isClient">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-folder"></i>

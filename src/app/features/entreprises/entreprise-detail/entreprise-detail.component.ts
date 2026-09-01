@@ -3,6 +3,7 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Observable, forkJoin, of } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
 import { Entreprise, AffectationEntrepriseChantier, RoleEntreprise } from '../models/entreprise.model';
 import { EntrepriseService } from '../services/entreprise.service';
 import { AffectationEntrepriseChantierService } from '../services/affectation-entreprise-chantier.service';
@@ -91,6 +92,16 @@ export class EntrepriseDetailComponent implements OnInit {
     parentsDisponibles: Array<{ id: string; label: string }> = [];
     chantiersDisponibles: Chantier[] = [];
     afficherAffectation = false;
+    // Raison sociale de l'entreprise "parente" (PRINCIPALE pour un STT1, STT1 pour un STT2)
+    // pour chacune de MES affectations, resolue à partir des mêmes appels que
+    // recalculerSousTraitants (tous les chantiers où j'interviens) — pas d'appel réseau
+    // supplémentaire (demande client : afficher le lien d'appartenance sur la fiche entreprise).
+    private parentNomParAffectationId: Record<string, string> = {};
+    // Affectations chantier+rang choisies avant que l'entreprise existe (voir isNew) : pas
+    // d'entrepriseId tant qu'elle n'est pas enregistrée, donc mises en attente ici et
+    // envoyées une à une juste après la création (voir enregistrerAffectationsInitiales),
+    // même principe que lignesDocument pour les documents à la création.
+    affectationsInitiales: Array<{ chantierId: string; nomChantierCalculee: string; role: RoleEntreprise; affectationParenteId?: string; nomParenteCalculee?: string }> = [];
 
     affectationForm = this.fb.group({
         chantierId: ['', Validators.required],
@@ -139,13 +150,17 @@ export class EntrepriseDetailComponent implements OnInit {
     // celui en contexte). Pour la liste affichée dans les cartes "Salariés", voir
     // salariesListeAffichee ci-dessous — bien distincte de celle-ci depuis la correction du
     // bug "salariés d'un autre chantier visibles ici" (voir chargerAffectationsSalarieContexte).
-    salaries: Array<Salarie & { identiteCalculee: string }> = [];
+    // zoneCalculee (France/UE/Hors UE, demande client) : ajouté ici pour le même motif
+    // qu'identiteCalculee — un p-columnFilter ne peut filtrer que sur un champ réel de la
+    // ligne, pas sur un appel de méthode. Recalculé aussi depuis listerPays() (voir
+    // recalculerZonesSalaries) au cas où les pays arrivent après les salariés.
+    salaries: Array<Salarie & { identiteCalculee: string; zoneCalculee?: string }> = [];
     // Liste réellement affichée dans les cartes "Salariés" (compacte + tableau) — filtrée au
     // chantier en contexte quand il y en a un (règle validée "Entreprise + Chantier = contexte
     // d'affectation"), identique à `salaries` sinon. Ne jamais utiliser à la place de `salaries`
     // pour un total/comptage entreprise-wide (en-tête, chargerSalariesClient) : elle ne
     // représenterait alors qu'un seul chantier, silencieusement.
-    salariesListeAffichee: Array<Salarie & { identiteCalculee: string }> = [];
+    salariesListeAffichee: Array<Salarie & { identiteCalculee: string; zoneCalculee?: string }> = [];
     afficherSalaries = false;
 
     // --- Vue Client (lecture seule) : salariés DE CETTE ENTREPRISE affectés à MES
@@ -509,7 +524,14 @@ export class EntrepriseDetailComponent implements OnInit {
                 });
             }
         });
-        this.referenceDataService.listerPays().subscribe((pays) => (this.pays = pays));
+        this.referenceDataService.listerPays().subscribe((pays) => {
+            this.pays = pays;
+            // Les salariés peuvent déjà être chargés à ce stade (ordre des appels non
+            // garanti) : recalcule leur zoneCalculee (voir chargerSalaries) plutôt que de
+            // les laisser figés sur "zone inconnue" jusqu'au prochain rechargement.
+            this.salaries = this.salaries.map((s) => ({ ...s, zoneCalculee: this.zoneDuPays(s.nationalitePaysId) }));
+            this.salariesListeAffichee = this.salariesListeAffichee.map((s) => ({ ...s, zoneCalculee: this.zoneDuPays(s.nationalitePaysId) }));
+        });
         this.referenceDataService.listerCorpsDeMetier().subscribe((c) => (this.corpsDeMetiers = c));
         this.referenceDataService.listerTypeContratSalarie().subscribe((types) => (this.typesContrat = types));
         this.referenceDataService.listerSalarieFonction().subscribe((fonctions) => (this.fonctions = fonctions));
@@ -595,14 +617,14 @@ export class EntrepriseDetailComponent implements OnInit {
     // le navigateur de quelqu'un qui n'est censé voir que ce chantier-ci.
     chargerSalaries(entrepriseId: string) {
         this.salarieService.lister(entrepriseId).subscribe((salaries) => {
-            this.salaries = salaries.map((s) => ({ ...s, identiteCalculee: `${s.prenom} ${s.nom}` }));
+            this.salaries = salaries.map((s) => ({ ...s, identiteCalculee: `${s.prenom} ${s.nom}`, zoneCalculee: this.zoneDuPays(s.nationalitePaysId) }));
             if (!this.contexteChantierId) {
                 this.salariesListeAffichee = this.salaries;
             }
         });
         if (this.contexteChantierId) {
             this.salarieService.lister(entrepriseId, this.contexteChantierId).subscribe((salaries) => {
-                this.salariesListeAffichee = salaries.map((s) => ({ ...s, identiteCalculee: `${s.prenom} ${s.nom}` }));
+                this.salariesListeAffichee = salaries.map((s) => ({ ...s, identiteCalculee: `${s.prenom} ${s.nom}`, zoneCalculee: this.zoneDuPays(s.nationalitePaysId) }));
             });
         }
         this.chargerAffectationsSalarieContexte();
@@ -684,15 +706,19 @@ export class EntrepriseDetailComponent implements OnInit {
         if (this.isNew) {
             this.entrepriseService.creer(payload).subscribe({
                 next: (entreprise) => {
-                    this.enregistrerDocumentsInitiaux(entreprise.id).subscribe({
-                        next: () => this.finaliserCreationEntreprise(entreprise.id),
-                        error: () => {
+                    forkJoin({
+                        documents: this.enregistrerDocumentsInitiaux(entreprise.id).pipe(catchError(() => of('erreur'))),
+                        affectations: this.enregistrerAffectationsInitiales(entreprise.id).pipe(catchError(() => of('erreur')))
+                    }).subscribe(({ documents, affectations }) => {
+                        if (documents === 'erreur' || affectations === 'erreur') {
+                            const cible = documents === 'erreur' && affectations === 'erreur' ? 'de certains documents et affectations'
+                                : documents === 'erreur' ? 'de certains documents' : 'de certaines affectations';
                             this.message.add({
                                 severity: 'error', summary: 'Erreur',
-                                detail: "Entreprise créée, mais l'enregistrement de certains documents a échoué."
+                                detail: `Entreprise créée, mais l'enregistrement ${cible} a échoué.`
                             });
-                            this.finaliserCreationEntreprise(entreprise.id);
                         }
+                        this.finaliserCreationEntreprise(entreprise.id);
                     });
                 },
                 error: () => {
@@ -812,14 +838,32 @@ export class EntrepriseDetailComponent implements OnInit {
         const mesAffectationIds = new Set(this.mesAffectations.map((a) => a.id));
         const chantierIds = [...new Set(this.mesAffectations.map((a) => a.chantierId))];
         forkJoin(chantierIds.map((id) => this.affectationService.lister(id))).subscribe((listesParChantier) => {
-            this.sousTraitants = listesParChantier.flat()
+            const toutes = listesParChantier.flat();
+            this.sousTraitants = toutes
                 .filter((a) => a.affectationParenteId && mesAffectationIds.has(a.affectationParenteId))
                 .map((a) => ({ ...a, nomChantierCalculee: this.nomChantier(a.chantierId) }));
+            // Lien d'appartenance (voir nomRattachement) : la raison sociale du parent n'est
+            // connue que via CETTE liste par chantier (toutes les affectations dessus), pas
+            // via mesAffectations qui ne contient que les MIENNES.
+            this.parentNomParAffectationId = {};
+            for (const a of toutes) {
+                this.parentNomParAffectationId[a.id] = a.raisonSocialeEntreprise ?? this.nomEntreprise(a.entrepriseId);
+            }
         });
     }
 
     nomSousTraitant(affectation: AffectationEntrepriseChantier): string {
         return affectation.raisonSocialeEntreprise ?? this.nomEntreprise(affectation.entrepriseId);
+    }
+
+    /** "Rattachée à" (lien d'appartenance, demande client) : nom de l'entreprise PRINCIPALE
+        pour un STT1, ou du STT1 pour un STT2 — "—" pour une PRINCIPALE (rien au-dessus) ou
+        tant que recalculerSousTraitants n'a pas encore résolu le lot de chantiers concernés. */
+    nomRattachement(affectation: AffectationEntrepriseChantier): string {
+        if (!affectation.affectationParenteId) {
+            return '—';
+        }
+        return this.parentNomParAffectationId[affectation.affectationParenteId] ?? '—';
     }
 
     private recalculerChantiersDisponibles() {
@@ -866,10 +910,29 @@ export class EntrepriseDetailComponent implements OnInit {
             return;
         }
         const value = this.affectationForm.getRawValue();
+        const affectationParenteId = value.role === 'PRINCIPALE' ? undefined : (value.affectationParenteId || undefined);
+
+        // Entreprise pas encore créée (voir isNew) : rien à affecter côté serveur tant
+        // qu'il n'y a pas d'entrepriseId — mis en attente, envoyé après la création
+        // (voir enregistrerAffectationsInitiales).
+        if (this.isNew) {
+            this.affectationsInitiales.push({
+                chantierId: value.chantierId!,
+                nomChantierCalculee: this.nomChantier(value.chantierId!),
+                role: value.role!,
+                affectationParenteId,
+                nomParenteCalculee: affectationParenteId
+                    ? this.parentsDisponibles.find((p) => p.id === affectationParenteId)?.label
+                    : undefined
+            });
+            this.affectationForm.reset({ chantierId: '', role: 'PRINCIPALE', affectationParenteId: '' });
+            return;
+        }
+
         this.affectationService.affecter(value.chantierId!, {
             entrepriseId: this.entrepriseId!,
             role: value.role!,
-            affectationParenteId: value.role === 'PRINCIPALE' ? undefined : (value.affectationParenteId || undefined)
+            affectationParenteId
         }).subscribe({
             next: () => {
                 this.message.add({ severity: 'success', summary: 'Succès', detail: 'Chantier affecté' });
@@ -881,6 +944,29 @@ export class EntrepriseDetailComponent implements OnInit {
                 detail: err?.error?.message ?? 'Affectation impossible'
             })
         });
+    }
+
+    retirerAffectationInitiale(index: number) {
+        this.affectationsInitiales.splice(index, 1);
+    }
+
+    /** Envoie les affectations mises en attente pendant la création (voir submitAffectation
+        / isNew) juste après que l'entreprise obtienne un id — même principe que
+        enregistrerDocumentsInitiaux. Séquentiel plutôt qu'un forkJoin : un STT1/STT2 peut
+        dépendre d'une affectation créée juste avant dans le même lot (rattachée à une
+        PRINCIPALE ajoutée dans ce même formulaire), donc l'ordre de saisie doit être respecté. */
+    private enregistrerAffectationsInitiales(entrepriseId: string): Observable<unknown> {
+        if (this.affectationsInitiales.length === 0) {
+            return of(null);
+        }
+        return this.affectationsInitiales.reduce(
+            (chaine, a) => chaine.pipe(switchMap(() => this.affectationService.affecter(a.chantierId, {
+                entrepriseId,
+                role: a.role,
+                affectationParenteId: a.affectationParenteId
+            }))),
+            of(null) as Observable<unknown>
+        );
     }
 
     desactiverAffectation(affectation: AffectationEntrepriseChantier) {

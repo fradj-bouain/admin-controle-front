@@ -982,6 +982,7 @@
                     <th style="min-width: 16rem">Entreprise</th>
                     <th style="min-width: 8rem">Rôle</th>
                     <th style="min-width: 14rem">Rattachée à</th>
+                    <th style="min-width: 8rem">Zone</th>
                     <th style="min-width: 8rem">Statut</th>
                     <th class="text-center" style="min-width: 8rem">Nb salariés</th>
                     <th style="width: 7rem"></th>
@@ -996,6 +997,13 @@
                         </p-columnFilter>
                     </th>
                     <th></th>
+                    <th>
+                        <p-columnFilter field="zoneCalculee" matchMode="equals" [showMenu]="false">
+                            <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+                                <p-dropdown [ngModel]="value" (ngModelChange)="filter($event)" [options]="[{label: 'France', value: 'FRANCE'}, {label: 'UE', value: 'UE'}, {label: 'Hors UE', value: 'HORS_UE'}]" optionLabel="label" optionValue="value" placeholder="Toutes" [showClear]="true" [appendTo]="'body'" styleClass="w-full"></p-dropdown>
+                            </ng-template>
+                        </p-columnFilter>
+                    </th>
                     <th>
                         <p-columnFilter field="statut" matchMode="equals" [showMenu]="false">
                             <ng-template pTemplate="filter" let-value let-filter="filterCallback">
@@ -1012,6 +1020,7 @@
                     <td>{{ affectation.nomEntrepriseCalculee }}</td>
                     <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
                     <td>{{ affectation.nomParenteCalculee || '—' }}</td>
+                    <td>{{ affectation.zoneCalculee ? (affectation.zoneCalculee === 'HORS_UE' ? 'Hors UE' : (affectation.zoneCalculee === 'UE' ? 'UE' : 'France')) : '—' }}</td>
                     <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut | etatLabel"></p-tag></td>
                     <td class="text-center">{{ entrepriseStatSalaries(affectation.id) }}</td>
                     <td class="white-space-nowrap" (click)="$event.stopPropagation()">

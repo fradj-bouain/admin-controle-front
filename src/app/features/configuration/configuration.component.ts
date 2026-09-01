@@ -204,6 +204,17 @@ export class ConfigurationComponent implements OnInit {
     ouvrirCreationPays() { this.paysToEdit = null; this.dialogPaysVisible = true; }
     ouvrirEditionPays(item: Pays) { this.paysToEdit = item; this.dialogPaysVisible = true; }
 
+    // Traduit la valeur brute (FRANCE/UE/HORS_UE, voir pays-form-dialog) en libellé lisible —
+    // les valeurs libres résiduelles d'avant la contrainte du formulaire (ex: "Europe")
+    // restent affichées telles quelles plutôt que masquées, pour rester repérables et
+    // corrigeables depuis cette même liste.
+    libelleZone(zone?: string): string {
+        if (zone === 'FRANCE') { return 'France'; }
+        if (zone === 'UE') { return 'UE'; }
+        if (zone === 'HORS_UE') { return 'Hors UE'; }
+        return zone || '—';
+    }
+
     ouvrirCreationCorps() { this.corpsToEdit = null; this.dialogCorpsVisible = true; }
     ouvrirEditionCorps(item: CorpsDeMetier) { this.corpsToEdit = item; this.dialogCorpsVisible = true; }
 

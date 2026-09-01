@@ -102,7 +102,10 @@ export class ChantierDetailComponent implements OnInit {
     // nomEntrepriseCalculee/nomParenteCalculee ajoutés au chargement, pour permettre un
     // p-columnFilter texte simple (les champs bruts n'ont que des id) et afficher le
     // rattachement en toutes lettres dans sa propre colonne (voir prototype v2 validé).
-    affectationsEntreprise: Array<AffectationEntrepriseChantier & { nomEntrepriseCalculee: string; nomParenteCalculee: string }> = [];
+    // zoneCalculee (France/UE/Hors UE, demande client) : résolue via le paysId du SIÈGE de
+    // l'entreprise affectée (this.entreprises), même principe qu'identiteCalculee — un
+    // p-columnFilter ne peut filtrer que sur un champ réel de la ligne.
+    affectationsEntreprise: Array<AffectationEntrepriseChantier & { nomEntrepriseCalculee: string; nomParenteCalculee: string; zoneCalculee?: string }> = [];
     entreprisesDisponibles: Entreprise[] = [];
     roles: RoleEntreprise[] = ['PRINCIPALE', 'STT1', 'STT2'];
     parentsDisponibles: Array<{ id: string; label: string }> = [];
@@ -767,7 +770,8 @@ export class ChantierDetailComponent implements OnInit {
                 // encore réassigné à ce stade de la fonction.
                 nomParenteCalculee: a.affectationParenteId
                     ? this.nomEntreprise(affectations.find((p) => p.id === a.affectationParenteId)?.entrepriseId ?? '')
-                    : ''
+                    : '',
+                zoneCalculee: this.zoneDuPays(this.entreprises.find((e) => e.id === a.entrepriseId)?.paysId)
             }));
             this.recalculerEntreprisesDisponibles();
             this.recalculerParentsDisponibles();

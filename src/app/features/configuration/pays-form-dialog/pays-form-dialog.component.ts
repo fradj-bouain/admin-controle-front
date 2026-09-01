@@ -14,10 +14,20 @@ export class PaysFormDialogComponent implements OnChanges {
     @Output() created = new EventEmitter<CreatePaysRequest>();
     @Output() updated = new EventEmitter<{ id: string; request: CreatePaysRequest }>();
 
+    // Valeurs alignées sur celles utilisées partout ailleurs (filtres, correspondance
+    // zoneRequise des types de document — voir DemoDataSeeder/recalculerTypesPourEntreprise) :
+    // un champ libre ici (ex: "Europe" au lieu de "UE") créait des pays dont la zone ne
+    // correspondait plus jamais à rien, silencieusement.
+    zones = [
+        { label: 'France', value: 'FRANCE' },
+        { label: 'UE', value: 'UE' },
+        { label: 'Hors UE', value: 'HORS_UE' }
+    ];
+
     form = this.fb.group({
         codeIso: ['', Validators.required],
         nom: ['', Validators.required],
-        zone: ['']
+        zone: ['', Validators.required]
     });
 
     constructor(private fb: FormBuilder) { }

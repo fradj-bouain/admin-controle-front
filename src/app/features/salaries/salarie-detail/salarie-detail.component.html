@@ -779,13 +779,11 @@
                 <th>Entreprise</th>
                 <th>Date début</th>
                 <th>Date fin</th>
-                <th>Statut</th>
                 <th>Statut d'accès</th>
                 <th style="width: 8rem"></th>
             </tr>
             <tr>
                 <th><p-columnFilter type="text" field="nomChantierCalculee" matchMode="contains" [showMenu]="false" placeholder="Filtrer..."></p-columnFilter></th>
-                <th></th>
                 <th></th>
                 <th></th>
                 <th></th>
@@ -805,7 +803,6 @@
                 <td>{{ affectation.entrepriseId ? nomEntreprise(affectation.entrepriseId) : '—' }}</td>
                 <td>{{ affectation.dateDebut | date: 'dd/MM/yyyy' }}</td>
                 <td>{{ affectation.dateFin ? (affectation.dateFin | date: 'dd/MM/yyyy') : '—' }}</td>
-                <td><p-tag [severity]="affectation.dateFin ? 'secondary' : 'success'" [value]="affectation.dateFin ? 'Clôturée' : 'Active'"></p-tag></td>
                 <td>
                     <p-tag
                         [severity]="affectation.statutAcces === 'ACCORDE' ? 'success' : (affectation.statutAcces === 'REFUSE' ? 'danger' : 'warning')"
