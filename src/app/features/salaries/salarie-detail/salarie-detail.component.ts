@@ -22,6 +22,7 @@ import { MessageService as MessagerieMessageService } from 'src/app/features/mes
 import { Utilisateur } from 'src/app/features/configuration/models/configuration.model';
 import { UtilisateurService } from 'src/app/features/configuration/services/utilisateur.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
+import { SectionNavItem } from 'src/app/shared/components/section-nav/section-nav.component';
 
 interface LigneDocument {
     fichierUrl: string;
@@ -231,6 +232,21 @@ export class SalarieDetailComponent implements OnInit {
 
     get isSuperAdmin(): boolean {
         return this.auth.hasRole('SUPER_ADMIN');
+    }
+
+    // Navigation entre blocs (voir SectionNavComponent, demande client — prototype validé) :
+    // "Historique" et "Nouveau message" n'y figurent pas, ce sont des panneaux latéraux
+    // (basculerHistorique/ouvrirComposeur), pas des blocs à scroller — déjà leurs propres
+    // boutons dans l'en-tête.
+    get sectionsNavSalarie(): SectionNavItem[] {
+        if (this.isNew) {
+            return [];
+        }
+        return [
+            { id: 'admin-coordonnees-salarie', label: 'Coordonnées', icon: 'user' },
+            { id: 'admin-documents-salarie', label: 'Documents', icon: 'folder' },
+            { id: 'admin-relances-salarie', label: 'Relances', icon: 'send' }
+        ];
     }
 
     get isEntreprise(): boolean {

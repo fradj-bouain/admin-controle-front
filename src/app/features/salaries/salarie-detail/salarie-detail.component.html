@@ -165,6 +165,8 @@
     </div>
 </div>
 
+<app-section-nav *ngIf="isSuperAdmin && !isNew" [sections]="sectionsNavSalarie"></app-section-nav>
+
 <!-- ============================================================
      Vue Client (lecture seule) : ce salarié vu par un compte Client, mêmes composants
      visuels que la fiche entreprise (chantier-hero + ent-layout, voir brand.scss) — pas
@@ -591,7 +593,7 @@
      rappels pratiques à la création (voir prototype validé). -->
 <div class="grid" *ngIf="!isEntreprise && !isClient">
     <div class="col-12 lg:col-8">
-        <div class="card mb-3 h-full flex flex-column">
+        <div class="card mb-3 h-full flex flex-column" id="admin-coordonnees-salarie">
             <div class="card-head">
                 <i class="pi pi-user"></i>
                 <h6 class="m-0">Coordonnées</h6>
@@ -824,7 +826,7 @@
 <!-- Documents (ouverts par défaut en création : peuvent être renseignés tout de
      suite ou laissés vides et complétés plus tard sur la fiche). Masquée pour l'Entreprise,
      qui a sa propre carte (vue deux colonnes) — voir #ligneDocumentEntreprise plus bas. -->
-<div class="card mb-3" *ngIf="!isEntreprise && !isClient">
+<div class="card mb-3" id="admin-documents-salarie" *ngIf="!isEntreprise && !isClient">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-folder"></i>
@@ -1050,7 +1052,7 @@
 <!-- Relances : rappels envoyés (automatiques ou manuels) pour les documents de ce salarié.
      Masqué en vue Entreprise (jamais elle-même destinataire de ses propres relances) et en
      vue Client (fiche salarié = consultation seule pour ce rôle, voir vue Client plus haut). -->
-<div class="card mb-3" *ngIf="!isNew && !isEntreprise && !isClient">
+<div class="card mb-3" id="admin-relances-salarie" *ngIf="!isNew && !isEntreprise && !isClient">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-send"></i>

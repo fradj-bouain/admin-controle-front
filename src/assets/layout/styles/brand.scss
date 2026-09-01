@@ -2013,6 +2013,61 @@ a { color: var(--brand-accent-ink); }
 .chantier-hstat-value small { opacity: 0.55; font-weight: 600; }
 .chantier-hstat-label { display: block; font-size: 0.72rem; color: rgba(255, 255, 255, 0.55); margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+/* ---------- Navigation entre blocs (fiches longues) + bouton "remonter en haut" ----------
+   Demande client : trop de scroll pour atteindre les derniers blocs d'une fiche (Entreprise/
+   Chantier/Salarié). Barre collante à indicateur glissant (voir SectionNavComponent) +
+   bouton flottant, même esprit qu'une navigation de landing page. .layout-topbar de ce
+   thème n'est pas fixe (scrolle avec la page, voir _topbar.scss) : top:0 colle bien au
+   sommet réel du viewport, pas besoin de décalage. */
+.section-nav-sentinel { height: 1px; }
+.section-nav-wrap { position: sticky; top: 0; z-index: 30; margin: 0 -1px 1.25rem; }
+.section-nav {
+    background: rgba(247, 248, 250, 0.88);
+    backdrop-filter: blur(10px) saturate(1.4);
+    -webkit-backdrop-filter: blur(10px) saturate(1.4);
+    border-radius: 14px;
+    border: 1px solid transparent;
+    transition: border-color .18s ease, box-shadow .18s ease, border-radius .18s ease;
+}
+.section-nav-wrap.stuck .section-nav {
+    border-color: var(--brand-border);
+    box-shadow: 0 10px 24px -16px rgba(23, 26, 33, 0.35);
+    border-radius: 0 0 14px 14px;
+}
+.section-nav-track { position: relative; display: flex; gap: 0.15rem; overflow-x: auto; scrollbar-width: none; padding: 0.5rem; }
+.section-nav-track::-webkit-scrollbar { display: none; }
+.section-nav-highlight {
+    position: absolute; top: 0.5rem; bottom: 0.5rem; left: 0; width: 0;
+    border-radius: 10px; background: var(--brand-accent-tint);
+    transition: transform .32s cubic-bezier(.65,0,.35,1), width .32s cubic-bezier(.65,0,.35,1);
+    pointer-events: none;
+}
+.section-nav-tab {
+    position: relative; z-index: 1; display: flex; align-items: center; gap: 0.5rem; white-space: nowrap;
+    background: none; border: none; font: 600 0.84rem 'IBM Plex Sans', sans-serif; color: var(--ink-soft, #5C6270);
+    padding: 0.6rem 0.9rem; border-radius: 10px; cursor: pointer; transition: color .18s ease;
+}
+.section-nav-tab i { font-size: 0.82rem; opacity: 0.72; transition: opacity .18s ease; }
+.section-nav-tab:hover { color: var(--brand-accent-ink); }
+.section-nav-tab[aria-current="true"] { color: var(--brand-accent-ink); }
+.section-nav-tab[aria-current="true"] i { opacity: 1; }
+.section-nav-tab:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 2px; }
+
+.scroll-top-btn {
+    position: fixed; right: 1.75rem; bottom: 1.75rem; z-index: 30;
+    width: 2.75rem; height: 2.75rem; border-radius: 50%; border: none;
+    background: var(--brand-sidebar); color: #fff; box-shadow: 0 10px 24px -10px rgba(20, 23, 29, 0.55);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    opacity: 0; transform: translateY(0.6rem) scale(0.9); pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease, background .15s ease;
+}
+.scroll-top-btn.visible { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.scroll-top-btn:hover { background: var(--brand-accent-active); }
+.scroll-top-btn i { font-size: 0.95rem; }
+@media (prefers-reduced-motion: reduce) {
+    .section-nav-highlight, .scroll-top-btn { transition: none; }
+}
+
 /* ---------- Barres horizontales (répartition salariés/entreprise) ---------- */
 .bar-chart { display: flex; flex-direction: column; gap: 0.65rem; }
 .bar-row { display: flex; align-items: center; gap: 0.75rem; }

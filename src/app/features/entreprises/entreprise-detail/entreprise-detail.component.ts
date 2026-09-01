@@ -22,6 +22,7 @@ import { UtilisateurService } from 'src/app/features/configuration/services/util
 import { Message, MessagePlanifie, SendMessageRequest } from 'src/app/features/messagerie/models/message.model';
 import { MessageService as MessagerieMessageService } from 'src/app/features/messagerie/services/message.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
+import { SectionNavItem } from 'src/app/shared/components/section-nav/section-nav.component';
 
 interface LigneDocument {
     fichierUrl: string;
@@ -473,6 +474,22 @@ export class EntrepriseDetailComponent implements OnInit {
 
     libelleContrat(id?: string): string {
         return this.typesContrat.find((t) => t.id === id)?.libelle ?? '—';
+    }
+
+    // Navigation entre blocs (voir SectionNavComponent, demande client — prototype validé) :
+    // Sous-traitants n'y figure pas, c'est un panneau latéral (afficherSousTraitants), pas
+    // un bloc à scroller — déjà son propre bouton dans l'en-tête.
+    get sectionsNavEntreprise(): SectionNavItem[] {
+        if (this.isNew) {
+            return [];
+        }
+        return [
+            { id: 'admin-identite', label: 'Identité', icon: 'building' },
+            { id: 'admin-coordonnees', label: 'Coordonnées', icon: 'phone' },
+            { id: 'admin-statistiques', label: 'Statistiques', icon: 'chart-bar' },
+            { id: 'admin-chantiers', label: 'Chantiers', icon: 'map-marker' },
+            { id: 'admin-documents', label: 'Documents', icon: 'folder' }
+        ];
     }
 
     // --- Statistiques (même bloc que la fiche Chantier, demande client — calculées côté

@@ -138,6 +138,8 @@
     </div>
 </div>
 
+<app-section-nav *ngIf="isSuperAdmin && !isNew" [sections]="sectionsNavChantier"></app-section-nav>
+
 <!-- ============================================================
      Vue Entreprise (lecture seule) : indicateurs déjà posés dans l'en-tête + mise en page
      à deux colonnes ici. Remplace Détail du chantier/Responsable/Statistiques/Contrôles/
@@ -583,7 +585,7 @@
 <div class="grid" *ngIf="!isEntreprise && !isClient">
     <div class="col-12 lg:col-8">
         <!-- Détail du chantier -->
-        <div class="card mb-3">
+        <div class="card mb-3" id="admin-detail-chantier">
             <div class="card-head">
                 <i class="pi pi-map-marker"></i>
                 <h6 class="m-0">Détail du chantier</h6>
@@ -698,7 +700,7 @@
          parent, pas besoin de les répéter ici. Absente à la création (rien à statistiquer
          tant que le chantier n'existe pas). -->
     <div class="col-12 lg:col-4" *ngIf="!isNew">
-        <div class="card mb-3">
+        <div class="card mb-3" id="admin-statistiques-chantier">
             <div class="card-head">
                 <i class="pi pi-chart-bar"></i>
                 <h6 class="m-0">Statistiques</h6>
@@ -935,7 +937,7 @@
 
     <!-- Entreprises affectées : gestion + vue globale (toutes entreprises confondues) —
          masquée pour l'Entreprise, qui a sa propre carte "Mes sous-traitants ici" plus haut. -->
-    <div class="card mb-3" *ngIf="!isEntreprise">
+    <div class="card mb-3" id="admin-entreprises-chantier" *ngIf="!isEntreprise">
         <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-building"></i>
@@ -1100,7 +1102,7 @@
 
     <!-- Salariés affectés : gestion + vue globale (tous salariés confondus) — masquée pour
          l'Entreprise, qui a sa propre carte "Mes salariés sur ce chantier" plus haut. -->
-    <div class="card mb-3" *ngIf="!isEntreprise">
+    <div class="card mb-3" id="admin-salaries-chantier" *ngIf="!isEntreprise">
         <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-users"></i>
@@ -1200,7 +1202,7 @@
     <!-- Documents supplémentaires sur CE chantier, en plus des types obligatoires globaux
          (qui s'appliquent déjà partout sans configuration ici) — voir modèle validé
          "un document, une instance par chantier". -->
-    <div class="card mb-3" *ngIf="isSuperAdmin && !isNew">
+    <div class="card mb-3" id="admin-documents-chantier" *ngIf="isSuperAdmin && !isNew">
         <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-file-plus"></i>

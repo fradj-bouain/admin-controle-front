@@ -166,6 +166,8 @@
     </div>
 </div>
 
+<app-section-nav *ngIf="isSuperAdmin && !isNew" [sections]="sectionsNavEntreprise"></app-section-nav>
+
 <!-- ============================================================
      Vue Entreprise (prototype validé par le client) : bandeau d'indicateurs
      déjà posé dans l'en-tête ci-dessus + mise en page à deux colonnes ici.
@@ -1096,7 +1098,7 @@
 
         <form *ngIf="!loading" [formGroup]="coordonneesForm" (ngSubmit)="submitCoordonnees()" class="p-fluid">
 
-            <div class="card mb-3">
+            <div class="card mb-3" id="admin-identite">
                 <div class="card-head">
                     <i class="pi pi-building"></i>
                     <h6 class="m-0">Identité</h6>
@@ -1130,7 +1132,7 @@
                 </div>
             </div>
 
-            <div class="card mb-3">
+            <div class="card mb-3" id="admin-coordonnees">
                 <div class="card-head">
                     <i class="pi pi-phone"></i>
                     <h6 class="m-0">Coordonnées</h6>
@@ -1341,7 +1343,7 @@
         <!-- Statistiques : même bloc, même principe que sur la fiche Chantier (juste à côté
              du formulaire principal, demande client) — mélange tous les chantiers/salariés
              de cette entreprise, rien de plus à charger (déjà en mémoire). -->
-        <div class="card mb-3" *ngIf="isSuperAdmin && !isNew">
+        <div class="card mb-3" id="admin-statistiques" *ngIf="isSuperAdmin && !isNew">
             <div class="card-head">
                 <i class="pi pi-chart-bar"></i>
                 <h6 class="m-0">Statistiques</h6>

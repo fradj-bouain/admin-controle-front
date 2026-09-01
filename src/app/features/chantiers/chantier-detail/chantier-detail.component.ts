@@ -26,6 +26,7 @@ import { DocumentChantierSupplementaireService } from 'src/app/features/document
 import { Message } from 'src/app/features/messagerie/models/message.model';
 import { MessageService } from 'src/app/features/messagerie/services/message.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
+import { SectionNavItem } from 'src/app/shared/components/section-nav/section-nav.component';
 
 @Component({
     selector: 'app-chantier-detail',
@@ -648,6 +649,22 @@ export class ChantierDetailComponent implements OnInit {
 
     get prochainControleEnRetard(): boolean {
         return !!this.chantier?.dateProchainControle && new Date(this.chantier.dateProchainControle) < new Date();
+    }
+
+    // Navigation entre blocs (voir SectionNavComponent, demande client — prototype validé) :
+    // "Contrôles" n'y figure pas, c'est un panneau latéral (afficherControles), pas un
+    // bloc à scroller — déjà son propre bouton dans l'en-tête.
+    get sectionsNavChantier(): SectionNavItem[] {
+        if (this.isNew) {
+            return [];
+        }
+        return [
+            { id: 'admin-detail-chantier', label: 'Détail', icon: 'map-marker' },
+            { id: 'admin-statistiques-chantier', label: 'Statistiques', icon: 'chart-bar' },
+            { id: 'admin-entreprises-chantier', label: 'Entreprises', icon: 'building' },
+            { id: 'admin-salaries-chantier', label: 'Salariés', icon: 'users' },
+            { id: 'admin-documents-chantier', label: 'Documents', icon: 'file-plus' }
+        ];
     }
 
     get statsEntreprises(): { total: number; actif: number; inactif: number } {

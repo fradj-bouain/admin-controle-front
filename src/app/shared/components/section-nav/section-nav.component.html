@@ -1,0 +1,30 @@
+<ng-container *ngIf="sections.length > 0">
+    <div #sentinel class="section-nav-sentinel"></div>
+    <div class="section-nav-wrap" [class.stuck]="stuck">
+        <nav class="section-nav" aria-label="Navigation entre les blocs de la fiche">
+            <div #track class="section-nav-track">
+                <span #highlight class="section-nav-highlight"></span>
+                <button
+                    type="button"
+                    class="section-nav-tab"
+                    *ngFor="let item of sections"
+                    [attr.data-nav-id]="item.id"
+                    [attr.aria-current]="activeId === item.id"
+                    (click)="aller(item)"
+                >
+                    <i class="pi" [ngClass]="'pi-' + item.icon"></i>
+                    {{ item.label }}
+                </button>
+            </div>
+        </nav>
+    </div>
+</ng-container>
+
+<button
+    type="button"
+    class="scroll-top-btn"
+    [class.visible]="showScrollTop"
+    pTooltip="Remonter en haut"
+    tooltipPosition="left"
+    (click)="remonterEnHaut()"
+><i class="pi pi-arrow-up"></i></button>
