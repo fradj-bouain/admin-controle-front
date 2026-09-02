@@ -1185,7 +1185,7 @@
                 </div>
             </div>
 
-            <div class="card mb-3">
+            <div class="card mb-3" id="admin-informations-legales">
                 <div class="card-head">
                     <i class="pi pi-lock"></i>
                     <h6 class="m-0">Informations légales</h6>
@@ -1659,7 +1659,7 @@
 <!-- Salariés (raccourci) : table complète pour SUPER_ADMIN/Client/Contrôleur — l'Entreprise
      a sa propre carte compacte (vue deux colonnes). Absente à la création (rien à lister
      tant que l'entreprise n'existe pas), plutôt que montrée grisée. -->
-<div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isNew">
+<div class="card mb-3" id="admin-salaries-entreprise" *ngIf="!isEntreprise && !isClient && !isNew">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-users"></i>
@@ -1746,7 +1746,7 @@
      SUPER_ADMIN/Client/Contrôleur — l'Entreprise a sa propre carte compacte (vue deux
      colonnes). Absente à la création. Le formulaire "Ajouter" reste visible en permanence
      (pas de bouton cacher/afficher séparé) — voir prototype validé. -->
-<div class="card mb-3" *ngIf="!isEntreprise && !isClient && !isNew">
+<div class="card mb-3" id="admin-utilisateurs-entreprise" *ngIf="!isEntreprise && !isClient && !isNew">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-id-card"></i>
@@ -2017,7 +2017,7 @@
 
 <!-- Historique des documents (repliée par défaut, chargée au premier dépli). Masquée pour
      l'Entreprise, qui a sa propre version compacte dans la vue deux colonnes plus bas. -->
-<div class="card mb-3" *ngIf="!isNew && !isEntreprise && !isClient">
+<div class="card mb-3" id="admin-historique-entreprise" *ngIf="!isNew && !isEntreprise && !isClient">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-history"></i>
@@ -2056,7 +2056,7 @@
 
 <!-- Relances : rappels envoyés (automatiques ou manuels) pour les documents de cette entreprise.
      C'est le Client (donneur d'ordre) qui relance, jamais l'entreprise elle-même — masqué en vue Entreprise. -->
-<div class="card mb-3" *ngIf="!isNew && !isEntreprise && !isClient">
+<div class="card mb-3" id="admin-relances-entreprise" *ngIf="!isNew && !isEntreprise && !isClient">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-send"></i>
@@ -2100,7 +2100,7 @@
      formulaire "Nouveau message" ci-dessous permettait d'envoyer, sans aucun moyen de
      retrouver ce qui avait déjà été échangé. Masqué pour l'Entreprise (pas de composeur non
      plus pour ce rôle, voir plus bas) et pour le Client (aucun lien avec ce Client). -->
-<div class="card mb-3" *ngIf="!isNew && !isEntreprise && !isClient">
+<div class="card mb-3" id="admin-historique-messages-entreprise" *ngIf="!isNew && !isEntreprise && !isClient">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-envelope"></i>

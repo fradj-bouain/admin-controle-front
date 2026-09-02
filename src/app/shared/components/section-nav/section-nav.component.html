@@ -6,7 +6,7 @@
                 <button
                     type="button"
                     class="section-nav-tab"
-                    *ngFor="let item of sections"
+                    *ngFor="let item of sections; trackBy: trackById"
                     [attr.data-nav-id]="item.id"
                     [attr.aria-current]="activeId === item.id"
                     (click)="aller(item)"

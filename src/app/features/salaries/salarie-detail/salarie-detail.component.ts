@@ -258,16 +258,18 @@ export class SalarieDetailComponent implements OnInit {
     // "Historique" et "Nouveau message" n'y figurent pas, ce sont des panneaux latéraux
     // (basculerHistorique/ouvrirComposeur), pas des blocs à scroller — déjà leurs propres
     // boutons dans l'en-tête.
-    get sectionsNavSalarie(): SectionNavItem[] {
-        if (this.isNew) {
-            return [];
-        }
-        return [
-            { id: 'admin-coordonnees-salarie', label: 'Coordonnées', icon: 'user' },
-            { id: 'admin-documents-salarie', label: 'Documents', icon: 'folder' },
-            { id: 'admin-relances-salarie', label: 'Relances', icon: 'send' }
-        ];
-    }
+    // CHAMP FIXE, PAS UNE GETTER : voir le commentaire équivalent sur entreprise-detail
+    // (bug constaté — un *ngFor lié à une getter recrée sans cesse ses éléments et peut
+    // avaler le clic, sans erreur console). *ngIf="isSuperAdmin && !isNew" sur
+    // <app-section-nav> gère déjà la visibilité.
+    // Badge est juste à côté de Coordonnées (même ligne) : déjà visible dès qu'on arrive sur
+    // "Coordonnées", pas besoin de son propre onglet (demande client).
+    readonly sectionsNavSalarie: SectionNavItem[] = [
+        { id: 'admin-coordonnees-salarie', label: 'Coordonnées', icon: 'user' },
+        { id: 'admin-documents-salarie', label: 'Documents', icon: 'folder' },
+        { id: 'admin-relances-salarie', label: 'Relances', icon: 'send' },
+        { id: 'admin-historique-messages-salarie', label: 'Messages', icon: 'envelope' }
+    ];
 
     get isEntreprise(): boolean {
         return this.auth.hasRole('ENTREPRISE');

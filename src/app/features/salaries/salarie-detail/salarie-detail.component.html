@@ -726,7 +726,7 @@
     </div>
 
     <div class="col-12 lg:col-4" *ngIf="!isNew && !loading && salarie">
-        <div class="card h-full flex flex-column">
+        <div class="card h-full flex flex-column" id="admin-badge-salarie">
             <div class="card-head">
                 <i class="pi pi-id-card"></i>
                 <h6 class="m-0">Badge du salarié</h6>
@@ -1109,7 +1109,7 @@
      ceux envoyés à son entreprise employeuse (voir salarieId toujours renseigné dans
      envoyerMessage). Jusqu'ici seul le formulaire "Nouveau message" ci-dessous permettait
      d'envoyer, sans aucun moyen de retrouver ce qui avait déjà été échangé. -->
-<div class="card mb-3" *ngIf="!isNew && !isEntreprise && !isClient">
+<div class="card mb-3" id="admin-historique-messages-salarie" *ngIf="!isNew && !isEntreprise && !isClient">
     <div class="card-head justify-content-between">
         <div class="flex align-items-center gap-2">
             <i class="pi pi-envelope"></i>

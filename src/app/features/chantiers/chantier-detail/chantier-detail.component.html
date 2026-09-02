@@ -840,7 +840,7 @@
     <!-- Utilisateurs du Back Office : masquée pour l'Entreprise (demande client). Formulaire
          au-dessus de la liste (voir prototype v2 validé). Liste avatar-initiales plutôt
          qu'un tableau brut (même style que Utilisateurs sur la fiche Client). -->
-    <div class="card mb-3" *ngIf="!isEntreprise">
+    <div class="card mb-3" id="admin-utilisateurs-bo-chantier" *ngIf="!isEntreprise">
         <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-users"></i>
@@ -890,7 +890,7 @@
     </div>
 
     <!-- Utilisateurs du client assignés à ce chantier (item 2) -->
-    <div class="card mb-3" *ngIf="isSuperAdmin && !isNew">
+    <div class="card mb-3" id="admin-utilisateurs-client-chantier" *ngIf="isSuperAdmin && !isNew">
         <div class="card-head justify-content-between">
             <div class="flex align-items-center gap-2">
                 <i class="pi pi-user"></i>

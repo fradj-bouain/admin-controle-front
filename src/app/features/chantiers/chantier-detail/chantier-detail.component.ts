@@ -654,18 +654,20 @@ export class ChantierDetailComponent implements OnInit {
     // Navigation entre blocs (voir SectionNavComponent, demande client — prototype validé) :
     // "Contrôles" n'y figure pas, c'est un panneau latéral (afficherControles), pas un
     // bloc à scroller — déjà son propre bouton dans l'en-tête.
-    get sectionsNavChantier(): SectionNavItem[] {
-        if (this.isNew) {
-            return [];
-        }
-        return [
-            { id: 'admin-detail-chantier', label: 'Détail', icon: 'map-marker' },
-            { id: 'admin-statistiques-chantier', label: 'Statistiques', icon: 'chart-bar' },
-            { id: 'admin-entreprises-chantier', label: 'Entreprises', icon: 'building' },
-            { id: 'admin-salaries-chantier', label: 'Salariés', icon: 'users' },
-            { id: 'admin-documents-chantier', label: 'Documents', icon: 'file-plus' }
-        ];
-    }
+    // CHAMP FIXE, PAS UNE GETTER : voir le commentaire équivalent sur entreprise-detail
+    // (bug constaté — un *ngFor lié à une getter recrée sans cesse ses éléments et peut
+    // avaler le clic, sans erreur console). *ngIf="isSuperAdmin && !isNew" sur
+    // <app-section-nav> gère déjà la visibilité.
+    // Statistiques est juste à côté de Détail (même ligne) : déjà visible dès qu'on arrive
+    // sur "Détail", pas besoin de son propre onglet (demande client).
+    readonly sectionsNavChantier: SectionNavItem[] = [
+        { id: 'admin-detail-chantier', label: 'Détail', icon: 'map-marker' },
+        { id: 'admin-utilisateurs-bo-chantier', label: 'Back Office', icon: 'users' },
+        { id: 'admin-utilisateurs-client-chantier', label: 'Utilisateurs client', icon: 'user' },
+        { id: 'admin-entreprises-chantier', label: 'Entreprises', icon: 'building' },
+        { id: 'admin-salaries-chantier', label: 'Salariés', icon: 'id-card' },
+        { id: 'admin-documents-chantier', label: 'Documents', icon: 'file-plus' }
+    ];
 
     get statsEntreprises(): { total: number; actif: number; inactif: number } {
         const entreprisesAffecteesIds = new Set(this.affectationsEntreprise.map((a) => a.entrepriseId));

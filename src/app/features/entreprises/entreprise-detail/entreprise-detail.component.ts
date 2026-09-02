@@ -499,18 +499,27 @@ export class EntrepriseDetailComponent implements OnInit {
     // Navigation entre blocs (voir SectionNavComponent, demande client — prototype validé) :
     // Sous-traitants n'y figure pas, c'est un panneau latéral (afficherSousTraitants), pas
     // un bloc à scroller — déjà son propre bouton dans l'en-tête.
-    get sectionsNavEntreprise(): SectionNavItem[] {
-        if (this.isNew) {
-            return [];
-        }
-        return [
-            { id: 'admin-identite', label: 'Identité', icon: 'building' },
-            { id: 'admin-coordonnees', label: 'Coordonnées', icon: 'phone' },
-            { id: 'admin-statistiques', label: 'Statistiques', icon: 'chart-bar' },
-            { id: 'admin-chantiers', label: 'Chantiers', icon: 'map-marker' },
-            { id: 'admin-documents', label: 'Documents', icon: 'folder' }
-        ];
-    }
+    // CHAMP FIXE, PAS UNE GETTER : un *ngFor lié à une getter reçoit un nouveau tableau (et
+    // de nouveaux objets) à chaque cycle de détection de changement — Angular le voit comme
+    // "tout a changé" et détruit/recrée les <button> en continu, ce qui peut avaler le clic
+    // en plein milieu (aucune erreur, le bouton "ne répond juste pas") — même classe de bug
+    // que le piège getter+p-dropdown déjà rencontré ailleurs dans ce projet. La visibilité
+    // du composant est déjà gérée par *ngIf="isSuperAdmin && !isNew" sur <app-section-nav>,
+    // pas besoin de recalculer ce tableau selon isNew ici.
+    // Identité/Coordonnées/Informations légales (empilées, courtes) et Statistiques (juste à
+    // côté, même ligne) partagent tous le même écran dès qu'on arrive sur "Identité" — pas
+    // besoin d'un onglet chacun (demande client). Ne reste séparé que ce qui est vraiment
+    // long/imprévisible (tableaux, listes paginées) — voir principe posé par le client.
+    readonly sectionsNavEntreprise: SectionNavItem[] = [
+        { id: 'admin-identite', label: 'Identité', icon: 'building' },
+        { id: 'admin-chantiers', label: 'Chantiers', icon: 'map-marker' },
+        { id: 'admin-salaries-entreprise', label: 'Salariés', icon: 'users' },
+        { id: 'admin-utilisateurs-entreprise', label: 'Utilisateurs', icon: 'id-card' },
+        { id: 'admin-documents', label: 'Documents', icon: 'folder' },
+        { id: 'admin-historique-entreprise', label: 'Historique', icon: 'history' },
+        { id: 'admin-relances-entreprise', label: 'Relances', icon: 'send' },
+        { id: 'admin-historique-messages-entreprise', label: 'Messages', icon: 'envelope' }
+    ];
 
     // --- Statistiques (même bloc que la fiche Chantier, demande client — calculées côté
     // client à partir des données déjà chargées : salaries/mesAffectations/sousTraitants). ---

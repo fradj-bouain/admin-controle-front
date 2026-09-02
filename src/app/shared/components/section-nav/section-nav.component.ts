@@ -46,6 +46,15 @@ export class SectionNavComponent implements AfterViewInit, OnDestroy {
     private rafId?: number;
     private scrollHandler = () => this.demanderMiseAJour();
     private resizeHandler = () => this.demanderMiseAJour();
+    // Le clic fixe déjà le bon onglet (voir aller()) : pendant le scroll animé qui l'amène
+    // à l'écran, la page défile forcément devant TOUS les blocs intermédiaires, et sans ce
+    // garde-fou le calcul au scroll (mettreAJourActif) rallumait chacun d'eux au passage —
+    // on voyait plusieurs onglets se colorer l'un après l'autre au lieu d'un seul qui reste
+    // actif. Suspendu le temps du scroll programmatique, réactivé à la fin (scrollend, avec
+    // un filet de temporisation pour les navigateurs qui ne le supportent pas encore).
+    private navigationEnCours = false;
+    private finNavigationTimer?: ReturnType<typeof setTimeout>;
+    private scrollEndHandler = () => this.terminerNavigation();
 
     ngAfterViewInit(): void {
         if (this.sections.length === 0) {
@@ -54,6 +63,7 @@ export class SectionNavComponent implements AfterViewInit, OnDestroy {
         this.activeId = this.sections[0].id;
         window.addEventListener('scroll', this.scrollHandler, { passive: true });
         window.addEventListener('resize', this.resizeHandler);
+        window.addEventListener('scrollend', this.scrollEndHandler);
         // Premier calcul après le rendu initial (et un second peu après, pour couvrir le cas
         // où la fiche est encore en train de charger au tout premier passage — voir le bloc
         // de commentaire ci-dessus).
@@ -65,8 +75,24 @@ export class SectionNavComponent implements AfterViewInit, OnDestroy {
         if (this.rafId !== undefined) {
             cancelAnimationFrame(this.rafId);
         }
+        if (this.finNavigationTimer !== undefined) {
+            clearTimeout(this.finNavigationTimer);
+        }
         window.removeEventListener('scroll', this.scrollHandler);
         window.removeEventListener('resize', this.resizeHandler);
+        window.removeEventListener('scrollend', this.scrollEndHandler);
+    }
+
+    private terminerNavigation(): void {
+        this.navigationEnCours = false;
+        if (this.finNavigationTimer !== undefined) {
+            clearTimeout(this.finNavigationTimer);
+            this.finNavigationTimer = undefined;
+        }
+        // Recale une dernière fois sur la position réelle une fois le scroll bien arrêté
+        // (le clic peut avoir visé une valeur légèrement différente du repos exact).
+        this.mettreAJourActif();
+        this.deplacerIndicateur();
     }
 
     private demanderMiseAJour(): void {
@@ -88,6 +114,9 @@ export class SectionNavComponent implements AfterViewInit, OnDestroy {
     }
 
     private mettreAJourActif(): void {
+        if (this.navigationEnCours) {
+            return;
+        }
         const reference = this.ligneReference();
         let meilleur: string | undefined;
         let meilleurTop = -Infinity;
@@ -116,12 +145,28 @@ export class SectionNavComponent implements AfterViewInit, OnDestroy {
         }
         this.activeId = item.id;
         this.deplacerIndicateur();
+        this.navigationEnCours = true;
+        if (this.finNavigationTimer !== undefined) {
+            clearTimeout(this.finNavigationTimer);
+        }
+        // Filet de secours si "scrollend" ne se déclenche pas (navigateur qui ne le supporte
+        // pas encore, ou cible déjà à l'écran donc aucun scroll réel à conclure).
+        this.finNavigationTimer = setTimeout(() => this.terminerNavigation(), 1000);
         const y = el.getBoundingClientRect().top + window.scrollY - this.ligneReference() + 8;
         window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
     }
 
     remonterEnHaut(): void {
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Filet de sécurité : si un jour un appelant passe `sections` depuis une getter (nouveau
+    // tableau à chaque cycle de détection), trackBy par id évite quand même qu'Angular ne
+    // détruise/recrée les <button> en continu (voir le bug déjà rencontré ici et documenté
+    // sur les pages hôtes — ces dernières utilisent maintenant des champs fixes, mais ce
+    // composant partagé ne doit pas dépendre de la discipline de chaque appelant).
+    trackById(_index: number, item: SectionNavItem): string {
+        return item.id;
     }
 
     private deplacerIndicateur(): void {
