@@ -1971,6 +1971,9 @@ a { color: var(--brand-accent-ink); }
     font-size: 1.05rem;
 }
 .chantier-hero-sub { display: flex; align-items: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.6); font-size: 0.84rem; margin-top: 0.3rem; flex-wrap: wrap; }
+// Segment "contexte chantier" (nom + rang) dans .chantier-hero-sub — demande client : mis en
+// évidence (gras, blanc plein) plutôt que dans la même teinte discrète que le reste de la ligne.
+.chantier-hero-contexte { color: #fff; font-weight: 700; }
 .chantier-hero-sub a { color: rgba(255, 255, 255, 0.85); text-decoration: none; border-bottom: 1px dotted rgba(255, 255, 255, 0.4); cursor: pointer; }
 /* Les tints pâles success/danger (voir plus haut) sont pensés pour un fond blanc — même
    correction que .id-card--client, appliquée ici pour ce second bandeau sombre. */

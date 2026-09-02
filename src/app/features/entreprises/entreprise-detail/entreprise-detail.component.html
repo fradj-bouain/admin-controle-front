@@ -94,7 +94,6 @@
                 <button type="button" class="id-card-back" pTooltip="Retour à la liste" tooltipPosition="bottom" (click)="retour()">
                     <i class="pi pi-arrow-left"></i>
                 </button>
-                <div class="chantier-hero-mark">{{ entrepriseInitiales }}</div>
                 <div>
                     <h1 class="chantier-hero-title">{{ entreprise.raisonSociale }}</h1>
                     <div class="chantier-hero-sub">
@@ -107,11 +106,18 @@
                         <!-- Contexte chantier (voir contexteChantierId) : la fiche est ouverte
                              depuis un chantier précis (liste fusionnée Entreprises) — sans ce
                              rappel dans l'en-tête, on perd de vue de quel chantier il s'agit en
-                             scrollant jusqu'à la carte "Contact supplémentaire" plus bas. -->
+                             scrollant jusqu'à la carte "Contact supplémentaire" plus bas. Mis en
+                             évidence (gras, blanc) plutôt que dans la même teinte discrète que le
+                             reste — c'est l'information la plus utile de cette ligne pour un
+                             SUPER_ADMIN arrivant ici depuis la fiche Chantier. Le rang
+                             (affectationContexte.role) répond à "à quel titre cette entreprise
+                             est sur CE chantier" (demande client). -->
                         <ng-container *ngIf="contexteChantierNom">
                             <span>·</span>
                             <span class="pi pi-map-marker" style="font-size: 0.7rem;"></span>
-                            <span>{{ contexteChantierNom }}</span>
+                            <span class="chantier-hero-contexte">
+                                {{ contexteChantierNom }}<ng-container *ngIf="affectationContexte?.role"> — {{ affectationContexte?.role }}</ng-container>
+                            </span>
                         </ng-container>
                     </div>
                 </div>
