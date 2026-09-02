@@ -865,6 +865,16 @@
     </div>
 
     <div *ngIf="isNew || afficherDocuments">
+        <!-- Barre de sélection groupée : visible dès qu'au moins un document est coché,
+             que ce soit dans "À fournir" ou "Documents optionnels" — retour client : le
+             bouton "Demander" restait auparavant caché dans la section "À fournir" et
+             disparaissait complètement quand la sélection ne portait que sur des
+             optionnels (aucun obligatoire manquant à ce moment-là). -->
+        <div class="flex align-items-center justify-content-between gap-2 p-2 mb-2 border-round-lg" style="background: var(--brand-accent-tint);" *ngIf="isSuperAdmin && !isNew && documentsSelectionnesDemande.size > 0">
+            <span class="text-sm font-medium" style="color: var(--brand-accent-ink);">{{ documentsSelectionnesDemande.size }} document(s) sélectionné(s)</span>
+            <button pButton type="button" icon="pi pi-send" [label]="'Demander la sélection (' + documentsSelectionnesDemande.size + ')'" class="p-button-sm" (click)="demanderSelection()"></button>
+        </div>
+
         <ng-container *ngIf="typesAFournir.length > 0">
             <div class="flex align-items-center justify-content-between gap-2 mb-2 mt-2">
                 <div class="flex align-items-center gap-2 text-sm font-semibold uppercase text-red-600">
@@ -874,11 +884,8 @@
                      seule demande qui les couvre tous, plutôt qu'un message par document
                      (voir demanderSelection/toggleSelectionDocument). -->
                 <div class="flex align-items-center gap-2" *ngIf="isSuperAdmin && !isNew">
-                    <div class="flex align-items-center gap-2">
-                        <p-checkbox [binary]="true" [ngModel]="toutSelectionneDemande" (onChange)="toggleToutSelectionnerDemande()" inputId="toutSelectionnerDemande"></p-checkbox>
-                        <label for="toutSelectionnerDemande" class="text-sm text-500">Tout sélectionner</label>
-                    </div>
-                    <button pButton type="button" icon="pi pi-send" [label]="'Demander la sélection (' + documentsSelectionnesDemande.size + ')'" class="p-button-sm" [disabled]="documentsSelectionnesDemande.size === 0" (click)="demanderSelection()"></button>
+                    <p-checkbox [binary]="true" [ngModel]="toutSelectionneDemande" (onChange)="toggleToutSelectionnerDemande()" inputId="toutSelectionnerDemande"></p-checkbox>
+                    <label for="toutSelectionnerDemande" class="text-sm text-500">Tout sélectionner</label>
                 </div>
             </div>
             <ng-container *ngFor="let type of typesAFournir">
@@ -896,7 +903,13 @@
         </ng-container>
 
         <ng-container *ngIf="typesOptionnelsRestants.length > 0">
-            <div class="flex align-items-center gap-2 text-sm font-semibold uppercase text-600 mb-2 mt-3">Documents optionnels</div>
+            <div class="flex align-items-center justify-content-between gap-2 mb-2 mt-3">
+                <div class="text-sm font-semibold uppercase text-600">Documents optionnels</div>
+                <div class="flex align-items-center gap-2" *ngIf="isSuperAdmin && !isNew && afficherOptionnels">
+                    <p-checkbox [binary]="true" [ngModel]="toutSelectionneOptionnelsDemande" (onChange)="toggleToutSelectionnerOptionnelsDemande()" inputId="toutSelectionnerOptionnelsDemande"></p-checkbox>
+                    <label for="toutSelectionnerOptionnelsDemande" class="text-sm text-500">Tout sélectionner</label>
+                </div>
+            </div>
             <div
                 *ngIf="!afficherOptionnels"
                 class="flex align-items-center justify-content-between border-1 border-dashed border-round-lg p-3 cursor-pointer"

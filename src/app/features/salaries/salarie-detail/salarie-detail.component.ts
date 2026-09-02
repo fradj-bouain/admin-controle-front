@@ -201,8 +201,28 @@ export class SalarieDetailComponent implements OnInit {
         }
     }
 
+    // Même mécanique que ci-dessus, pour les documents optionnels — retour client : le
+    // bouton "Demander la sélection" n'était visible que dans la section "À fournir", donc
+    // invisible dès qu'on cochait uniquement des optionnels (aucun obligatoire manquant).
+    get toutSelectionneOptionnelsDemande(): boolean {
+        return this.typesOptionnelsRestants.length > 0 && this.typesOptionnelsRestants.every((t) => this.documentsSelectionnesDemande.has(t.id));
+    }
+
+    toggleToutSelectionnerOptionnelsDemande() {
+        if (this.toutSelectionneOptionnelsDemande) {
+            this.typesOptionnelsRestants.forEach((t) => this.documentsSelectionnesDemande.delete(t.id));
+        } else {
+            this.typesOptionnelsRestants.forEach((t) => this.documentsSelectionnesDemande.add(t.id));
+        }
+    }
+
+    // Couvre "À fournir" ET "Documents optionnels" — un document coché dans l'une ou
+    // l'autre section part dans la même demande groupée (voir retour client : le bouton
+    // ne regardait auparavant que les obligatoires manquants).
     demanderSelection() {
-        this.demanderDocuments(this.typesAFournir.filter((t) => this.documentsSelectionnesDemande.has(t.id)));
+        const types = [...this.typesAFournir, ...this.typesOptionnelsRestants]
+            .filter((t) => this.documentsSelectionnesDemande.has(t.id));
+        this.demanderDocuments(types);
     }
 
     constructor(
