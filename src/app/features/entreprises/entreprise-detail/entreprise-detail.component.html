@@ -104,6 +104,15 @@
                         <span>·</span>
                         <span>{{ nomCorpsDeMetier(entreprise.corpsDeMetierId) }}</span>
                         <ng-container *ngIf="entreprise.ville"><span>·</span><span>{{ entreprise.ville }}</span></ng-container>
+                        <!-- Contexte chantier (voir contexteChantierId) : la fiche est ouverte
+                             depuis un chantier précis (liste fusionnée Entreprises) — sans ce
+                             rappel dans l'en-tête, on perd de vue de quel chantier il s'agit en
+                             scrollant jusqu'à la carte "Contact supplémentaire" plus bas. -->
+                        <ng-container *ngIf="contexteChantierNom">
+                            <span>·</span>
+                            <span class="pi pi-map-marker" style="font-size: 0.7rem;"></span>
+                            <span>{{ contexteChantierNom }}</span>
+                        </ng-container>
                     </div>
                 </div>
             </div>
@@ -1404,10 +1413,10 @@
              séparée — un champ par ligne, plus adapté à cette colonne étroite. -->
         <div class="card mb-3" *ngIf="isSuperAdmin && contexteChantierId && !isNew">
             <div class="card-head">
-                <i class="pi pi-map-marker"></i>
-                <h6 class="m-0">Chantier : {{ contexteChantierNom }}</h6>
+                <i class="pi pi-id-card"></i>
+                <h6 class="m-0">Contact supplémentaire</h6>
             </div>
-            <p class="text-500 text-sm mt-0 mb-3">Coordonnées de contact propres à ce chantier — optionnelles, sans toucher aux informations légales de l'entreprise, communes à tous ses chantiers.</p>
+            <p class="text-500 text-sm mt-0 mb-3">Coordonnées de contact propres au chantier {{ contexteChantierNom }} — optionnelles, sans toucher aux informations légales de l'entreprise, communes à tous ses chantiers.</p>
             <div class="field">
                 <label for="emailContactChantier">Email de contact</label>
                 <input id="emailContactChantier" type="email" pInputText [(ngModel)]="emailContactChantier" placeholder="Par défaut : email principal de l'entreprise" class="w-full" />

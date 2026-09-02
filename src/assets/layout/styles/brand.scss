@@ -2019,7 +2019,6 @@ a { color: var(--brand-accent-ink); }
    bouton flottant, même esprit qu'une navigation de landing page. .layout-topbar de ce
    thème n'est pas fixe (scrolle avec la page, voir _topbar.scss) : top:0 colle bien au
    sommet réel du viewport, pas besoin de décalage. */
-.section-nav-sentinel { height: 1px; }
 .section-nav-wrap { position: sticky; top: 0; z-index: 30; margin: 0 -1px 1.25rem; }
 .section-nav {
     background: rgba(247, 248, 250, 0.88);

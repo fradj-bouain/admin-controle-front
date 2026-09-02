@@ -1,6 +1,5 @@
 <ng-container *ngIf="sections.length > 0">
-    <div #sentinel class="section-nav-sentinel"></div>
-    <div class="section-nav-wrap" [class.stuck]="stuck">
+    <div #wrap class="section-nav-wrap" [class.stuck]="stuck">
         <nav class="section-nav" aria-label="Navigation entre les blocs de la fiche">
             <div #track class="section-nav-track">
                 <span #highlight class="section-nav-highlight"></span>

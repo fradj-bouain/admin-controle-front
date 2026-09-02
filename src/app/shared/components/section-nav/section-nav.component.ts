@@ -14,9 +14,19 @@ export interface SectionNavItem {
  * même principe qu'une navigation de landing page) avant implémentation ici.
  *
  * Les sections ciblées (un id par bloc, voir `sections`) vivent dans le template de la
- * page hôte, pas dans celui-ci — observées via document.getElementById/IntersectionObserver
- * plutôt que via ViewChild, seule option pour un composant générique réutilisable sur
- * plusieurs fiches aux blocs différents.
+ * page hôte, pas dans celui-ci — recherchées via document.getElementById à chaque calcul
+ * plutôt que mises en cache une fois pour toutes : certains blocs (ex: Identité/Coordonnées
+ * sur la fiche Entreprise) sont dans un <form *ngIf="!loading"> qui n'existe pas encore au
+ * premier rendu (la fiche est encore en train de charger) — les mettre en cache trop tôt les
+ * excluait silencieusement de la détection pour tout le reste de la vie du composant (bug
+ * constaté : un seul bloc restait jamais actif).
+ *
+ * Détection du bloc actif : PAS un IntersectionObserver à bande étroite (rootMargin) — sur
+ * une mise en page à deux colonnes (ex: Identité à gauche, Statistiques à droite), plusieurs
+ * blocs partagent la même position verticale et "gagnent" au hasard selon l'ordre des
+ * callbacks. À la place, un calcul simple et déterministe au scroll : le dernier bloc dont le
+ * haut a franchi une ligne de référence juste sous la barre — en cas d'égalité verticale
+ * (colonnes côte à côte), le premier de `sections` l'emporte (comparaison stricte `>`).
  */
 @Component({
     selector: 'app-section-nav',
@@ -27,78 +37,87 @@ export class SectionNavComponent implements AfterViewInit, OnDestroy {
 
     @ViewChild('track') trackRef?: ElementRef<HTMLElement>;
     @ViewChild('highlight') highlightRef?: ElementRef<HTMLElement>;
-    @ViewChild('sentinel') sentinelRef?: ElementRef<HTMLElement>;
+    @ViewChild('wrap') wrapRef?: ElementRef<HTMLElement>;
 
     activeId = '';
     stuck = false;
     showScrollTop = false;
 
-    private sectionObserver?: IntersectionObserver;
-    private stickyObserver?: IntersectionObserver;
-    private scrollHandler = () => (this.showScrollTop = window.scrollY > 480);
-    private resizeHandler = () => this.deplacerIndicateur();
+    private rafId?: number;
+    private scrollHandler = () => this.demanderMiseAJour();
+    private resizeHandler = () => this.demanderMiseAJour();
 
     ngAfterViewInit(): void {
         if (this.sections.length === 0) {
             return;
         }
         this.activeId = this.sections[0].id;
-        // Les sections visées sont ajoutées au DOM par la page hôte au même cycle — un
-        // setTimeout(0) suffit à laisser Angular terminer son propre rendu avant qu'on
-        // aille chercher leurs éléments.
-        setTimeout(() => this.initialiser());
         window.addEventListener('scroll', this.scrollHandler, { passive: true });
         window.addEventListener('resize', this.resizeHandler);
+        // Premier calcul après le rendu initial (et un second peu après, pour couvrir le cas
+        // où la fiche est encore en train de charger au tout premier passage — voir le bloc
+        // de commentaire ci-dessus).
+        this.demanderMiseAJour();
+        setTimeout(() => this.demanderMiseAJour(), 400);
     }
 
     ngOnDestroy(): void {
-        this.sectionObserver?.disconnect();
-        this.stickyObserver?.disconnect();
+        if (this.rafId !== undefined) {
+            cancelAnimationFrame(this.rafId);
+        }
         window.removeEventListener('scroll', this.scrollHandler);
         window.removeEventListener('resize', this.resizeHandler);
     }
 
-    private initialiser(): void {
-        this.deplacerIndicateur();
-
-        if (this.sentinelRef) {
-            this.stickyObserver = new IntersectionObserver(
-                (entries) => (this.stuck = !entries[0].isIntersecting),
-                { threshold: 0 }
-            );
-            this.stickyObserver.observe(this.sentinelRef.nativeElement);
-        }
-
-        const cibles = this.sections
-            .map((s) => document.getElementById(s.id))
-            .filter((el): el is HTMLElement => !!el);
-        this.sectionObserver = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        const id = entry.target.getAttribute('id');
-                        if (id) {
-                            this.definirActif(id);
-                        }
-                    }
-                });
-            },
-            { rootMargin: '-40% 0px -55% 0px', threshold: 0 }
-        );
-        cibles.forEach((el) => this.sectionObserver!.observe(el));
-    }
-
-    definirActif(id: string): void {
-        if (id === this.activeId) {
+    private demanderMiseAJour(): void {
+        if (this.rafId !== undefined) {
             return;
         }
-        this.activeId = id;
-        this.deplacerIndicateur();
+        this.rafId = requestAnimationFrame(() => {
+            this.rafId = undefined;
+            this.mettreAJourActif();
+            this.deplacerIndicateur();
+        });
+    }
+
+    private ligneReference(): number {
+        // Juste sous la barre collante (une fois accrochée) — hauteur réelle du bandeau,
+        // pas une valeur fixe qui suppose sa taille.
+        const hauteurBarre = this.wrapRef?.nativeElement.getBoundingClientRect().height ?? 0;
+        return hauteurBarre + 24;
+    }
+
+    private mettreAJourActif(): void {
+        const reference = this.ligneReference();
+        let meilleur: string | undefined;
+        let meilleurTop = -Infinity;
+        for (const s of this.sections) {
+            const el = document.getElementById(s.id);
+            if (!el) {
+                continue;
+            }
+            const top = el.getBoundingClientRect().top;
+            // Comparaison stricte : en cas d'égalité (deux blocs côte à côte à la même
+            // hauteur), celui déjà retenu (donc le premier de la liste) reste gagnant.
+            if (top <= reference && top > meilleurTop) {
+                meilleur = s.id;
+                meilleurTop = top;
+            }
+        }
+        if (meilleur && meilleur !== this.activeId) {
+            this.activeId = meilleur;
+        }
     }
 
     aller(item: SectionNavItem): void {
-        this.definirActif(item.id);
-        document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const el = document.getElementById(item.id);
+        if (!el) {
+            return;
+        }
+        this.activeId = item.id;
+        this.deplacerIndicateur();
+        const y = el.getBoundingClientRect().top + window.scrollY - this.ligneReference() + 8;
+        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
     }
 
     remonterEnHaut(): void {
@@ -119,5 +138,7 @@ export class SectionNavComponent implements AfterViewInit, OnDestroy {
         const highlight = this.highlightRef.nativeElement;
         highlight.style.width = `${boutonRect.width}px`;
         highlight.style.transform = `translateX(${boutonRect.left - trackRect.left + track.scrollLeft}px)`;
+        this.stuck = this.wrapRef ? this.wrapRef.nativeElement.getBoundingClientRect().top <= 0 : false;
+        this.showScrollTop = window.scrollY > 480;
     }
 }
