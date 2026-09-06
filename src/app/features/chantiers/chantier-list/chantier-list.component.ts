@@ -117,6 +117,18 @@ export class ChantierListComponent implements OnInit {
         });
     }
 
+    // Nom de l'entreprise "parente" (la Principale pour un STT1, le STT1 pour un STT2) —
+    // demande client : dire à quel titre un STT2 intervient sur ce chantier plutôt que son
+    // seul rang isolé. raisonSocialeEntreprise est déjà résolue côté backend sur chaque
+    // affectation du même lot (entreprisesParChantier[chantierId]) — pas d'appel réseau de plus.
+    nomParenteAffectation(affectation: AffectationEntrepriseChantier, chantierId: string): string | undefined {
+        if (!affectation.affectationParenteId) {
+            return undefined;
+        }
+        return (this.entreprisesParChantier[chantierId] || [])
+            .find((p) => p.id === affectation.affectationParenteId)?.raisonSocialeEntreprise;
+    }
+
     // Email de contact propre à cette relation (entreprise, chantier) — voir modèle validé
     // "chaque chantier peut avoir son propre contact" — sinon retombe sur l'email principal
     // de l'entreprise (voir AffectationEntrepriseChantier.emailContact).

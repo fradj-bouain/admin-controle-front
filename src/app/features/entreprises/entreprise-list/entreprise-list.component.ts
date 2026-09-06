@@ -45,6 +45,12 @@ interface LigneEntrepriseAffectation {
     nomChantier?: string;
     role?: RoleEntreprise;
     statutAffectation?: string;
+    // Entreprise "parente" (la Principale pour un STT1, le STT1 pour un STT2) — demande
+    // client : un STT2 n'a jamais de sous-traitant EN DESSOUS de lui (sousTraitants reste
+    // vide, voir plus bas), donc la colonne "Sous-traitants" affiche à la place, pour ces
+    // lignes, le rattachement AU-DESSUS — même forme que SousTraitantApercu pour pouvoir
+    // se déplier de la même façon (clic → ligne détaillée, comme les vrais sous-traitants).
+    parenteCalculee?: SousTraitantApercu;
     // Entreprises STT1/STT2 rattachées à CETTE affectation précise (affectationParenteId
     // pointant sur elle) — jamais renseigné pour une ligne "sans affectation" ni pour un
     // STT2 (qui ne peut pas lui-même avoir de sous-traitant, voir règle métier).
@@ -213,6 +219,7 @@ export class EntrepriseListComponent implements OnInit {
                 nomChantier: a.nomChantier,
                 role: a.role,
                 statutAffectation: a.statut,
+                parenteCalculee: this.parenteAffectation(a.affectationParenteId),
                 sousTraitants: this.affectations
                     .filter((enfant) => enfant.affectationParenteId === a.id)
                     .map((enfant) => ({
@@ -223,6 +230,25 @@ export class EntrepriseListComponent implements OnInit {
                     }))
             }));
         });
+    }
+
+    // Résout l'entreprise portant l'affectation "parente" (this.affectations contient déjà
+    // tout le lot, aucun appel réseau supplémentaire) — même forme que les entrées de
+    // sousTraitants, pour un rendu identique (ligne dépliable) dans le template.
+    private parenteAffectation(affectationParenteId?: string): SousTraitantApercu | undefined {
+        if (!affectationParenteId) {
+            return undefined;
+        }
+        const parente = this.affectations.find((p) => p.id === affectationParenteId);
+        if (!parente) {
+            return undefined;
+        }
+        return {
+            entrepriseId: parente.entrepriseId,
+            raisonSociale: this.entreprises.find((e) => e.id === parente.entrepriseId)?.raisonSociale ?? '—',
+            role: parente.role,
+            statut: parente.statut
+        };
     }
 
     private ligneSansAffectation(entreprise: Entreprise): LigneEntrepriseAffectation {

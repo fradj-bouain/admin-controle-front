@@ -174,7 +174,24 @@
                     >
                         <ng-template pTemplate="icon"><i class="pi" [ngClass]="expandedRowKeys[ligne.rowKey] ? 'pi-chevron-down' : 'pi-sitemap'" style="margin-right:.35rem;"></i></ng-template>
                     </p-tag>
-                    <ng-template #pasDeSousTraitant><span class="text-500">—</span></ng-template>
+                    <!-- Un STT2 n'a jamais de sous-traitant EN DESSOUS de lui (sousTraitants
+                         reste vide, voir règle métier) : la colonne montrait juste "—", sans
+                         dire à qui il est rattaché AU-DESSUS (demande client). Même
+                         comportement dépliable que les vrais sous-traitants — pas juste du
+                         texte statique — pour rester cohérent visuellement. -->
+                    <ng-template #pasDeSousTraitant>
+                        <p-tag
+                            *ngIf="ligne.parenteCalculee; else aucunRattachement"
+                            [pRowToggler]="ligne"
+                            severity="secondary"
+                            value="Rattachée à"
+                            [style.cursor]="'pointer'"
+                            [pTooltip]="(expandedRowKeys[ligne.rowKey] ? 'Masquer' : 'Voir') + ' l\'entreprise de rattachement'"
+                        >
+                            <ng-template pTemplate="icon"><i class="pi" [ngClass]="expandedRowKeys[ligne.rowKey] ? 'pi-chevron-down' : 'pi-arrow-up'" style="margin-right:.35rem;"></i></ng-template>
+                        </p-tag>
+                        <ng-template #aucunRattachement><span class="text-500">—</span></ng-template>
+                    </ng-template>
                 </td>
                 <td>
                     <p-tag *ngIf="ligne.statutAffectation" [severity]="ligne.statutAffectation === 'ACTIF' ? 'success' : 'danger'" [value]="ligne.statutAffectation | etatLabel"></p-tag>
@@ -198,32 +215,59 @@
             </tr>
         </ng-template>
         <!-- Sous-traitants (STT1/STT2) directement rattachés à CETTE affectation, sur CE
-             chantier — déjà en mémoire (this.affectations), aucun appel réseau au dépli. -->
+             chantier — déjà en mémoire (this.affectations), aucun appel réseau au dépli. Pour
+             un STT2 (jamais de sous-traitant en dessous, voir sousTraitants toujours vide),
+             affiche à la place l'entreprise à laquelle IL est rattaché (parenteCalculee) —
+             même liste compacte, juste inversée dans le sens de la relation. -->
         <ng-template pTemplate="rowexpansion" let-ligne>
             <tr>
                 <td colspan="9" style="background: var(--surface-50);">
                     <div class="p-3">
-                        <div class="flex align-items-center gap-2 mb-2 text-sm font-semibold uppercase text-600">
-                            <i class="pi pi-sitemap"></i> Sous-traitants sur {{ ligne.nomChantier }}
-                        </div>
-                        <div class="ent-compact-list">
-                            <button
-                                type="button"
-                                class="ent-compact-row"
-                                *ngFor="let st of ligne.sousTraitants"
-                                [routerLink]="['/entreprises', st.entrepriseId]"
-                                [queryParams]="{ chantierId: ligne.chantierId }"
-                            >
-                                <span class="ent-compact-row-icon"><i class="pi pi-briefcase"></i></span>
-                                <span class="ent-compact-row-body">
-                                    <span class="ent-compact-row-title">{{ st.raisonSociale }}</span>
-                                </span>
-                                <span class="ent-compact-row-end flex align-items-center gap-2">
-                                    <p-tag severity="info" [value]="st.role"></p-tag>
-                                    <p-tag [severity]="st.statut === 'ACTIF' ? 'success' : 'danger'" [value]="st.statut | etatLabel"></p-tag>
-                                </span>
-                            </button>
-                        </div>
+                        <ng-container *ngIf="ligne.sousTraitants.length > 0; else blocParente">
+                            <div class="flex align-items-center gap-2 mb-2 text-sm font-semibold uppercase text-600">
+                                <i class="pi pi-sitemap"></i> Sous-traitants sur {{ ligne.nomChantier }}
+                            </div>
+                            <div class="ent-compact-list">
+                                <button
+                                    type="button"
+                                    class="ent-compact-row"
+                                    *ngFor="let st of ligne.sousTraitants"
+                                    [routerLink]="['/entreprises', st.entrepriseId]"
+                                    [queryParams]="{ chantierId: ligne.chantierId }"
+                                >
+                                    <span class="ent-compact-row-icon"><i class="pi pi-briefcase"></i></span>
+                                    <span class="ent-compact-row-body">
+                                        <span class="ent-compact-row-title">{{ st.raisonSociale }}</span>
+                                    </span>
+                                    <span class="ent-compact-row-end flex align-items-center gap-2">
+                                        <p-tag severity="info" [value]="st.role"></p-tag>
+                                        <p-tag [severity]="st.statut === 'ACTIF' ? 'success' : 'danger'" [value]="st.statut | etatLabel"></p-tag>
+                                    </span>
+                                </button>
+                            </div>
+                        </ng-container>
+                        <ng-template #blocParente>
+                            <div class="flex align-items-center gap-2 mb-2 text-sm font-semibold uppercase text-600" *ngIf="ligne.parenteCalculee">
+                                <i class="pi pi-arrow-up"></i> Rattachée à sur {{ ligne.nomChantier }}
+                            </div>
+                            <div class="ent-compact-list" *ngIf="ligne.parenteCalculee as parente">
+                                <button
+                                    type="button"
+                                    class="ent-compact-row"
+                                    [routerLink]="['/entreprises', parente.entrepriseId]"
+                                    [queryParams]="{ chantierId: ligne.chantierId }"
+                                >
+                                    <span class="ent-compact-row-icon"><i class="pi pi-briefcase"></i></span>
+                                    <span class="ent-compact-row-body">
+                                        <span class="ent-compact-row-title">{{ parente.raisonSociale }}</span>
+                                    </span>
+                                    <span class="ent-compact-row-end flex align-items-center gap-2">
+                                        <p-tag severity="info" [value]="parente.role"></p-tag>
+                                        <p-tag [severity]="parente.statut === 'ACTIF' ? 'success' : 'danger'" [value]="parente.statut | etatLabel"></p-tag>
+                                    </span>
+                                </button>
+                            </div>
+                        </ng-template>
                     </div>
                 </td>
             </tr>

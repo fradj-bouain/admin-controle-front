@@ -203,6 +203,7 @@
                                     <th>Corps de métier</th>
                                     <th>Localisation</th>
                                     <th>Rang</th>
+                                    <th>Rattachée à</th>
                                     <th>Statut</th>
                                     <th>Email de contact</th>
                                     <th>Téléphone</th>
@@ -214,6 +215,7 @@
                                     <td>{{ corpsDeMetierAffichage(affectation) }}</td>
                                     <td>{{ localisationAffichage(affectation) }}</td>
                                     <td><p-tag severity="info" [value]="affectation.role"></p-tag></td>
+                                    <td>{{ nomParenteAffectation(affectation, chantier.id) || '—' }}</td>
                                     <td><p-tag [severity]="affectation.statut === 'ACTIF' ? 'success' : 'danger'" [value]="affectation.statut | etatLabel"></p-tag></td>
                                     <td>{{ emailAffichage(affectation) }}</td>
                                     <td>{{ affectation.telephoneContact || '—' }}</td>
