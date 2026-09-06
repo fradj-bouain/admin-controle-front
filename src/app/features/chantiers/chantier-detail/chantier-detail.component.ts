@@ -244,7 +244,7 @@ export class ChantierDetailComponent implements OnInit {
     // --- Vue Entreprise (lecture seule) : indicateurs propres à SA situation sur ce
     // chantier, jamais les stats globales qui mélangent toutes les entreprises. ---
 
-    get monAffectationEntreprise(): (AffectationEntrepriseChantier & { nomEntrepriseCalculee: string }) | undefined {
+    get monAffectationEntreprise(): (AffectationEntrepriseChantier & { nomEntrepriseCalculee: string; nomParenteCalculee: string }) | undefined {
         return this.affectationsEntreprise.find((a) => a.entrepriseId === this.auth.entrepriseId);
     }
 
@@ -279,7 +279,7 @@ export class ChantierDetailComponent implements OnInit {
     // refaire ici). Remplace les blocs de gestion (Responsable/Contrôles/Utilisateurs/
     // Entreprises affectées/Salariés affectés) par une vue de consultation pratique. ---
 
-    get entreprisesActivesClient(): Array<AffectationEntrepriseChantier & { nomEntrepriseCalculee: string }> {
+    get entreprisesActivesClient(): Array<AffectationEntrepriseChantier & { nomEntrepriseCalculee: string; nomParenteCalculee: string }> {
         return this.affectationsEntreprise.filter((a) => a.statut === 'ACTIF');
     }
 
@@ -287,7 +287,7 @@ export class ChantierDetailComponent implements OnInit {
     // via "Voir tout" → /entreprises, déjà scopé par le backend au périmètre exact de ce
     // compte (accès total = toutes les entreprises du client, responsable = uniquement
     // celles de ses chantiers assignés) — aucun paramètre de filtrage à ajouter ici.
-    get entreprisesActivesClientApercu(): Array<AffectationEntrepriseChantier & { nomEntrepriseCalculee: string }> {
+    get entreprisesActivesClientApercu(): Array<AffectationEntrepriseChantier & { nomEntrepriseCalculee: string; nomParenteCalculee: string }> {
         return this.entreprisesActivesClient.slice(0, 7);
     }
 

@@ -88,6 +88,14 @@ export class EntrepriseDetailComponent implements OnInit {
     // Panneau latéral (voir bouton "Sous-traitants" dans l'en-tête) — plus de carte dédiée
     // sur la page elle-même, même mécanique que "Contrôles" sur la fiche Chantier.
     afficherSousTraitants = false;
+    // Symétrique de "Sous-traitants" (demande client : l'en-tête montrait qui dépend de
+    // cette entreprise mais jamais à qui ELLE est rattachée) — mes propres affectations
+    // STT1/STT2, déjà en mémoire (mesAffectations), aucun appel réseau de plus.
+    afficherRattachements = false;
+
+    get mesRattachements(): Array<AffectationEntrepriseChantier & { nomChantierCalculee: string }> {
+        return this.mesAffectations.filter((a) => a.role !== 'PRINCIPALE');
+    }
     roles: RoleEntreprise[] = ['PRINCIPALE', 'STT1', 'STT2'];
     affectationsChantierSelectionne: AffectationEntrepriseChantier[] = [];
     parentsDisponibles: Array<{ id: string; label: string }> = [];

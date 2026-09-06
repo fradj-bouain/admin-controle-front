@@ -19,7 +19,7 @@
             <span class="ent-stat-icon tint-accent"><i class="pi pi-sitemap"></i></span>
             <span class="ent-stat-body">
                 <span class="ent-stat-value">{{ monAffectationEntreprise?.role || '—' }}</span>
-                <span class="ent-stat-label">Mon rôle sur ce chantier</span>
+                <span class="ent-stat-label">Mon rôle sur ce chantier<ng-container *ngIf="monAffectationEntreprise?.nomParenteCalculee"> — rattachée à {{ monAffectationEntreprise?.nomParenteCalculee }}</ng-container></span>
             </span>
         </span>
         <span class="ent-stat">
@@ -399,7 +399,10 @@
                     <span class="ent-compact-row-icon"><i class="pi pi-briefcase"></i></span>
                     <span class="ent-compact-row-body">
                         <span class="ent-compact-row-title">{{ a.nomEntrepriseCalculee }}</span>
-                        <span class="ent-compact-row-sub">{{ entrepriseStatSalaries(a.id) }} salarié(s) sur ce chantier</span>
+                        <span class="ent-compact-row-sub">
+                            {{ entrepriseStatSalaries(a.id) }} salarié(s) sur ce chantier
+                            <ng-container *ngIf="a.nomParenteCalculee"> · Rattachée à {{ a.nomParenteCalculee }}</ng-container>
+                        </span>
                     </span>
                     <span class="ent-compact-row-end"><p-tag severity="info" [value]="a.role"></p-tag></span>
                 </button>
