@@ -648,6 +648,7 @@ export class EntrepriseDetailComponent implements OnInit {
                 this.chargerDocuments();
                 this.chargerSalaries(id);
                 this.chargerUtilisateurs(id);
+                this.chargerRelancesPourStatistiques(id);
                 if (this.isClient) {
                     this.chargerSalariesClient(id);
                 }
@@ -724,6 +725,9 @@ export class EntrepriseDetailComponent implements OnInit {
     private chargerAffectationsSalarieContexte() {
         this.affectationParSalarieId = {};
         if (!this.contexteChantierId || !this.entrepriseId) {
+            // Pas de chantier en contexte : accord/refus d'accès (voir Statistiques) se
+            // calcule alors sur TOUS les chantiers de l'entreprise plutôt qu'un seul.
+            this.chargerAccesSalariesStats();
             return;
         }
         const chantierId = this.contexteChantierId;
@@ -732,6 +736,49 @@ export class EntrepriseDetailComponent implements OnInit {
             const map: Record<string, AffectationSalarieChantier> = {};
             affectations.filter((a) => a.entrepriseId === entrepriseId).forEach((a) => (map[a.salarieId] = a));
             this.affectationParSalarieId = map;
+            this.accesSalarieStatsMap = map;
+        });
+    }
+
+    // Alimente la carte "Statistiques" (accord/refus d'accès, demande client) : réutilise
+    // affectationParSalarieId (déjà chargé) quand un chantier est en contexte ; sinon,
+    // regroupe la dernière affectation active de chaque salarié tous chantiers confondus.
+    accesSalarieStatsMap: Record<string, AffectationSalarieChantier> = {};
+
+    get statutAccesSalariesEntreprise(): { accorde: number; refuse: number; enAttente: number; total: number } {
+        const actifs = this.salaries.filter((s) => s.statut === 'ACTIF');
+        let accorde = 0;
+        let refuse = 0;
+        let enAttente = 0;
+        for (const s of actifs) {
+            const aff = this.accesSalarieStatsMap[s.id];
+            if (!aff) {
+                continue;
+            }
+            if (aff.statutAcces === 'ACCORDE') {
+                accorde++;
+            } else if (aff.statutAcces === 'REFUSE') {
+                refuse++;
+            } else {
+                enAttente++;
+            }
+        }
+        return { accorde, refuse, enAttente, total: actifs.length };
+    }
+
+    private chargerAccesSalariesStats(): void {
+        const chantierIds = [...new Set(this.mesAffectations.map((a) => a.chantierId))];
+        if (chantierIds.length === 0) {
+            this.accesSalarieStatsMap = {};
+            return;
+        }
+        forkJoin(chantierIds.map((id) => this.affectationSalarieService.lister(id))).subscribe((listesParChantier) => {
+            const map: Record<string, AffectationSalarieChantier> = {};
+            listesParChantier.flat()
+                .filter((a) => a.entrepriseId === this.entrepriseId && !a.dateFin)
+                .sort((a, b) => a.dateDebut.localeCompare(b.dateDebut))
+                .forEach((a) => (map[a.salarieId] = a));
+            this.accesSalarieStatsMap = map;
         });
     }
 
@@ -911,6 +958,13 @@ export class EntrepriseDetailComponent implements OnInit {
             this.emailContactChantier = this.affectationContexte?.emailContact ?? '';
             this.telephoneContactChantier = this.affectationContexte?.telephoneContact ?? '';
             this.adresseContactChantier = this.affectationContexte?.adresseContact ?? '';
+            // Accord/refus d'accès (voir Statistiques) sans chantier en contexte se calcule
+            // sur TOUS les chantiers de l'entreprise — a besoin de mesAffectations, donc
+            // relancé ici plutôt que seulement depuis chargerAffectationsSalarieContexte
+            // (qui peut résoudre avant que mesAffectations n'arrive).
+            if (!this.contexteChantierId) {
+                this.chargerAccesSalariesStats();
+            }
         });
     }
 
@@ -1454,6 +1508,23 @@ ${this.contexteChantierNom ? `<p>Chantier :<br /><strong>${this.contexteChantier
                 this.relancesChargees = true;
             });
         }
+    }
+
+    // Chargée dès l'ouverture de la fiche (pas seulement au dépli de la carte Relances,
+    // voir basculerRelances ci-dessus) — la carte Statistiques affiche la date de la
+    // dernière relance en permanence (demande client). relancesChargees mis à true ici
+    // aussi pour éviter un second appel identique si la carte Relances est dépliée ensuite.
+    private chargerRelancesPourStatistiques(entrepriseId: string): void {
+        this.documentService.relancesParEntreprise(entrepriseId, this.contexteChantierId ?? undefined).subscribe((r) => {
+            this.relances = r;
+            this.relancesChargees = true;
+        });
+    }
+
+    get derniereRelance(): MessagePlanifie | undefined {
+        return [...this.relances].sort((a, b) =>
+            new Date(b.dateEnvoiReelle || b.dateEnvoiPrevue).getTime() - new Date(a.dateEnvoiReelle || a.dateEnvoiPrevue).getTime()
+        )[0];
     }
 
     // --- Historique des messages ---

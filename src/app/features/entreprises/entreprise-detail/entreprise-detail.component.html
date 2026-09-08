@@ -1387,10 +1387,20 @@
                         <app-stat-tile [compact]="true" icon="check-circle" label="Actifs" [value]="statsSalariesEntreprise.actif" color="green"></app-stat-tile>
                     </div>
                     <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="ban" label="Inactifs" [value]="statsSalariesEntreprise.inactif" color="red"></app-stat-tile>
+                        <app-stat-tile [compact]="true" icon="ban" label="Inactifs (fin de mission)" [value]="statsSalariesEntreprise.inactif" color="red"></app-stat-tile>
                     </div>
                     <div class="col-6 xl:col-4" *ngFor="let s of statsSalariesEntrepriseParContrat">
                         <app-stat-tile [compact]="true" icon="file" [label]="s.libelle" [value]="s.total" color="purple"></app-stat-tile>
+                    </div>
+                    <!-- Accord/refus d'accès parmi les salariés ACTIFS (demande client) : sur
+                         le chantier en contexte si la fiche est ouverte depuis là (voir
+                         contexteChantierId), sinon sur la dernière affectation active de
+                         chacun, tous chantiers confondus (voir accesSalarieStatsMap). -->
+                    <div class="col-6 xl:col-4">
+                        <app-stat-tile [compact]="true" icon="check-circle" label="Accord d'accès (actifs)" [value]="statutAccesSalariesEntreprise.accorde + '/' + statutAccesSalariesEntreprise.total" color="green"></app-stat-tile>
+                    </div>
+                    <div class="col-6 xl:col-4">
+                        <app-stat-tile [compact]="true" icon="times-circle" label="Refus d'accès (actifs)" [value]="statutAccesSalariesEntreprise.refuse + '/' + statutAccesSalariesEntreprise.total" color="red"></app-stat-tile>
                     </div>
                 </div>
             </div>
@@ -1407,10 +1417,28 @@
                         <app-stat-tile [compact]="true" icon="check-circle" label="Actifs" [value]="statsChantiersEntreprise.actif" color="green"></app-stat-tile>
                     </div>
                     <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="ban" label="Inactifs" [value]="statsChantiersEntreprise.inactif" color="red"></app-stat-tile>
+                        <app-stat-tile [compact]="true" icon="ban" label="Inactifs (fin de mission)" [value]="statsChantiersEntreprise.inactif" color="red"></app-stat-tile>
                     </div>
-                    <div class="col-6 xl:col-4" *ngFor="let s of statsChantiersEntrepriseParRole">
-                        <app-stat-tile [compact]="true" icon="sitemap" [label]="s.libelle" [value]="s.total" color="yellow"></app-stat-tile>
+                    <!-- Rang + lien d'appartenance (demande client) : n'a de sens que pour LE
+                         chantier en contexte (une entreprise peut avoir un rôle différent sur
+                         chacun de ses chantiers) — absent hors contexte plutôt que trompeur. -->
+                    <div class="col-6 xl:col-4" *ngIf="affectationContexte?.role">
+                        <app-stat-tile [compact]="true" icon="sitemap" label="Rang sur ce chantier" [value]="affectationContexte?.role ?? ''" color="yellow"></app-stat-tile>
+                    </div>
+                    <div class="col-6 xl:col-4" *ngIf="affectationContexte && nomRattachement(affectationContexte) !== '—'">
+                        <app-stat-tile [compact]="true" icon="share-alt" label="Rattachée à" [value]="nomRattachement(affectationContexte)" color="yellow"></app-stat-tile>
+                    </div>
+                    <div class="col-6 xl:col-4">
+                        <app-stat-tile [compact]="true" icon="sitemap" label="Sous-traitants" [value]="sousTraitants.length" color="purple"></app-stat-tile>
+                    </div>
+                    <div class="col-6 xl:col-4">
+                        <app-stat-tile [compact]="true" [icon]="pourcentageObligatoires === 100 ? 'check-circle' : 'times-circle'" label="Documents à jour" [value]="pourcentageObligatoires === 100 ? 'Oui' : 'Non'" [color]="pourcentageObligatoires === 100 ? 'green' : 'red'"></app-stat-tile>
+                    </div>
+                    <div class="col-6 xl:col-4">
+                        <app-stat-tile [compact]="true" icon="file" label="Documents manquants" [value]="typesAFournir.length + '/' + nbObligatoiresTotal" color="orange"></app-stat-tile>
+                    </div>
+                    <div class="col-6 xl:col-4" *ngIf="derniereRelance as relance">
+                        <app-stat-tile [compact]="true" icon="send" label="Dernière relance" [value]="((relance.dateEnvoiReelle || relance.dateEnvoiPrevue) | date: 'dd/MM/yyyy à HH\'h\'mm') ?? ''" color="blue"></app-stat-tile>
                     </div>
                 </div>
             </div>
