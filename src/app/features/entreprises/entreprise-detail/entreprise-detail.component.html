@@ -1374,71 +1374,63 @@
                 <h6 class="m-0">Statistiques</h6>
             </div>
 
-            <div class="mb-4">
-                <div class="flex align-items-center gap-2 mb-3">
-                    <i class="pi pi-users text-600 text-sm"></i>
-                    <span class="text-600 font-semibold text-sm uppercase" style="letter-spacing:.04em">Salariés</span>
+            <!-- Redécoupé en "métriques" (comptes purs) + liste clé/valeur (ratios, statuts,
+                 dates, noms) : la colonne latérale est étroite, l'ancienne grille de tuiles
+                 carrées faisait déborder le texte long (dates, raison sociale, "Oui/Non"). -->
+            <div class="stat-section">
+                <div class="stat-section-head"><i class="pi pi-users"></i> Salariés</div>
+                <div class="stat-metrics">
+                    <div class="stat-metric"><div class="stat-metric-num">{{ statsSalariesEntreprise.total }}</div><span class="stat-metric-label">Total</span></div>
+                    <div class="stat-metric pos"><div class="stat-metric-num">{{ statsSalariesEntreprise.actif }}</div><span class="stat-metric-label">Actifs</span></div>
+                    <div class="stat-metric neg"><div class="stat-metric-num">{{ statsSalariesEntreprise.inactif }}</div><span class="stat-metric-label">Inactifs</span></div>
+                    <div class="stat-metric pos"><div class="stat-metric-num">{{ statutAccesSalariesEntreprise.accorde }}<small style="opacity:.5;font-weight:600">/{{ statutAccesSalariesEntreprise.total }}</small></div><span class="stat-metric-label">Accord accès</span></div>
+                    <div class="stat-metric neg"><div class="stat-metric-num">{{ statutAccesSalariesEntreprise.refuse }}<small style="opacity:.5;font-weight:600">/{{ statutAccesSalariesEntreprise.total }}</small></div><span class="stat-metric-label">Refus accès</span></div>
                 </div>
-                <div class="grid">
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="users" label="Total" [value]="statsSalariesEntreprise.total" color="blue"></app-stat-tile>
-                    </div>
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="check-circle" label="Actifs" [value]="statsSalariesEntreprise.actif" color="green"></app-stat-tile>
-                    </div>
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="ban" label="Inactifs (fin de mission)" [value]="statsSalariesEntreprise.inactif" color="red"></app-stat-tile>
-                    </div>
-                    <div class="col-6 xl:col-4" *ngFor="let s of statsSalariesEntrepriseParContrat">
-                        <app-stat-tile [compact]="true" icon="file" [label]="s.libelle" [value]="s.total" color="purple"></app-stat-tile>
-                    </div>
-                    <!-- Accord/refus d'accès parmi les salariés ACTIFS (demande client) : sur
-                         le chantier en contexte si la fiche est ouverte depuis là (voir
-                         contexteChantierId), sinon sur la dernière affectation active de
-                         chacun, tous chantiers confondus (voir accesSalarieStatsMap). -->
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="check-circle" label="Accord d'accès (actifs)" [value]="statutAccesSalariesEntreprise.accorde + '/' + statutAccesSalariesEntreprise.total" color="green"></app-stat-tile>
-                    </div>
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="times-circle" label="Refus d'accès (actifs)" [value]="statutAccesSalariesEntreprise.refuse + '/' + statutAccesSalariesEntreprise.total" color="red"></app-stat-tile>
+                <div class="stat-kv" *ngIf="statsSalariesEntrepriseParContrat.length > 0">
+                    <div class="stat-kv-row" *ngFor="let s of statsSalariesEntrepriseParContrat">
+                        <span class="stat-kv-key">{{ s.libelle }}</span>
+                        <span class="stat-kv-val">{{ s.total }}</span>
                     </div>
                 </div>
+                <span class="stat-caption">Inactif = fin de mission. Accès comptés parmi les salariés actifs.</span>
             </div>
-            <div>
-                <div class="flex align-items-center gap-2 mb-3">
-                    <i class="pi pi-map-marker text-600 text-sm"></i>
-                    <span class="text-600 font-semibold text-sm uppercase" style="letter-spacing:.04em">Chantiers</span>
+
+            <div class="stat-section">
+                <!-- Titre = raison sociale en majuscule (demande client) plutôt que le
+                     générique "Chantiers" : cette section porte la situation de l'entreprise. -->
+                <div class="stat-section-head"><i class="pi pi-building"></i> {{ entreprise?.raisonSociale | uppercase }}</div>
+                <div class="stat-metrics">
+                    <div class="stat-metric"><div class="stat-metric-num">{{ statsChantiersEntreprise.total }}</div><span class="stat-metric-label">Total</span></div>
+                    <div class="stat-metric pos"><div class="stat-metric-num">{{ statsChantiersEntreprise.actif }}</div><span class="stat-metric-label">Actifs</span></div>
+                    <div class="stat-metric neg"><div class="stat-metric-num">{{ statsChantiersEntreprise.inactif }}</div><span class="stat-metric-label">Inactifs</span></div>
+                    <div class="stat-metric info"><div class="stat-metric-num">{{ sousTraitants.length }}</div><span class="stat-metric-label">Sous-traitants</span></div>
                 </div>
-                <div class="grid">
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="map-marker" label="Total" [value]="statsChantiersEntreprise.total" color="blue"></app-stat-tile>
+                <div class="stat-kv">
+                    <!-- Rang + rattachement : n'ont de sens que pour LE chantier en contexte
+                         (rôle variable d'un chantier à l'autre) — absents sinon. Le rang du
+                         parent est déterministe : une STT1 est toujours rattachée à la
+                         Principale, une STT2 à une STT1. -->
+                    <div class="stat-kv-row" *ngIf="affectationContexte?.role">
+                        <span class="stat-kv-key">Rang de l'entreprise</span>
+                        <span class="stat-kv-val">{{ affectationContexte?.role }}</span>
                     </div>
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="check-circle" label="Actifs" [value]="statsChantiersEntreprise.actif" color="green"></app-stat-tile>
+                    <div class="stat-kv-row" *ngIf="affectationContexte && affectationContexte.role !== 'PRINCIPALE' && nomRattachement(affectationContexte) !== '—'">
+                        <span class="stat-kv-key">Rattaché à</span>
+                        <span class="stat-kv-val">{{ nomRattachement(affectationContexte) }} ({{ affectationContexte.role === 'STT1' ? 'Principale' : 'STT1' }})</span>
                     </div>
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="ban" label="Inactifs (fin de mission)" [value]="statsChantiersEntreprise.inactif" color="red"></app-stat-tile>
+                    <div class="stat-kv-row">
+                        <span class="stat-kv-key">Documents à jour</span>
+                        <span class="stat-kv-val" [class.pos]="pourcentageObligatoires === 100" [class.neg]="pourcentageObligatoires !== 100">
+                            <span class="stat-kv-dot"></span>{{ pourcentageObligatoires === 100 ? 'Oui' : 'Non' }}
+                        </span>
                     </div>
-                    <!-- Rang + lien d'appartenance (demande client) : n'a de sens que pour LE
-                         chantier en contexte (une entreprise peut avoir un rôle différent sur
-                         chacun de ses chantiers) — absent hors contexte plutôt que trompeur. -->
-                    <div class="col-6 xl:col-4" *ngIf="affectationContexte?.role">
-                        <app-stat-tile [compact]="true" icon="sitemap" label="Rang sur ce chantier" [value]="affectationContexte?.role ?? ''" color="yellow"></app-stat-tile>
+                    <div class="stat-kv-row">
+                        <span class="stat-kv-key">Documents manquants</span>
+                        <span class="stat-kv-val" [class.neg]="typesAFournir.length > 0">{{ typesAFournir.length }}/{{ nbObligatoiresTotal }}</span>
                     </div>
-                    <div class="col-6 xl:col-4" *ngIf="affectationContexte && nomRattachement(affectationContexte) !== '—'">
-                        <app-stat-tile [compact]="true" icon="share-alt" label="Rattachée à" [value]="nomRattachement(affectationContexte)" color="yellow"></app-stat-tile>
-                    </div>
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="sitemap" label="Sous-traitants" [value]="sousTraitants.length" color="purple"></app-stat-tile>
-                    </div>
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" [icon]="pourcentageObligatoires === 100 ? 'check-circle' : 'times-circle'" label="Documents à jour" [value]="pourcentageObligatoires === 100 ? 'Oui' : 'Non'" [color]="pourcentageObligatoires === 100 ? 'green' : 'red'"></app-stat-tile>
-                    </div>
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="file" label="Documents manquants" [value]="typesAFournir.length + '/' + nbObligatoiresTotal" color="orange"></app-stat-tile>
-                    </div>
-                    <div class="col-6 xl:col-4" *ngIf="derniereRelance as relance">
-                        <app-stat-tile [compact]="true" icon="send" label="Dernière relance" [value]="((relance.dateEnvoiReelle || relance.dateEnvoiPrevue) | date: 'dd/MM/yyyy à HH\'h\'mm') ?? ''" color="blue"></app-stat-tile>
+                    <div class="stat-kv-row">
+                        <span class="stat-kv-key">Date / heure de la dernière relance</span>
+                        <span class="stat-kv-val">{{ derniereRelance ? (derniereRelance.dateEnvoiReelle | date: 'dd/MM/yyyy à HH\'h\'mm') : '—' }}</span>
                     </div>
                 </div>
             </div>

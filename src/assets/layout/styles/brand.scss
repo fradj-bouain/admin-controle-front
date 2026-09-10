@@ -1346,6 +1346,37 @@ a { color: var(--brand-accent-ink); }
 .detail-strip-label { font-size: 0.7rem; font-weight: 700; color: var(--ink-soft, #5C6270); text-transform: uppercase; letter-spacing: 0.03em; }
 .detail-strip-value { font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 1.05rem; margin-top: 0.15rem; }
 
+/* ---------- Bloc "Statistiques" des fiches (Entreprise / Chantier) : données hétérogènes
+   (comptes, ratios, oui/non, dates, noms d'entreprise) dans une colonne latérale étroite.
+   L'ancienne grille de tuiles carrées faisait déborder le texte long. Deux registres :
+   - .stat-metrics : les comptes purs (chiffre + micro-libellé), en flex-wrap, jamais long
+   - .stat-kv : liste clé/valeur pour tout le reste (ratios, statuts, dates, noms) — la
+     valeur a sa propre place à droite, passe à la ligne au besoin, ne déborde jamais. ---------- */
+.stat-section { margin-bottom: 1.4rem; }
+.stat-section:last-child { margin-bottom: 0; }
+.stat-section-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.85rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft, #5C6270); }
+.stat-section-head i { font-size: 0.8rem; }
+
+.stat-metrics { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.stat-metric { flex: 1 1 4.5rem; min-width: 4.5rem; text-align: center; padding: 0.6rem 0.4rem; border-radius: 10px; background: var(--brand-surface-alt); border: 1px solid var(--brand-border); }
+.stat-metric-num { font-family: 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 800; font-size: 1.35rem; line-height: 1.05; color: var(--ink); }
+.stat-metric.pos .stat-metric-num { color: var(--brand-success); }
+.stat-metric.neg .stat-metric-num { color: var(--brand-danger); }
+.stat-metric.warn .stat-metric-num { color: var(--brand-warning); }
+.stat-metric.info .stat-metric-num { color: var(--brand-info); }
+.stat-metric-label { display: block; margin-top: 0.2rem; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; color: var(--ink-faint, #9098A6); line-height: 1.25; }
+
+.stat-kv { display: flex; flex-direction: column; margin-top: 0.75rem; }
+.stat-kv-row { display: flex; align-items: baseline; justify-content: space-between; gap: 0.85rem; padding: 0.5rem 0; border-top: 1px solid var(--brand-border); font-size: 0.8rem; }
+.stat-kv-row:first-child { border-top: none; }
+.stat-kv-key { flex-shrink: 0; color: var(--ink-soft, #5C6270); }
+.stat-kv-val { min-width: 0; text-align: right; font-weight: 700; color: var(--ink); word-break: break-word; }
+.stat-kv-val.pos { color: var(--brand-success); }
+.stat-kv-val.neg { color: var(--brand-danger); }
+.stat-kv-dot { display: inline-block; width: 0.5rem; height: 0.5rem; border-radius: 50%; margin-right: 0.35rem; vertical-align: middle; }
+.stat-kv-val.pos .stat-kv-dot { background: var(--brand-success); }
+.stat-kv-val.neg .stat-kv-dot { background: var(--brand-danger); }
+
 /* ================================================================
  * Composeur de message en panneau latéral (fiche Salarié, voir prototype validé) —
  * remplace le bloc "Envoyer un message" jusqu'ici posé en bas de page. Générique,

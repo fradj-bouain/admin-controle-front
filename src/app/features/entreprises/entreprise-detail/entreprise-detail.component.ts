@@ -1521,10 +1521,13 @@ ${this.contexteChantierNom ? `<p>Chantier :<br /><strong>${this.contexteChantier
         });
     }
 
+    // La dernière relance RÉELLEMENT ENVOYÉE (pas une programmée en attente ni une annulée)
+    // — triée sur la date d'envoi réelle. Une relance EN_ATTENTE a une dateEnvoiPrevue
+    // future qui gagnerait au tri et afficherait une date qui n'a pas eu lieu.
     get derniereRelance(): MessagePlanifie | undefined {
-        return [...this.relances].sort((a, b) =>
-            new Date(b.dateEnvoiReelle || b.dateEnvoiPrevue).getTime() - new Date(a.dateEnvoiReelle || a.dateEnvoiPrevue).getTime()
-        )[0];
+        return this.relances
+            .filter((r) => r.statut === 'ENVOYE' && !!r.dateEnvoiReelle)
+            .sort((a, b) => new Date(b.dateEnvoiReelle!).getTime() - new Date(a.dateEnvoiReelle!).getTime())[0];
     }
 
     // --- Historique des messages ---

@@ -709,44 +709,31 @@
                 <h6 class="m-0">Statistiques</h6>
             </div>
 
-            <div class="mb-4">
-                <div class="flex align-items-center gap-2 mb-3">
-                    <i class="pi pi-users text-600 text-sm"></i>
-                    <span class="text-600 font-semibold text-sm uppercase" style="letter-spacing:.04em">Salariés</span>
+            <!-- Redécoupé en "métriques" (comptes purs) + liste clé/valeur : la colonne
+                 latérale est étroite, l'ancienne grille de tuiles carrées faisait déborder
+                 les libellés longs (types de contrat). -->
+            <div class="stat-section">
+                <div class="stat-section-head"><i class="pi pi-users"></i> Salariés</div>
+                <div class="stat-metrics">
+                    <div class="stat-metric"><div class="stat-metric-num">{{ statsSalariesParStatutAcces.total }}</div><span class="stat-metric-label">Total</span></div>
+                    <div class="stat-metric pos"><div class="stat-metric-num">{{ statsSalariesParStatutAcces.accorde }}</div><span class="stat-metric-label">Accord accès</span></div>
+                    <div class="stat-metric neg"><div class="stat-metric-num">{{ statsSalariesParStatutAcces.refuse }}</div><span class="stat-metric-label">Refus accès</span></div>
+                    <div class="stat-metric warn"><div class="stat-metric-num">{{ statsSalariesParStatutAcces.enAttente }}</div><span class="stat-metric-label">En attente</span></div>
                 </div>
-                <div class="grid">
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="users" label="Total" [value]="statsSalariesParStatutAcces.total" color="blue"></app-stat-tile>
-                    </div>
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="check-circle" label="Accord d'accès" [value]="statsSalariesParStatutAcces.accorde" color="green"></app-stat-tile>
-                    </div>
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="times-circle" label="Refus d'accès" [value]="statsSalariesParStatutAcces.refuse" color="red"></app-stat-tile>
-                    </div>
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="clock" label="En attente" [value]="statsSalariesParStatutAcces.enAttente" color="yellow"></app-stat-tile>
-                    </div>
-                    <div class="col-6 xl:col-4" *ngFor="let s of statsSalariesParContrat">
-                        <app-stat-tile [compact]="true" icon="file" [label]="s.libelle" [value]="s.total" color="purple"></app-stat-tile>
+                <div class="stat-kv" *ngIf="statsSalariesParContrat.length > 0">
+                    <div class="stat-kv-row" *ngFor="let s of statsSalariesParContrat">
+                        <span class="stat-kv-key">{{ s.libelle }}</span>
+                        <span class="stat-kv-val">{{ s.total }}</span>
                     </div>
                 </div>
             </div>
-            <div>
-                <div class="flex align-items-center gap-2 mb-3">
-                    <i class="pi pi-building text-600 text-sm"></i>
-                    <span class="text-600 font-semibold text-sm uppercase" style="letter-spacing:.04em">Entreprises</span>
-                </div>
-                <div class="grid">
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="building" label="Total" [value]="statsEntreprises.total" color="blue"></app-stat-tile>
-                    </div>
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="check-circle" label="Actives" [value]="statsEntreprises.actif" color="green"></app-stat-tile>
-                    </div>
-                    <div class="col-6 xl:col-4">
-                        <app-stat-tile [compact]="true" icon="ban" label="Inactives" [value]="statsEntreprises.inactif" color="red"></app-stat-tile>
-                    </div>
+
+            <div class="stat-section">
+                <div class="stat-section-head"><i class="pi pi-building"></i> Entreprises</div>
+                <div class="stat-metrics">
+                    <div class="stat-metric"><div class="stat-metric-num">{{ statsEntreprises.total }}</div><span class="stat-metric-label">Total</span></div>
+                    <div class="stat-metric pos"><div class="stat-metric-num">{{ statsEntreprises.actif }}</div><span class="stat-metric-label">Actives</span></div>
+                    <div class="stat-metric neg"><div class="stat-metric-num">{{ statsEntreprises.inactif }}</div><span class="stat-metric-label">Inactives</span></div>
                 </div>
             </div>
         </div>
