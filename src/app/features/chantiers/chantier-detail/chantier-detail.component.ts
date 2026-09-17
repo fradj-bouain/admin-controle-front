@@ -260,6 +260,36 @@ export class ChantierDetailComponent implements OnInit {
         return this.affectationsSalarie.filter((a) => a.entrepriseId === this.auth.entrepriseId);
     }
 
+    // --- Affecter un de mes salariés à ce chantier (rôle ENTREPRISE) : même action que
+    // le formulaire admin plus bas (affecterSalarieForm/submitAffecterSalarie), mais
+    // simplifiée à un seul champ — GET /salaries scope déjà côté backend la liste
+    // (salariesDisponibles) aux salariés de SON entreprise pour ce rôle (voir
+    // SalarieController.lister), et l'entreprise employeuse sur ce chantier ne peut être
+    // que SA PROPRE affectation (monAffectationEntreprise) : pas de second champ à choisir.
+    // Champ simple (pas un FormGroup) — même convention que nouvelUtilisateurId/
+    // nouvelUtilisateurClientId ci-dessus, pour une action à un seul champ.
+    nouveauSalarieAffecteId = '';
+
+    affecterMonSalarie() {
+        const affectationEntrepriseChantierId = this.monAffectationEntreprise?.id;
+        if (!this.nouveauSalarieAffecteId || !affectationEntrepriseChantierId) {
+            return;
+        }
+        this.affectationSalarieService.affecter(this.chantierId!, {
+            salarieId: this.nouveauSalarieAffecteId,
+            affectationEntrepriseChantierId
+        }).subscribe({
+            next: () => {
+                this.nouveauSalarieAffecteId = '';
+                this.chargerAffectationsSalarie(this.chantierId!);
+                this.message.add({ severity: 'success', summary: 'Succès', detail: 'Salarié affecté' });
+            },
+            error: (err) => this.message.add({
+                severity: 'error', summary: 'Erreur', detail: err?.error?.message ?? 'Affectation impossible'
+            })
+        });
+    }
+
     get mesSalariesStats(): { accorde: number; total: number } {
         const mes = this.mesAffectationsSalarie;
         return { accorde: mes.filter((a) => a.statutAcces === 'ACCORDE').length, total: mes.length };
@@ -541,9 +571,13 @@ export class ChantierDetailComponent implements OnInit {
             });
         } else {
             this.chantierService.modifier(this.chantierId!, payload).subscribe({
-                next: (chantier) => {
+                // Recharge depuis le serveur plutôt que de se contenter de la réponse assignée
+                // en local — cohérent avec entreprise/salarié (voir chargerEntreprise/
+                // chargerSalarie) : garantit que toute donnée dérivée reste à jour sans devoir
+                // recharger la page à la main (retour client).
+                next: () => {
                     this.saving = false;
-                    this.chantier = chantier;
+                    this.chargerChantier(this.chantierId!);
                     this.message.add({ severity: 'success', summary: 'Succès', detail: 'Chantier modifié' });
                 },
                 error: () => {
@@ -679,6 +713,68 @@ export class ChantierDetailComponent implements OnInit {
         };
     }
 
+    /** Répartition par rang (voir carte Statistiques, demande client) : ici "actif"/
+        "inactif" porte sur le STATUT DE L'AFFECTATION à CE chantier précis ("fin de
+        mission", voir desactiverAffectationEntreprise) — pas le statut global de
+        l'entreprise (voir statsEntreprises ci-dessus, utilisé lui par le bandeau d'en-tête
+        et gardé inchangé). Une même entreprise peut porter plusieurs rôles sur ce chantier
+        (ex : Principale ET STT1) : chaque affectation compte pour son propre rang. */
+    get statsEntreprisesParRang(): {
+        actif: { principale: number; stt1: number; stt2: number };
+        inactif: { principale: number; stt1: number; stt2: number };
+    } {
+        const compte = (statut: 'ACTIF' | 'INACTIF', role: RoleEntreprise) =>
+            this.affectationsEntreprise.filter((a) => a.statut === statut && a.role === role).length;
+        return {
+            actif: { principale: compte('ACTIF', 'PRINCIPALE'), stt1: compte('ACTIF', 'STT1'), stt2: compte('ACTIF', 'STT2') },
+            inactif: { principale: compte('INACTIF', 'PRINCIPALE'), stt1: compte('INACTIF', 'STT1'), stt2: compte('INACTIF', 'STT2') }
+        };
+    }
+
+    /** Nombre d'entreprises actives sur ce chantier dont TOUS les documents obligatoires
+        sont fournis ("à jour") — même règle que la fiche Entreprise (typesAFournir : un
+        type obligatoire compte dès qu'un document existe, sans exiger la validation admin)
+        et que la vue Client de cette même page (calculerConformiteClient) : obligatoire
+        globalement OU listé en document_chantier_supplementaire pour CE chantier.
+        Chargée uniquement pour SUPER_ADMIN/CONTROLEUR (voir chargerConformiteEntreprisesActives,
+        seuls rôles à voir cette carte). */
+    entreprisesConformiteStats: { conformes: number; total: number } = { conformes: 0, total: 0 };
+
+    private chargerConformiteEntreprisesActives(chantierId: string) {
+        const entrepriseIds = [...new Set(
+            this.affectationsEntreprise.filter((a) => a.statut === 'ACTIF').map((a) => a.entrepriseId)
+        )];
+        if (entrepriseIds.length === 0) {
+            this.entreprisesConformiteStats = { conformes: 0, total: 0 };
+            return;
+        }
+        forkJoin({
+            types: this.typeDocumentService.lister(),
+            supplementaires: this.documentChantierSupplementaireService.lister(chantierId),
+            docs: forkJoin(entrepriseIds.map((id) => this.documentService.listerParEntrepriseEtChantier(id, chantierId)))
+        }).subscribe(({ types, supplementaires, docs }) => {
+            const typesSupplementairesIds = new Set(supplementaires.map((s) => s.typeDocumentId));
+            let conformes = 0;
+            entrepriseIds.forEach((entrepriseId, i) => {
+                const entreprise = this.entreprises.find((e) => e.id === entrepriseId);
+                if (!entreprise) {
+                    return;
+                }
+                const documentsByType = new Set((docs[i] ?? []).map((d) => d.typeDocumentId));
+                const obligatoires = types.filter((t) =>
+                    t.cible === 'ENTREPRISE' &&
+                    (!t.corpsDeMetierId || t.corpsDeMetierId === entreprise.corpsDeMetierId) &&
+                    (!t.paysId || t.paysId === entreprise.paysId) &&
+                    (t.obligatoire || typesSupplementairesIds.has(t.id))
+                );
+                if (obligatoires.every((t) => documentsByType.has(t.id))) {
+                    conformes++;
+                }
+            });
+            this.entreprisesConformiteStats = { conformes, total: entrepriseIds.length };
+        });
+    }
+
     // --- Contrôles ---
 
     chargerControles(chantierId: string) {
@@ -812,6 +908,9 @@ export class ChantierDetailComponent implements OnInit {
             }));
             this.recalculerEntreprisesDisponibles();
             this.recalculerParentsDisponibles();
+            if (!this.isEntreprise && !this.isClient) {
+                this.chargerConformiteEntreprisesActives(chantierId);
+            }
         });
     }
 

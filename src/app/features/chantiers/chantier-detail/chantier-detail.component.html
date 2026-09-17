@@ -230,6 +230,21 @@
                 <i class="pi pi-users"></i>
                 <h6 class="m-0">Mes salariés sur ce chantier ({{ mesAffectationsSalarie.length }})</h6>
             </div>
+
+            <!-- Affecter un de mes salariés (voir affecterMonSalarie) : un seul champ, le
+                 reste (entreprise employeuse = ma propre affectation sur ce chantier) est
+                 déjà connu, pas besoin de le refaire choisir. -->
+            <div class="flex align-items-end gap-2 p-3 border-round mb-3" style="background:var(--brand-accent-tint);" *ngIf="monAffectationEntreprise && salariesDisponibles.length > 0">
+                <div class="flex-1" style="min-width:0;">
+                    <label class="text-500 text-sm block mb-1">Ajouter un de mes salariés</label>
+                    <p-dropdown [options]="salariesDisponibles" [(ngModel)]="nouveauSalarieAffecteId" optionValue="id" [filter]="true" filterBy="nom" placeholder="-- Sélectionner --" styleClass="w-full">
+                        <ng-template let-s pTemplate="item">{{ s?.prenom }} {{ s?.nom }}</ng-template>
+                        <ng-template let-s pTemplate="selectedItem">{{ s?.prenom }} {{ s?.nom }}</ng-template>
+                    </p-dropdown>
+                </div>
+                <button pButton type="button" label="Affecter" class="flex-shrink-0" [disabled]="!nouveauSalarieAffecteId" (click)="affecterMonSalarie()"></button>
+            </div>
+
             <div class="ent-compact-list" *ngIf="mesAffectationsSalarie.length > 0">
                 <button
                     type="button"
@@ -729,11 +744,28 @@
             </div>
 
             <div class="stat-section">
-                <div class="stat-section-head"><i class="pi pi-building"></i> Entreprises</div>
+                <!-- Titre = nom du chantier en majuscule (même principe que la fiche
+                     Entreprise, voir entreprise-detail : cette section porte la situation
+                     DE CE chantier) plutôt que le générique "Entreprises". -->
+                <div class="stat-section-head"><i class="pi pi-building"></i> {{ chantier?.nom | uppercase }}</div>
                 <div class="stat-metrics">
-                    <div class="stat-metric"><div class="stat-metric-num">{{ statsEntreprises.total }}</div><span class="stat-metric-label">Total</span></div>
-                    <div class="stat-metric pos"><div class="stat-metric-num">{{ statsEntreprises.actif }}</div><span class="stat-metric-label">Actives</span></div>
-                    <div class="stat-metric neg"><div class="stat-metric-num">{{ statsEntreprises.inactif }}</div><span class="stat-metric-label">Inactives</span></div>
+                    <div class="stat-metric pos"><div class="stat-metric-num">{{ statsEntreprisesParRang.actif.principale }}</div><span class="stat-metric-label">Principale</span></div>
+                    <div class="stat-metric pos"><div class="stat-metric-num">{{ statsEntreprisesParRang.actif.stt1 }}</div><span class="stat-metric-label">1er rang</span></div>
+                    <div class="stat-metric pos"><div class="stat-metric-num">{{ statsEntreprisesParRang.actif.stt2 }}</div><span class="stat-metric-label">2nd rang</span></div>
+                </div>
+                <div class="stat-kv">
+                    <div class="stat-kv-row">
+                        <span class="stat-kv-key">Entreprises à jour (conformité administrative)</span>
+                        <span class="stat-kv-val" [class.pos]="entreprisesConformiteStats.conformes === entreprisesConformiteStats.total && entreprisesConformiteStats.total > 0" [class.neg]="entreprisesConformiteStats.conformes < entreprisesConformiteStats.total">
+                            {{ entreprisesConformiteStats.conformes }}/{{ entreprisesConformiteStats.total }}
+                        </span>
+                    </div>
+                </div>
+                <span class="stat-caption">Inactif = fin de mission sur ce chantier.</span>
+                <div class="stat-metrics mt-2">
+                    <div class="stat-metric neg"><div class="stat-metric-num">{{ statsEntreprisesParRang.inactif.principale }}</div><span class="stat-metric-label">Principale</span></div>
+                    <div class="stat-metric neg"><div class="stat-metric-num">{{ statsEntreprisesParRang.inactif.stt1 }}</div><span class="stat-metric-label">1er rang</span></div>
+                    <div class="stat-metric neg"><div class="stat-metric-num">{{ statsEntreprisesParRang.inactif.stt2 }}</div><span class="stat-metric-label">2nd rang</span></div>
                 </div>
             </div>
         </div>

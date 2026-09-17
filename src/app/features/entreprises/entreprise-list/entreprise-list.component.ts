@@ -7,6 +7,8 @@ import { AffectationEntrepriseChantierService } from '../services/affectation-en
 import { ReferenceDataService } from 'src/app/features/configuration/services/reference-data.service';
 import { AuthService } from 'src/app/core/auth/auth.service';
 import { Pays } from 'src/app/features/configuration/models/configuration.model';
+import { Chantier } from 'src/app/features/chantiers/models/chantier.model';
+import { ChantierService } from 'src/app/features/chantiers/services/chantier.service';
 
 interface RepartitionCorpsMetier {
     libelle: string;
@@ -71,6 +73,15 @@ export class EntrepriseListComponent implements OnInit {
     // colonne chantier renseignée (comportement inchangé pour ces rôles).
     affectations: AffectationEntrepriseChantier[] = [];
     lignes: LigneEntrepriseAffectation[] = [];
+    // --- Sélection d'un chantier (demande client) : filtre la liste aux seules entreprises
+    // concernées par CE chantier et fait varier les indicateurs actives/inactives en
+    // conséquence — tout est déjà en mémoire (this.lignes), aucun appel réseau au
+    // changement. Champ recalculé explicitement (jamais une getter, voir la note sur
+    // typesSupplementairesDisponibles ailleurs dans le projet) : lignesFiltrees est liée
+    // au [value] de p-table, qui perd sinon tri/pagination/lignes dépliées en boucle.
+    chantiers: Chantier[] = [];
+    chantierFiltreId: string | null = null;
+    lignesFiltrees: LigneEntrepriseAffectation[] = [];
     // Ligne dépliable "Sous-traitants" (voir template, pRowToggler) — déjà en mémoire via
     // this.affectations, aucun appel réseau au dépli, contrairement au dépli chantier de
     // ChantierListComponent (qui doit charger à la demande).
@@ -97,6 +108,7 @@ export class EntrepriseListComponent implements OnInit {
         private entrepriseService: EntrepriseService,
         private affectationEntrepriseChantierService: AffectationEntrepriseChantierService,
         private referenceDataService: ReferenceDataService,
+        private chantierService: ChantierService,
         private confirmation: ConfirmationService,
         private message: MessageService,
         public auth: AuthService
@@ -104,6 +116,23 @@ export class EntrepriseListComponent implements OnInit {
 
     get isSuperAdmin(): boolean {
         return this.auth.hasRole('SUPER_ADMIN');
+    }
+
+    /** Nombre d'entreprises actives/inactives SUR LE CHANTIER SÉLECTIONNÉ (statut de
+        l'affectation — "fin de mission", voir désactiverAffectation), pas le statut
+        global de l'entreprise (voir nbActifs/nbInactifs ci-dessus, calculés séparément
+        et inchangés). Sans chantier sélectionné : toutes affectations confondues (une
+        même entreprise sur plusieurs chantiers compte alors une fois par chantier). Objet
+        simple (pas un tableau) : sûr en getter, pas de risque de boucle de rendu p-table. */
+    get statsChantierFiltre(): { actives: number; inactives: number } {
+        return {
+            actives: this.lignesFiltrees.filter((l) => l.statutAffectation === 'ACTIF').length,
+            inactives: this.lignesFiltrees.filter((l) => l.statutAffectation === 'INACTIF').length
+        };
+    }
+
+    get nomChantierFiltre(): string | undefined {
+        return this.chantiers.find((c) => c.id === this.chantierFiltreId)?.nom;
     }
 
     get maxRepartitionCorpsMetier(): number {
@@ -130,6 +159,19 @@ export class EntrepriseListComponent implements OnInit {
         // appelé ici : la liste fusionnée (une ligne par affectation) est désormais la vue
         // standard, plus seulement celle du SUPER_ADMIN.
         this.chargerAffectations();
+        // Chantiers déjà scopés côté backend au périmètre de chacun (voir ChantierController) —
+        // même liste que celle proposée ailleurs (ex. formulaire "Affecter à un chantier").
+        this.chantierService.lister().subscribe((chantiers) => (this.chantiers = chantiers));
+    }
+
+    onChantierFiltreChange() {
+        this.recalculerLignesFiltrees();
+    }
+
+    private recalculerLignesFiltrees() {
+        this.lignesFiltrees = this.chantierFiltreId
+            ? this.lignes.filter((l) => l.chantierId === this.chantierFiltreId)
+            : this.lignes;
     }
 
     charger() {
@@ -192,6 +234,7 @@ export class EntrepriseListComponent implements OnInit {
     private recalculerLignes() {
         if (this.affectations.length === 0) {
             this.lignes = this.entreprises.map((e) => this.ligneSansAffectation(e));
+            this.recalculerLignesFiltrees();
             return;
         }
         const affectationsParEntreprise = new Map<string, AffectationEntrepriseChantier[]>();
@@ -230,6 +273,7 @@ export class EntrepriseListComponent implements OnInit {
                     }))
             }));
         });
+        this.recalculerLignesFiltrees();
     }
 
     // Résout l'entreprise portant l'affectation "parente" (this.affectations contient déjà

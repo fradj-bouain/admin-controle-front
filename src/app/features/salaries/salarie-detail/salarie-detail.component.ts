@@ -146,6 +146,10 @@ export class SalarieDetailComponent implements OnInit {
         return this.contexteChantierId ? this.chantiers.find((c) => c.id === this.contexteChantierId)?.nom : undefined;
     }
 
+    // Entreprise déjà connue à la création (voir ngOnInit, ?entrepriseId=... dans l'URL) :
+    // le champ "Entreprise" du formulaire est alors désactivé plutôt que resélectionnable.
+    entrepriseImposee = false;
+
     // --- Envoyer un message (panneau latéral, voir prototype validé) ---
     afficherComposeur = false;
     envoiMessageEnCours = false;
@@ -414,9 +418,16 @@ export class SalarieDetailComponent implements OnInit {
                 this.chargerMesAffectations(id);
                 this.chargerDocuments(id);
             } else {
+                // Créé depuis la fiche Entreprise (voir les boutons "Ajouter un salarié")
+                // avec l'entreprise déjà connue : elle apparaît directement, pas la peine
+                // de la faire resélectionner dans une liste (demande client) — désactivée
+                // plutôt que retirée du DOM pour que getRawValue() (voir submitCoordonnees)
+                // continue de l'inclure dans le payload envoyé au serveur.
                 const preselectionnee = this.route.snapshot.queryParamMap.get('entrepriseId');
+                this.entrepriseImposee = !!preselectionnee;
                 if (preselectionnee) {
                     this.coordonneesForm.patchValue({ entrepriseEmployeurId: preselectionnee });
+                    this.coordonneesForm.controls.entrepriseEmployeurId.disable();
                 }
             }
         });
@@ -520,13 +531,13 @@ export class SalarieDetailComponent implements OnInit {
             this.salarieService.creer(payload).subscribe({
                 next: (salarie) => {
                     this.enregistrerDocumentsInitiaux(salarie.id).subscribe({
-                        next: () => this.router.navigate(['/salaries', salarie.id]),
+                        next: () => this.finaliserCreationSalarie(salarie.id, payload.entrepriseEmployeurId),
                         error: () => {
                             this.message.add({
                                 severity: 'error', summary: 'Erreur',
                                 detail: 'Salarié créé, mais l\'enregistrement de certains documents a échoué.'
                             });
-                            this.router.navigate(['/salaries', salarie.id]);
+                            this.finaliserCreationSalarie(salarie.id, payload.entrepriseEmployeurId);
                         }
                     });
                 },
@@ -537,9 +548,14 @@ export class SalarieDetailComponent implements OnInit {
             });
         } else {
             this.salarieService.modifier(this.salarieId!, payload).subscribe({
-                next: (salarie) => {
+                // Recharge depuis le serveur (pas seulement la réponse assignée en local) :
+                // changer la nationalité ou le type de contrat change aussi les documents
+                // obligatoires (voir recalculerTypesPourSalarie, déjà appelée par
+                // chargerSalarie) — rester sur la seule réponse de la requête laissait la
+                // checklist Documents périmée jusqu'au prochain rechargement manuel (retour client).
+                next: () => {
                     this.saving = false;
-                    this.salarie = salarie;
+                    this.chargerSalarie(this.salarieId!);
                     this.message.add({ severity: 'success', summary: 'Succès', detail: 'Salarié modifié' });
                 },
                 error: () => {
@@ -548,6 +564,42 @@ export class SalarieDetailComponent implements OnInit {
                 }
             });
         }
+    }
+
+    // Après création : si le salarié a été ajouté depuis la fiche d'une entreprise déjà
+    // ouverte dans le contexte d'un chantier précis (voir contexteChantierId, alimenté par
+    // ?chantierId=... — porté par les boutons "Ajouter un salarié" de la fiche Entreprise),
+    // l'admin vient de fournir l'entreprise ET le chantier en deux clics : on affecte donc
+    // directement le nouveau salarié à ce chantier, plutôt que de le renvoyer ressaisir les
+    // deux mêmes informations juste après depuis la fiche Chantier (voir affecterSalarieForm).
+    // Même restriction que submitAffectation/onChantierChange : uniquement via SON entreprise
+    // employeuse. Si elle n'est pas (ou plus) affectée à ce chantier, on n'invente rien.
+    private finaliserCreationSalarie(salarieId: string, entrepriseEmployeurId: string) {
+        const chantierId = this.contexteChantierId;
+        if (!chantierId) {
+            this.router.navigate(['/salaries', salarieId]);
+            return;
+        }
+        this.affectationEntrepriseService.lister(chantierId).subscribe({
+            next: (affectations) => {
+                const affectationEntreprise = affectations.find((a) => a.statut === 'ACTIF' && a.entrepriseId === entrepriseEmployeurId);
+                if (!affectationEntreprise) {
+                    this.router.navigate(['/salaries', salarieId]);
+                    return;
+                }
+                this.affectationSalarieService.affecter(chantierId, {
+                    salarieId,
+                    affectationEntrepriseChantierId: affectationEntreprise.id
+                }).subscribe({
+                    next: () => {
+                        this.message.add({ severity: 'success', summary: 'Succès', detail: 'Salarié créé et affecté au chantier en cours.' });
+                        this.router.navigate(['/salaries', salarieId], { queryParams: { chantierId } });
+                    },
+                    error: () => this.router.navigate(['/salaries', salarieId])
+                });
+            },
+            error: () => this.router.navigate(['/salaries', salarieId])
+        });
     }
 
     confirmerBasculeStatut() {

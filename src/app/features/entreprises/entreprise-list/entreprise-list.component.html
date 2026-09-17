@@ -1,7 +1,52 @@
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
+<!-- Sélection d'un chantier (demande client) : filtre la liste ci-dessous aux seules
+     entreprises concernées par CE chantier et fait varier les 2 indicateurs actives/
+     inactives juste en dessous en conséquence — tout est déjà en mémoire (this.lignes),
+     aucun appel réseau au changement (voir recalculerLignesFiltrees). -->
+<div class="card mb-3" *ngIf="!loading">
+    <div class="flex align-items-center gap-2 flex-wrap">
+        <label for="chantierFiltre" class="text-500 text-sm font-semibold white-space-nowrap">Chantier</label>
+        <p-dropdown
+            id="chantierFiltre"
+            [options]="chantiers"
+            [(ngModel)]="chantierFiltreId"
+            (ngModelChange)="onChantierFiltreChange()"
+            optionLabel="nom"
+            optionValue="id"
+            [filter]="true"
+            filterBy="nom"
+            placeholder="Tous les chantiers"
+            [showClear]="true"
+            styleClass="w-full md:w-25rem"
+        ></p-dropdown>
+    </div>
+</div>
+
 <div class="stat-grid" *ngIf="!loading">
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Entreprises actives</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ statsChantierFiltre.actives }}</span></div>
+            </div>
+            <span class="stat-icon tint-success"><i class="pi pi-check-circle"></i></span>
+        </div>
+        <span class="stat-caption">{{ chantierFiltreId ? ('sur ' + nomChantierFiltre) : 'toutes affectations confondues' }}</span>
+    </div>
+
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Entreprises inactives</div>
+                <div class="stat-value-row"><span class="stat-value tabular-nums">{{ statsChantierFiltre.inactives }}</span></div>
+            </div>
+            <span class="stat-icon tint-danger"><i class="pi pi-ban"></i></span>
+        </div>
+        <span class="stat-caption">Fin de mission — {{ chantierFiltreId ? ('sur ' + nomChantierFiltre) : 'toutes affectations confondues' }}</span>
+    </div>
+
     <div class="stat-card" style="cursor:default;">
         <div class="stat-top">
             <div>
@@ -105,9 +150,9 @@
         </span>
         <button pButton type="button" [label]="afficherFiltresAvances ? 'Masquer les filtres avancés' : 'Filtres avancés'" [icon]="afficherFiltresAvances ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" class="p-button-text p-button-sm" (click)="afficherFiltresAvances = !afficherFiltresAvances"></button>
     </div>
-    <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? lignes).length }} résultat(s)</p>
+    <p class="text-500 text-sm mt-0 mb-3">{{ (dt.filteredValue ?? lignesFiltrees).length }} résultat(s)</p>
 
-    <p-table #dt [value]="lignes" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="rowKey" [globalFilterFields]="['raisonSociale','paysCalculee','telephone','ville','nomChantier','role']" [expandedRowKeys]="expandedRowKeys">
+    <p-table #dt [value]="lignesFiltrees" [loading]="loading" [paginator]="true" [rows]="25" [rowsPerPageOptions]="[25,50,150]" [scrollable]="true" scrollHeight="560px" dataKey="rowKey" [globalFilterFields]="['raisonSociale','paysCalculee','telephone','ville','nomChantier','role']" [expandedRowKeys]="expandedRowKeys">
         <ng-template pTemplate="header">
             <tr>
                 <th style="min-width: 16rem">Raison sociale</th>

@@ -289,9 +289,12 @@ export class ClientDetailComponent implements OnInit {
             });
         } else {
             this.clientService.modifier(this.clientId!, payload).subscribe({
-                next: (client) => {
+                // Recharge depuis le serveur plutôt que de se contenter de la réponse assignée
+                // en local — cohérent avec entreprise/chantier/salarié (retour client : les
+                // pages ne doivent jamais rester sur une donnée périmée après une action).
+                next: () => {
                     this.saving = false;
-                    this.client = client;
+                    this.chargerClient(this.clientId!);
                     this.message.add({ severity: 'success', summary: 'Succès', detail: 'Client modifié' });
                 },
                 error: () => {

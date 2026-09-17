@@ -112,7 +112,7 @@
                         <span>·</span>
                         <span>{{ nomFonction(salarie.fonctionId) }}</span>
                         <span>·</span>
-                        <span>{{ nomEntreprise(salarie.entrepriseEmployeurId) }}<ng-container *ngIf="rangSocieteActuel"> ({{ rangSocieteActuel }})</ng-container></span>
+                        <span><a [routerLink]="['/entreprises', salarie.entrepriseEmployeurId]" pTooltip="Ouvrir la fiche entreprise">{{ nomEntreprise(salarie.entrepriseEmployeurId) }}</a><ng-container *ngIf="rangSocieteActuel"> ({{ rangSocieteActuel }})</ng-container></span>
                     </div>
                 </div>
             </div>
@@ -190,7 +190,7 @@
                         <span>·</span>
                         <span>{{ nomFonction(salarie.fonctionId) }}</span>
                         <span>·</span>
-                        <span>{{ nomEntreprise(salarie.entrepriseEmployeurId) }}</span>
+                        <span><a [routerLink]="['/entreprises', salarie.entrepriseEmployeurId]" pTooltip="Ouvrir la fiche entreprise">{{ nomEntreprise(salarie.entrepriseEmployeurId) }}</a></span>
                     </div>
                 </div>
             </div>
@@ -661,6 +661,21 @@
                             [class.ng-dirty]="coordonneesForm.controls.entrepriseEmployeurId.touched"
                         ></p-dropdown>
                         <small class="p-error" *ngIf="coordonneesForm.controls.entrepriseEmployeurId.invalid && coordonneesForm.controls.entrepriseEmployeurId.touched">Ce champ est requis.</small>
+                        <!-- Verrouillée automatiquement quand on arrive depuis la fiche
+                             Entreprise (voir entrepriseImposee) : inutile de la refaire
+                             choisir, elle est déjà connue (demande client). -->
+                        <small class="text-500" *ngIf="isNew && entrepriseImposee">Entreprise déjà sélectionnée depuis sa fiche.</small>
+                    </div>
+                    <!-- Chantier auto-affecté à l'enregistrement (voir contexteChantierId,
+                         alimenté par ?chantierId=... — porté par les boutons "Ajouter un
+                         salarié" de la fiche Entreprise quand un chantier est en contexte,
+                         voir finaliserCreationSalarie) : simple affichage, aucun champ de
+                         formulaire réel ici — l'entreprise est déjà affectée à ce chantier,
+                         inutile de le faire choisir une seconde fois (demande client). -->
+                    <div class="field col-12 md:col-6" *ngIf="isNew && contexteChantierNom">
+                        <label for="chantierAuto">Chantier</label>
+                        <input id="chantierAuto" type="text" pInputText [value]="contexteChantierNom" disabled />
+                        <small class="text-500">Affecté automatiquement à ce chantier une fois enregistré.</small>
                     </div>
                     <div class="field col-12 md:col-6">
                         <label for="typeContratId">Types de contrat *</label>
@@ -802,7 +817,10 @@
         <ng-template pTemplate="body" let-affectation>
             <tr class="cursor-pointer" [class.text-500]="!!affectation.dateFin" [routerLink]="['/chantiers', affectation.chantierId]">
                 <td>{{ affectation.nomChantierCalculee }}</td>
-                <td>{{ affectation.entrepriseId ? nomEntreprise(affectation.entrepriseId) : '—' }}</td>
+                <td (click)="$event.stopPropagation()">
+                    <a *ngIf="affectation.entrepriseId; else pasEntreprise" class="cursor-pointer text-primary" [routerLink]="['/entreprises', affectation.entrepriseId]" pTooltip="Ouvrir la fiche entreprise">{{ nomEntreprise(affectation.entrepriseId) }}</a>
+                    <ng-template #pasEntreprise>—</ng-template>
+                </td>
                 <td>{{ affectation.dateDebut | date: 'dd/MM/yyyy' }}</td>
                 <td>{{ affectation.dateFin ? (affectation.dateFin | date: 'dd/MM/yyyy') : '—' }}</td>
                 <td>

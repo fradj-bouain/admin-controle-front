@@ -540,10 +540,15 @@ export class EntrepriseDetailComponent implements OnInit {
         };
     }
 
+    // Parmi les salariés ACTIFS uniquement (voir carte Statistiques, demande client :
+    // "le calcul doit être effectué sur les salariés actifs afin que les statistiques
+    // soient justes") — un intervenant en fin de mission ne doit plus peser dans la
+    // répartition de l'effectif courant par type de contrat.
     get statsSalariesEntrepriseParContrat(): Array<{ libelle: string; total: number }> {
+        const actifs = this.salaries.filter((s) => s.statut === 'ACTIF');
         return this.typesContrat.map((t) => ({
             libelle: t.libelle,
-            total: this.salaries.filter((s) => s.typeContratId === t.id).length
+            total: actifs.filter((s) => s.typeContratId === t.id).length
         })).filter((s) => s.total > 0);
     }
 
@@ -862,11 +867,15 @@ export class EntrepriseDetailComponent implements OnInit {
             });
         } else {
             this.entrepriseService.modifier(this.entrepriseId!, payload).subscribe({
-                next: (entreprise) => {
+                // Recharge depuis le serveur (pas seulement la réponse assignée en local) : un
+                // changement de corps de métier change aussi les documents obligatoires
+                // (voir recalculerTypesPourEntreprise, déjà appelée par chargerEntreprise) —
+                // rester sur la seule réponse de la requête laissait la checklist Documents
+                // périmée jusqu'au prochain rechargement manuel de la page (retour client).
+                next: () => {
                     this.saving = false;
-                    this.entreprise = entreprise;
-                    this.coordonneesForm.patchValue(entreprise);
                     this.editerCoordonnees = false;
+                    this.chargerEntreprise(this.entrepriseId!);
                     this.message.add({ severity: 'success', summary: 'Succès', detail: 'Entreprise modifiée' });
                 },
                 error: () => {

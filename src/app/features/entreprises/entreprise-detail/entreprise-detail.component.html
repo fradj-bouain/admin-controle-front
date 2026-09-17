@@ -478,7 +478,7 @@
                     label="Ajouter"
                     class="p-button-sm"
                     [routerLink]="['/salaries/nouveau']"
-                    [queryParams]="{ entrepriseId: entrepriseId }"
+                    [queryParams]="{ entrepriseId: entrepriseId, chantierId: contexteChantierId ?? undefined }"
                 ></button>
             </div>
             <div class="ent-compact-list" *ngIf="salariesListeAffichee.length > 0">
@@ -1379,20 +1379,32 @@
                  carrées faisait déborder le texte long (dates, raison sociale, "Oui/Non"). -->
             <div class="stat-section">
                 <div class="stat-section-head"><i class="pi pi-users"></i> Salariés</div>
+                <!-- Accord/Refus d'accès n'a de sens QUE pour un salarié actif (voir
+                     statutAccesSalariesEntreprise, déjà scopé aux actifs) : regroupé avec
+                     "Actifs" plutôt qu'affiché à plat à côté d'"Inactifs" (ancien rendu),
+                     qui laissait croire que ces tuiles étaient des catégories sœurs alors
+                     que l'accès est un sous-compte DES actifs uniquement (demande client :
+                     "l'accès ne doit pas être compté parmi les inactifs"). -->
                 <div class="stat-metrics">
-                    <div class="stat-metric"><div class="stat-metric-num">{{ statsSalariesEntreprise.total }}</div><span class="stat-metric-label">Total</span></div>
                     <div class="stat-metric pos"><div class="stat-metric-num">{{ statsSalariesEntreprise.actif }}</div><span class="stat-metric-label">Actifs</span></div>
-                    <div class="stat-metric neg"><div class="stat-metric-num">{{ statsSalariesEntreprise.inactif }}</div><span class="stat-metric-label">Inactifs</span></div>
                     <div class="stat-metric pos"><div class="stat-metric-num">{{ statutAccesSalariesEntreprise.accorde }}<small style="opacity:.5;font-weight:600">/{{ statutAccesSalariesEntreprise.total }}</small></div><span class="stat-metric-label">Accord accès</span></div>
                     <div class="stat-metric neg"><div class="stat-metric-num">{{ statutAccesSalariesEntreprise.refuse }}<small style="opacity:.5;font-weight:600">/{{ statutAccesSalariesEntreprise.total }}</small></div><span class="stat-metric-label">Refus accès</span></div>
                 </div>
+                <!-- Répartition par type de contrat : parmi les salariés ACTIFS uniquement
+                     (voir statsSalariesEntrepriseParContrat) — un intervenant en fin de
+                     mission ne doit plus compter dans l'effectif courant par contrat. -->
                 <div class="stat-kv" *ngIf="statsSalariesEntrepriseParContrat.length > 0">
                     <div class="stat-kv-row" *ngFor="let s of statsSalariesEntrepriseParContrat">
                         <span class="stat-kv-key">{{ s.libelle }}</span>
                         <span class="stat-kv-val">{{ s.total }}</span>
                     </div>
                 </div>
-                <span class="stat-caption">Inactif = fin de mission. Accès comptés parmi les salariés actifs.</span>
+                <span class="stat-caption">Accès comptés parmi les salariés actifs uniquement.</span>
+
+                <div class="stat-metrics mt-2">
+                    <div class="stat-metric neg"><div class="stat-metric-num">{{ statsSalariesEntreprise.inactif }}</div><span class="stat-metric-label">Intervenants inactifs</span></div>
+                </div>
+                <span class="stat-caption">Inactif = fin de mission.</span>
             </div>
 
             <div class="stat-section">
@@ -1740,7 +1752,7 @@
                 icon="pi pi-plus"
                 label="Ajouter un salarié"
                 [routerLink]="['/salaries/nouveau']"
-                [queryParams]="{ entrepriseId: entrepriseId }"
+                [queryParams]="{ entrepriseId: entrepriseId, chantierId: contexteChantierId ?? undefined }"
             ></button>
         </div>
     </div>
