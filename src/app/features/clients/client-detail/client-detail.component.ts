@@ -131,15 +131,6 @@ export class ClientDetailComponent implements OnInit {
         return this.chantiers.slice(0, 7);
     }
 
-    initialesUtilisateur(u: Utilisateur): string {
-        const p = (u.prenom || '').trim();
-        const n = (u.nom || '').trim();
-        if (!p && !n) {
-            return '?';
-        }
-        return ((p[0] ?? '') + (n[0] ?? '')).toUpperCase() || '?';
-    }
-
     nomPays(id?: string): string {
         return this.pays.find((p) => p.id === id)?.nom ?? '—';
     }

@@ -192,7 +192,6 @@
             <tr class="cursor-pointer" [routerLink]="['/entreprises', ligne.entrepriseId]" [queryParams]="ligne.chantierId ? { chantierId: ligne.chantierId } : {}">
                 <td>
                     <div class="flex align-items-center gap-2">
-                        <span class="member-avatar">{{ initiales(ligne.raisonSociale) }}</span>
                         {{ ligne.raisonSociale }}
                     </div>
                 </td>

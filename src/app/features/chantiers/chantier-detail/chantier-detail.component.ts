@@ -386,17 +386,6 @@ export class ChantierDetailComponent implements OnInit {
             .map((u) => ({ utilisateur: u, accesTousChantiers: !!u.accesTousChantiers }));
     }
 
-    initialesUtilisateur(u: Utilisateur): string {
-        const p = (u.prenom || '').trim();
-        const n = (u.nom || '').trim();
-        return ((p[0] ?? '') + (n[0] ?? '')).toUpperCase() || '?';
-    }
-
-    initialesUtilisateurId(id: string): string {
-        const u = this.utilisateurs.find((x) => x.id === id);
-        return u ? this.initialesUtilisateur(u) : '?';
-    }
-
     /** Rapport envoyé pour ce contrôle, s'il existe — un contrôle terminé n'a pas
         forcément de rapport encore rédigé/envoyé. */
     rapportDuControle(controleId: string): RapportControle | undefined {

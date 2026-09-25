@@ -287,7 +287,6 @@
 
                 <div class="member-list" *ngIf="equipeApercu.length > 0">
                     <div class="member-row" *ngFor="let u of equipeApercu">
-                        <div class="member-avatar">{{ initialesUtilisateur(u) }}</div>
                         <div class="member-body">
                             <span class="member-name">{{ u.prenom }} {{ u.nom }}<ng-container *ngIf="u.id === auth.userId"> (vous)</ng-container></span>
                             <span class="member-email">{{ u.email }}</span>
@@ -563,7 +562,6 @@
 
             <div class="member-list" *ngIf="utilisateurs.length > 0">
                 <div class="member-row" *ngFor="let u of utilisateurs">
-                    <div class="member-avatar">{{ initialesUtilisateur(u) }}</div>
                     <div class="member-body">
                         <span class="member-name">{{ u.prenom }} {{ u.nom }}<ng-container *ngIf="u.id === auth.userId"> (vous)</ng-container></span>
                         <span class="member-email">{{ u.email }}</span>

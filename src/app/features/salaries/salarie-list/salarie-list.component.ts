@@ -112,10 +112,6 @@ export class SalarieListComponent implements OnInit {
         return Math.max(1, ...this.repartitionTypesContrat.map((t) => t.total));
     }
 
-    initiales(nom: string, prenom: string): string {
-        return ((prenom[0] ?? '') + (nom[0] ?? '')).toUpperCase() || '?';
-    }
-
     ngOnInit(): void {
         this.charger();
         // GET /salaries/affectations est ouvert à tout compte authentifié et filtré côté

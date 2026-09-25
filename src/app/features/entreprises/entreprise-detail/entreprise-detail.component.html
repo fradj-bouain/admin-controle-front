@@ -1886,7 +1886,6 @@
 
         <div class="member-list" *ngIf="utilisateurs.length > 0">
             <div class="member-row" *ngFor="let utilisateur of utilisateurs">
-                <span class="member-avatar">{{ initialesUtilisateur(utilisateur) }}</span>
                 <span class="member-body">
                     <span class="member-name">{{ utilisateur.prenom }} {{ utilisateur.nom }}</span>
                     <span class="member-email">{{ utilisateur.username }}</span>

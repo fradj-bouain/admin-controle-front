@@ -143,14 +143,6 @@ export class EntrepriseListComponent implements OnInit {
         return this.pays.find((p) => p.id === paysId)?.nom ?? '—';
     }
 
-    initiales(raisonSociale: string): string {
-        const mots = raisonSociale.trim().split(/\s+/).filter((m) => m.length > 0);
-        if (mots.length === 0) {
-            return '?';
-        }
-        return mots.length === 1 ? mots[0].substring(0, 2).toUpperCase() : (mots[0][0] + mots[1][0]).toUpperCase();
-    }
-
     ngOnInit(): void {
         this.charger();
         // GET /entreprises/affectations est ouvert à tout compte authentifié et filtré

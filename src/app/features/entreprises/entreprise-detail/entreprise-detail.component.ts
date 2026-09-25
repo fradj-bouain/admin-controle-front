@@ -408,12 +408,6 @@ export class EntrepriseDetailComponent implements OnInit {
         return this.mesAffectations.filter((a) => a.statut === 'ACTIF').length;
     }
 
-    initialesUtilisateur(u: Utilisateur): string {
-        const p = (u.prenom || '').trim();
-        const n = (u.nom || '').trim();
-        return ((p[0] ?? '') + (n[0] ?? '')).toUpperCase() || '?';
-    }
-
     annulerEditionCoordonnees() {
         if (this.entreprise) {
             this.coordonneesForm.patchValue(this.entreprise);

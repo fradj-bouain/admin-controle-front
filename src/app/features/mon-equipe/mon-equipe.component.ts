@@ -75,12 +75,6 @@ export class MonEquipeComponent implements OnInit {
         return this.chantiersDetail.slice(0, 7);
     }
 
-    initialesUtilisateur(u: Utilisateur): string {
-        const p = (u.prenom || '').trim();
-        const n = (u.nom || '').trim();
-        return ((p[0] ?? '') + (n[0] ?? '')).toUpperCase() || '?';
-    }
-
     charger() {
         this.utilisateurService.lister().subscribe((utilisateurs) => {
             this.utilisateurs = utilisateurs.map((u) => ({ ...u, identiteCalculee: `${u.nom} ${u.prenom} (${u.username})` }));

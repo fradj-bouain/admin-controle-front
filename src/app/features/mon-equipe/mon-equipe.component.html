@@ -120,7 +120,6 @@
      un simple décompte sur le listing ne répond pas à "sur quel chantier exactement ?". -->
 <p-dialog header="Détail" [(visible)]="dialogDetailVisible" [modal]="true" [style]="{ width: '480px' }" *ngIf="utilisateurDetail as u">
     <div class="flex align-items-center gap-3 mb-4">
-        <div class="member-avatar" style="width: 3rem; height: 3rem; font-size: 1rem;">{{ initialesUtilisateur(u) }}</div>
         <div class="min-w-0">
             <div class="font-semibold text-lg white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ u.prenom }} {{ u.nom }}</div>
             <div class="text-500 text-sm white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ u.email }}</div>

@@ -147,14 +147,6 @@ export class RapportDetailPageComponent implements OnInit {
         return this.controleTiers.find((c) => c.id === id)?.nom;
     }
 
-    initialesSalarie(id: string): string {
-        const s = this.salaries.find((x) => x.id === id);
-        if (!s) {
-            return '?';
-        }
-        return ((s.prenom[0] ?? '') + (s.nom[0] ?? '')).toUpperCase() || '?';
-    }
-
     nomSalarie(id: string): string {
         const s = this.salaries.find((x) => x.id === id);
         return s ? `${s.prenom} ${s.nom}` : id;

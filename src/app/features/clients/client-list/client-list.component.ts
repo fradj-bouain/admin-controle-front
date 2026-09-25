@@ -100,14 +100,6 @@ export class ClientListComponent implements OnInit {
         return Math.max(1, ...this.repartitionVilles.map((v) => v.total));
     }
 
-    initiales(raisonSociale: string): string {
-        const mots = raisonSociale.trim().split(/\s+/).filter((m) => m.length > 0);
-        if (mots.length === 0) {
-            return '?';
-        }
-        return mots.length === 1 ? mots[0].substring(0, 2).toUpperCase() : (mots[0][0] + mots[1][0]).toUpperCase();
-    }
-
     confirmerBasculeStatut(client: Client) {
         this.confirmation.confirm({
             header: 'Confirmation',

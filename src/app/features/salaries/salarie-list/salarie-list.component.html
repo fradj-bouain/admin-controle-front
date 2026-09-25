@@ -174,7 +174,6 @@
             <tr class="cursor-pointer" [routerLink]="['/salaries', ligne.salarieId]" [queryParams]="ligne.chantierId ? { chantierId: ligne.chantierId } : {}">
                 <td>
                     <div class="flex align-items-center gap-2">
-                        <span class="member-avatar">{{ initiales(ligne.nom, ligne.prenom) }}</span>
                         {{ ligne.nom }}
                     </div>
                 </td>

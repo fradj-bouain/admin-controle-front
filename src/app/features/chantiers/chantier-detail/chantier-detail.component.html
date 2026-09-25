@@ -566,7 +566,6 @@
                     </div>
                     <div *ngIf="equipeClientSurCeChantier.length > 0">
                         <div class="member-row" *ngFor="let e of equipeClientSurCeChantier">
-                            <div class="member-avatar">{{ initialesUtilisateur(e.utilisateur) }}</div>
                             <div class="member-body">
                                 <span class="member-name">{{ e.utilisateur.prenom }} {{ e.utilisateur.nom }}</span>
                                 <span class="member-email">{{ e.accesTousChantiers ? 'Accès total' : 'Assigné à ce chantier' }}</span>
@@ -890,7 +889,6 @@
 
         <div class="member-list" *ngIf="chantierUtilisateurIds.length > 0">
             <div class="member-row" *ngFor="let utilisateurId of chantierUtilisateurIds">
-                <span class="member-avatar">{{ initialesUtilisateurId(utilisateurId) }}</span>
                 <span class="member-body"><span class="member-name">{{ nomUtilisateur(utilisateurId) }}</span></span>
                 <span class="member-end">
                     <button
@@ -946,7 +944,6 @@
 
         <div class="member-list" *ngIf="utilisateursClientAssignes.length > 0">
             <div class="member-row" *ngFor="let utilisateur of utilisateursClientAssignes">
-                <span class="member-avatar">{{ initialesUtilisateur(utilisateur) }}</span>
                 <span class="member-body"><span class="member-name">{{ utilisateur.prenom }} {{ utilisateur.nom }}</span></span>
                 <span class="member-end">
                     <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-danger" (click)="revoquerUtilisateur(utilisateur.id)"></button>
