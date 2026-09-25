@@ -23,18 +23,6 @@ export class AppSidebarComponent {
         return this.auth.username;
     }
 
-    get initiales(): string {
-        const name = this.auth.username;
-        if (!name) {
-            return '?';
-        }
-        const parts = name.replace(/[._-]+/g, ' ').trim().split(' ').filter(Boolean);
-        if (parts.length >= 2) {
-            return (parts[0][0] + parts[1][0]).toUpperCase();
-        }
-        return name.substring(0, 2).toUpperCase();
-    }
-
     get roleLabel(): string {
         const role = this.auth.roles[0];
         return role ? (ROLE_LABELS[role] ?? role) : '';

@@ -46,13 +46,6 @@ export class QrCodeDialogComponent implements OnChanges {
         }
     }
 
-    get initiales(): string {
-        if (!this.salarie) {
-            return '';
-        }
-        return `${this.salarie.prenom.charAt(0)}${this.salarie.nom.charAt(0)}`.toUpperCase();
-    }
-
     private charger() {
         if (!this.salarie) {
             return;

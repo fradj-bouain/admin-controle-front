@@ -102,7 +102,6 @@
                 <button type="button" class="id-card-back" pTooltip="Retour à la liste" tooltipPosition="bottom" (click)="retour()">
                     <i class="pi pi-arrow-left"></i>
                 </button>
-                <div class="chantier-hero-mark">{{ salarieInitiales }}</div>
                 <div>
                     <h1 class="chantier-hero-title">{{ salarie.prenom }} {{ salarie.nom }}</h1>
                     <div class="chantier-hero-sub">
@@ -180,7 +179,6 @@
                 <button type="button" class="id-card-back" pTooltip="Retour" tooltipPosition="bottom" (click)="retour()">
                     <i class="pi pi-arrow-left"></i>
                 </button>
-                <div class="chantier-hero-mark">{{ (salarie ? salarie.prenom + salarie.nom : '?') | slice:0:2 | uppercase }}</div>
                 <div *ngIf="salarie">
                     <h1 class="chantier-hero-title">{{ salarie.prenom }} {{ salarie.nom }}</h1>
                     <div class="chantier-hero-sub">
@@ -707,7 +705,6 @@
         <p class="text-500 text-xs font-bold uppercase mb-2" style="letter-spacing:.05em;">Aperçu de la fiche</p>
         <div class="id-card mb-3">
             <div class="id-card-band">
-                <div class="id-card-mark">{{ previewInitiales }}</div>
                 <div class="id-card-name-row">
                     <span class="id-card-name">{{ (coordonneesForm.get('prenom')?.value || coordonneesForm.get('nom')?.value) ? (coordonneesForm.get('prenom')?.value + ' ' + coordonneesForm.get('nom')?.value) : 'Nouveau salarié' }}</span>
                     <div class="id-card-sub">

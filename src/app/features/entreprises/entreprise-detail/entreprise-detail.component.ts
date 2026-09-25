@@ -404,14 +404,6 @@ export class EntrepriseDetailComponent implements OnInit {
     // chiffres déjà calculés pour la carte Documents/Affectation/Salariés plus bas — aucune
     // donnée de plus à charger, juste remontée en haut de page. Même traitement que les
     // fiches Client et Chantier.
-    get entrepriseInitiales(): string {
-        const mots = (this.entreprise?.raisonSociale ?? '').trim().split(/\s+/).filter(Boolean);
-        if (mots.length === 0) {
-            return '?';
-        }
-        return mots.length === 1 ? mots[0].slice(0, 2).toUpperCase() : (mots[0][0] + mots[1][0]).toUpperCase();
-    }
-
     get nbAffectationsActives(): number {
         return this.mesAffectations.filter((a) => a.statut === 'ACTIF').length;
     }

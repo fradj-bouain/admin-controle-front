@@ -144,14 +144,6 @@ export class ClientDetailComponent implements OnInit {
         return this.pays.find((p) => p.id === id)?.nom ?? '—';
     }
 
-    get clientInitiales(): string {
-        const mots = (this.client?.raisonSociale ?? '').trim().split(/\s+/).filter(Boolean);
-        if (mots.length === 0) {
-            return '?';
-        }
-        return mots.length === 1 ? mots[0].slice(0, 2).toUpperCase() : (mots[0][0] + mots[1][0]).toUpperCase();
-    }
-
     get nbChantiersActifs(): number {
         return this.chantiers.filter((c) => c.statut === 'ACTIF').length;
     }

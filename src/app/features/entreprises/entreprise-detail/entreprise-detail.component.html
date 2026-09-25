@@ -698,7 +698,6 @@
                 <button type="button" class="id-card-back" pTooltip="Retour" tooltipPosition="bottom" (click)="retour()">
                     <i class="pi pi-arrow-left"></i>
                 </button>
-                <div class="chantier-hero-mark">{{ (entreprise?.raisonSociale || '?') | slice:0:2 | uppercase }}</div>
                 <div *ngIf="entreprise">
                     <h1 class="chantier-hero-title">{{ entreprise.raisonSociale }}</h1>
                     <div class="chantier-hero-sub">
@@ -1331,7 +1330,6 @@
             <p class="text-500 text-xs font-bold uppercase mb-2" style="letter-spacing:.05em;">Aperçu de la fiche</p>
             <div class="id-card mb-3">
                 <div class="id-card-band">
-                    <div class="id-card-mark">{{ (coordonneesForm.get('raisonSociale')?.value || '?') | slice:0:2 | uppercase }}</div>
                     <div class="id-card-name-row">
                         <span class="id-card-name">{{ coordonneesForm.get('raisonSociale')?.value || 'Nouvelle entreprise' }}</span>
                         <div class="id-card-sub">
